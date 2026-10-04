@@ -1,0 +1,142 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:XIVault.Desktop.Controls"
+             xmlns:vm="using:XIVault.Desktop.ViewModels"
+             x:Class="XIVault.Desktop.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" MaxWidth="760" />
+    </Grid.ColumnDefinitions>
+    <StackPanel Spacing="16">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="page-title" Text="Settings" />
+        <TextBlock Classes="body t2" Text="Changes apply to the next backup." />
+      </StackPanel>
+
+      <c:Banner Tone="Critical" Title="The setting was not saved" Description="{Binding ErrorMessage}"
+                IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+      <!-- Backup -->
+      <StackPanel Spacing="8">
+        <TextBlock Classes="label t3" Text="BACKUP" Margin="4,0" />
+        <Border Classes="card" ClipToBounds="True">
+          <StackPanel>
+            <Border Classes="setting"><Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+              <StackPanel Spacing="2" VerticalAlignment="Center">
+                <TextBlock Classes="strong" Text="Destination" />
+                <TextBlock Classes="data t3" FontSize="11.5" Text="{Binding Destination}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Destination}" />
+              </StackPanel>
+              <c:XvButton Grid.Column="1" Classes="secondary sm" Icon="FolderOpen" Content="Choose Folder" Command="{Binding ChooseFolderCommand}" />
+            </Grid></Border>
+            <Border Classes="setting divided"><Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+              <StackPanel Spacing="2" VerticalAlignment="Center">
+                <TextBlock Classes="strong" Text="Keep latest backups" />
+                <TextBlock Classes="compact t3" Text="Older backups are removed once a new one is verified." TextWrapping="Wrap" />
+              </StackPanel>
+              <Border Grid.Column="1" BorderBrush="{StaticResource Border2}" BorderThickness="1" CornerRadius="4" Background="{StaticResource Bg3}" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                  <c:XvButton Classes="ghost sm icon" Icon="Minus" Command="{Binding RetentionDownCommand}" AutomationProperties.Name="Keep fewer backups" ToolTip.Tip="Fewer" />
+                  <TextBlock Classes="data-value" MinWidth="30" TextAlignment="Center" Text="{Binding Retention}" VerticalAlignment="Center" />
+                  <c:XvButton Classes="ghost sm icon" Icon="Plus" Command="{Binding RetentionUpCommand}" AutomationProperties.Name="Keep more backups" ToolTip.Tip="More" />
+                </StackPanel>
+              </Border>
+            </Grid></Border>
+            <Border Classes="setting divided"><Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+              <StackPanel Spacing="2" VerticalAlignment="Center">
+                <TextBlock Classes="strong" Text="Include Dalamud UI layout" />
+                <TextBlock Classes="compact t3" TextWrapping="Wrap"
+                           Text="Window positions and sizes. Off by default because layouts rarely transfer well between monitors." />
+              </StackPanel>
+              <c:XvSwitch Grid.Column="1" IsChecked="{Binding IncludeUi}" AutomationProperties.Name="Include Dalamud UI layout" />
+            </Grid></Border>
+            <Border Classes="setting divided"><Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+              <StackPanel Spacing="2" VerticalAlignment="Center">
+                <TextBlock Classes="strong" Text="Compression" />
+                <TextBlock Classes="compact t3" Text="{Binding CompressionHint}" TextWrapping="Wrap" />
+              </StackPanel>
+              <ComboBox Grid.Column="1" Width="150" ItemsSource="{Binding CompressionOptions}" SelectedItem="{Binding Compression}"
+                        VerticalAlignment="Center" AutomationProperties.Name="Compression" />
+            </Grid></Border>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <!-- XIVLauncher -->
+      <StackPanel Spacing="8">
+        <TextBlock Classes="label t3" Text="XIVLAUNCHER" Margin="4,0" />
+        <Border Classes="card" ClipToBounds="True">
+          <StackPanel>
+            <Border Classes="setting"><Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+              <StackPanel Spacing="2" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Classes="strong" Text="Detected path" VerticalAlignment="Center" />
+                  <c:StatusBadge Classes="sm" Tone="{Binding DetectedTone}" Label="{Binding DetectedLabel}" />
+                </StackPanel>
+                <TextBlock Classes="data t3" FontSize="11.5" Text="{Binding DetectedPath}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DetectedPath}" />
+                <TextBlock Classes="compact t3" Text="{Binding DetectedNote}" TextWrapping="Wrap"
+                           IsVisible="{Binding DetectedNote, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                <c:XvButton Classes="ghost sm" Icon="RotateCcw" Content="Use detected folder" Command="{Binding ResetOverrideCommand}"
+                            IsVisible="{Binding HasOverride}" />
+                <c:XvButton Classes="ghost sm" Icon="Pencil" Content="{Binding OverrideButtonLabel}" Command="{Binding ToggleOverrideCommand}" />
+              </StackPanel>
+            </Grid></Border>
+            <Border Background="{StaticResource Bg1}" BorderBrush="{StaticResource Border1}" BorderThickness="0,1,0,0" Padding="16,12"
+                    IsVisible="{Binding IsOverrideOpen}">
+              <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                  <TextBox Classes="mono" Text="{Binding OverrideText}" PlaceholderText="D:\Games\XIVLauncher"
+                           AutomationProperties.Name="XIVLauncher folder">
+                    <TextBox.InnerLeftContent>
+                      <c:Icon Kind="FolderOpen" Size="13" Foreground="{StaticResource Text3}" Margin="8,0,0,0" VerticalAlignment="Center" />
+                    </TextBox.InnerLeftContent>
+                  </TextBox>
+                  <c:XvButton Grid.Column="1" Classes="secondary sm" Content="Browse" Command="{Binding BrowseOverrideCommand}" VerticalAlignment="Center" />
+                  <c:XvButton Grid.Column="2" Classes="primary sm" Content="Use path" Command="{Binding UseOverrideCommand}" VerticalAlignment="Center" />
+                </Grid>
+                <TextBlock Classes="compact critical" Text="{Binding OverrideError}" TextWrapping="Wrap"
+                           IsVisible="{Binding OverrideError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <!-- Safety -->
+      <StackPanel Spacing="8">
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,0">
+          <TextBlock Classes="label t3" Text="SAFETY" VerticalAlignment="Center" />
+          <TextBlock Classes="compact t3" FontSize="11" Text="Always on. These cannot be changed." VerticalAlignment="Center" />
+        </StackPanel>
+        <Border Classes="panel" BorderBrush="{StaticResource AccentBorder}" ClipToBounds="True">
+          <StackPanel>
+            <Border Classes="setting"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+              <c:Icon Kind="Lock" Size="13" Foreground="{StaticResource AccentText}" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Spacing="2">
+                <TextBlock Classes="strong" Text="Create a safety backup before every restore" />
+                <TextBlock Classes="compact t3" Text="Your current configuration is always recoverable." />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Classes="micro accent" Text="REQUIRED" VerticalAlignment="Center" />
+                <c:XvSwitch IsChecked="True" IsEnabled="False" AutomationProperties.Name="Safety backup before every restore, required" />
+              </StackPanel>
+            </Grid></Border>
+            <Border Classes="setting divided"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+              <c:Icon Kind="Lock" Size="13" Foreground="{StaticResource AccentText}" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Spacing="2">
+                <TextBlock Classes="strong" Text="Verify backup hashes" />
+                <TextBlock Classes="compact t3" Text="Every file is checked against its SHA-256 after writing and before restoring." TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Classes="micro accent" Text="REQUIRED" VerticalAlignment="Center" />
+                <c:XvSwitch IsChecked="True" IsEnabled="False" AutomationProperties.Name="Verify backup hashes, required" />
+              </StackPanel>
+            </Grid></Border>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </StackPanel>
+  </Grid>
+</UserControl>

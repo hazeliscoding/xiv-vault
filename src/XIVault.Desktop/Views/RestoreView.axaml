@@ -1,0 +1,273 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:XIVault.Desktop.Controls"
+             xmlns:vm="using:XIVault.Desktop.ViewModels"
+             xmlns:v="using:XIVault.Desktop.Views"
+             x:Class="XIVault.Desktop.Views.RestoreView"
+             x:DataType="vm:RestoreViewModel">
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" MaxWidth="820" />
+    </Grid.ColumnDefinitions>
+    <StackPanel Spacing="16">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="page-title" Text="Restore" />
+        <TextBlock Classes="body t2" Text="Bring back a previous Dalamud configuration. Nothing changes until the last step." />
+      </StackPanel>
+
+      <!-- Steps -->
+      <ItemsControl ItemsSource="{Binding Steps}" AutomationProperties.Name="Restore steps">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:StepItem">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Panel Width="20" Height="20" VerticalAlignment="Center">
+                <Border CornerRadius="10" BorderThickness="1" BorderBrush="{StaticResource Border2}" IsVisible="{Binding State, Converter={x:Static v:Converters.IsTodo}}">
+                  <TextBlock Classes="data t3" FontSize="11" Text="{Binding Mark}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <Border CornerRadius="10" Background="{StaticResource Accent}" IsVisible="{Binding State, Converter={x:Static v:Converters.IsCurrent}}">
+                  <TextBlock Classes="data" FontSize="11" Foreground="{StaticResource TextInverse}" Text="{Binding Mark}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <Border CornerRadius="10" BorderThickness="1" Background="{StaticResource AccentSubtle}" BorderBrush="{StaticResource AccentBorder}"
+                        IsVisible="{Binding State, Converter={x:Static v:Converters.IsDone}}">
+                  <c:Icon Kind="Check" Size="11" StrokeWidth="2.5" Foreground="{StaticResource AccentText}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+              </Panel>
+              <TextBlock Classes="compact" FontWeight="Medium" Text="{Binding Label}" VerticalAlignment="Center"
+                         Classes.t1="{Binding State, Converter={x:Static v:Converters.IsCurrent}}"
+                         Classes.accent="{Binding State, Converter={x:Static v:Converters.IsDone}}"
+                         Classes.t3="{Binding State, Converter={x:Static v:Converters.IsTodo}}" />
+              <Border Width="36" Height="1" Background="{StaticResource Border2}" VerticalAlignment="Center" IsVisible="{Binding HasLine}" />
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <c:Banner Tone="Critical" Title="Restore can't continue" Description="{Binding ErrorMessage}"
+                IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+      <!-- Step 1: choose -->
+      <StackPanel Spacing="16" IsVisible="{Binding IsStep1}">
+        <ListBox ItemsSource="{Binding Choices}" SelectedItem="{Binding Selected}" Background="Transparent"
+                 ItemContainerTheme="{StaticResource ChoiceItem}" IsVisible="{Binding HasChoices}"
+                 AutomationProperties.Name="Backups you can restore">
+          <ListBox.Template>
+            <ControlTemplate>
+              <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+            </ControlTemplate>
+          </ListBox.Template>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:BackupRowViewModel">
+              <Grid ColumnDefinitions="18,150,*,170,Auto" ColumnSpacing="14" AutomationProperties.Name="{Binding AccessibleName}">
+                <Panel Width="14" Height="14" VerticalAlignment="Center">
+                  <Ellipse Classes="radio" StrokeThickness="1.5" />
+                  <Ellipse Classes="radio-dot" Width="6" Height="6" />
+                </Panel>
+                <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                  <TextBlock Classes="strong">
+                    <Run Text="{Binding Day}" /><Run Text=" · " /><Run Text="{Binding Time}" />
+                  </TextBlock>
+                  <TextBlock Classes="compact t3" Text="{Binding Age}" />
+                </StackPanel>
+                <TextBlock Grid.Column="2" Classes="compact t2" Text="{Binding PluginSummary}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <Border Classes="type-mark" RenderTransform="rotate(45deg)" Background="{Binding TypeTone, Converter={x:Static c:ToneConverters.Main}}" />
+                  <TextBlock Classes="compact t3" Text="{Binding TypeLabel}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                </StackPanel>
+                <c:StatusBadge Grid.Column="4" Classes="sm" Tone="{Binding IntegrityTone}" Label="{Binding IntegrityLabel}" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Panel IsVisible="{Binding !HasChoices}">
+          <Rectangle Classes="dashed-card" />
+          <StackPanel Margin="20,22" Spacing="6">
+            <TextBlock Classes="section-title" Text="No backups found" />
+            <TextBlock Classes="body t2" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left">
+              <Run Text="XIVault looked in " /><Run Text="{Binding Destination}" /><Run Text=". On a new PC, wait for OneDrive or Dropbox to finish syncing, choose the folder that holds your backups in Settings, or pick a backup file directly." />
+            </TextBlock>
+          </StackPanel>
+        </Panel>
+
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <c:XvButton Classes="ghost" Icon="FolderOpen" Content="Choose a backup file…" Command="{Binding ChooseFileCommand}" />
+            <c:XvButton Classes="ghost" Icon="Settings" Content="Change backup folder" Command="{Binding OpenSettingsCommand}"
+                        IsVisible="{Binding !HasChoices}" />
+          </StackPanel>
+          <c:XvButton Grid.Column="1" Classes="primary" IconRight="ChevronRight" Content="Continue"
+                      Command="{Binding ContinueCommand}" IsLoading="{Binding IsLoading}" />
+        </Grid>
+      </StackPanel>
+
+      <!-- Step 2: review -->
+      <StackPanel Spacing="16" IsVisible="{Binding IsStep2}">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="section-title" Text="{Binding SelectedTitle}" />
+          <c:Banner Tone="Warning" Title="This backup is older than your current configuration" Description="{Binding OlderWarningText}"
+                    IsVisible="{Binding ShowOlderWarning}" />
+          <c:Banner Tone="Critical" Title="XIVLauncher isn't set up on this PC yet" Description="{Binding TargetProblem}"
+                    IsVisible="{Binding TargetProblem, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <c:Banner.Actions>
+              <c:XvButton Classes="ghost sm" Content="Open Settings" Command="{Binding OpenSettingsCommand}" />
+            </c:Banner.Actions>
+          </c:Banner>
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+            <Border Classes="card" BorderBrush="{StaticResource AccentBorder}" Padding="16,14">
+              <StackPanel Spacing="10">
+                <TextBlock Classes="micro accent" Text="IN THIS BACKUP" />
+                <ItemsControl ItemsSource="{Binding Contents}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ContentItem">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Panel Width="14">
+                          <c:Icon Kind="Check" Size="13" StrokeWidth="2.2" Foreground="{StaticResource Healthy}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding Included}" />
+                          <TextBlock FontFamily="{StaticResource MonoFont}" Text="–" Classes="t4" HorizontalAlignment="Center" IsVisible="{Binding !Included}" />
+                        </Panel>
+                        <TextBlock Classes="body" Text="{Binding Label}" Classes.t1="{Binding Included}" Classes.t3="{Binding !Included}" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Classes="card" Padding="16,14">
+              <StackPanel Spacing="10">
+                <TextBlock Classes="micro t3" Text="ON THIS PC RIGHT NOW" />
+                <ItemsControl ItemsSource="{Binding Current}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CurrentItem">
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Classes="body t2" Text="{Binding Label}" />
+                        <TextBlock Grid.Column="1" Classes="data t3" FontSize="11" Text="{Binding Meta}" VerticalAlignment="Center" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </Grid>
+          <c:Banner Tone="Info" Icon="ShieldCheck" Title="XIVault will create a safety backup of your current configuration before restoring anything."
+                    Description="It appears in Backups as a Pre-Restore Safety Backup and can be restored the same way." />
+        </StackPanel>
+        <Grid ColumnDefinitions="*,Auto">
+          <c:XvButton Classes="ghost" Icon="ChevronLeft" Content="Back" Command="{Binding BackCommand}" />
+          <c:XvButton Grid.Column="1" Classes="primary" IconRight="ChevronRight" Content="Continue"
+                      Command="{Binding ContinueCommand}" IsLoading="{Binding IsLoading}" />
+        </Grid>
+      </StackPanel>
+
+      <!-- Step 3: safety checks and the restore itself -->
+      <StackPanel Spacing="16" IsVisible="{Binding IsStep3}">
+        <Border Classes="card" ClipToBounds="True" MinHeight="40">
+          <Panel>
+            <StackPanel Orientation="Horizontal" Spacing="10" Margin="16,12" IsVisible="{Binding IsLoading}">
+              <c:Spinner Classes="spin" Width="12" Height="12" Foreground="{StaticResource Accent}" VerticalAlignment="Center" />
+              <TextBlock Classes="body t2" Text="Running safety checks…" VerticalAlignment="Center" />
+            </StackPanel>
+            <ItemsControl Classes="rows" ItemsSource="{Binding Checks}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:CheckItem">
+                  <Border Classes="row enter" Height="40" Padding="16,0">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <c:StatusDot Tone="{Binding Tone}" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Classes="body" Text="{Binding Label}" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="2" Classes="data t3" FontSize="11.5" Text="{Binding Detail}" VerticalAlignment="Center"
+                                 TextTrimming="CharacterEllipsis" MaxWidth="360" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Panel>
+        </Border>
+
+        <Border Classes="card" Padding="16,14" BorderBrush="{StaticResource AccentBorder}" BoxShadow="{StaticResource AccentGlow}"
+                IsVisible="{Binding IsRestoring}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+            <c:AetherRing Size="40" VerticalAlignment="Center" />
+            <ItemsControl Grid.Column="1" ItemsSource="{Binding Stages}" VerticalAlignment="Center">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:StageItem">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <c:Icon Kind="Check" Size="12" StrokeWidth="2.2" Width="14" Foreground="{StaticResource HealthyText}" VerticalAlignment="Center"
+                            IsVisible="{Binding State, Converter={x:Static v:Converters.IsDone}}" />
+                    <TextBlock Width="14" TextAlignment="Center" FontFamily="{StaticResource MonoFont}" FontSize="12" Text="{Binding Mark}"
+                               IsVisible="{Binding State, Converter={x:Static v:Converters.IsNotDone}}"
+                               Classes.t1="{Binding State, Converter={x:Static v:Converters.IsCurrent}}"
+                               Classes.t3="{Binding State, Converter={x:Static v:Converters.IsTodo}}" />
+                    <TextBlock Classes="compact" Text="{Binding Label}"
+                               Classes.healthy="{Binding State, Converter={x:Static v:Converters.IsDone}}"
+                               Classes.t1="{Binding State, Converter={x:Static v:Converters.IsCurrent}}"
+                               Classes.t3="{Binding State, Converter={x:Static v:Converters.IsTodo}}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Grid>
+        </Border>
+
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <c:XvButton Classes="ghost" Icon="ChevronLeft" Content="Back" Command="{Binding BackCommand}" />
+          <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <TextBlock Classes="compact t3" Text="{Binding RestoreSummary}" VerticalAlignment="Center" />
+            <c:XvButton Classes="ghost" Icon="RefreshCw" Content="Run checks again" Command="{Binding RunChecksCommand}"
+                        IsVisible="{Binding !ChecksPassed}" />
+          </StackPanel>
+          <Border Grid.Column="2" Classes="glow">
+            <c:XvButton Classes="primary" Icon="RotateCcw" Content="Restore Configuration"
+                        Command="{Binding RestoreNowCommand}" IsEnabled="{Binding CanRestore}" IsLoading="{Binding IsRestoring}" />
+          </Border>
+        </Grid>
+      </StackPanel>
+
+      <!-- Step 4: complete -->
+      <StackPanel Spacing="16" IsVisible="{Binding IsStep4}">
+        <Border Classes="card complete-pulse" Padding="20,36,20,28">
+          <StackPanel Spacing="18" HorizontalAlignment="Center">
+            <Border Width="44" Height="44" CornerRadius="22" Background="{StaticResource HealthySubtle}" BorderBrush="{StaticResource HealthyBorder}"
+                    BorderThickness="1" HorizontalAlignment="Center">
+              <c:Icon Kind="Check" Size="20" Foreground="{StaticResource Healthy}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Spacing="4" HorizontalAlignment="Center">
+              <TextBlock Classes="page-title" Text="Restore complete" HorizontalAlignment="Center" />
+              <TextBlock Classes="body t2" Text="{Binding SelectedTitle}" HorizontalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Spacing="8" HorizontalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <c:StatusDot Tone="Healthy" VerticalAlignment="Center" />
+                <TextBlock Classes="body" Text="{Binding ResultPlugins}" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <c:StatusDot Tone="Healthy" VerticalAlignment="Center" />
+                <TextBlock Classes="body" Text="{Binding ResultDalamud}" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <c:StatusDot Tone="Healthy" VerticalAlignment="Center" />
+                <TextBlock Classes="body" Text="{Binding ResultSnapshot}" ToolTip.Tip="{Binding ResultSnapshotFile}" />
+              </StackPanel>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" Margin="0,6,0,0">
+              <c:XvButton Classes="primary" Icon="ExternalLink" Content="Open XIVLauncher" Command="{Binding OpenLauncherCommand}"
+                          IsVisible="{Binding CanOpenLauncher}" />
+              <c:XvButton Classes="secondary" Icon="Archive" Content="View Backups" Command="{Binding ViewBackupsCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <c:XvButton Classes="ghost" Content="Start another restore" HorizontalAlignment="Right" Command="{Binding StartOverCommand}" />
+      </StackPanel>
+    </StackPanel>
+  </Grid>
+</UserControl>

@@ -1,0 +1,102 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:XIVault.Desktop.Controls"
+             xmlns:vm="using:XIVault.Desktop.ViewModels"
+             x:Class="XIVault.Desktop.Views.BackupsView"
+             x:DataType="vm:BackupsViewModel">
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" MaxWidth="880" />
+    </Grid.ColumnDefinitions>
+    <StackPanel Spacing="16">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="4">
+          <TextBlock Classes="page-title" Text="Backups" />
+          <TextBlock Classes="body t2" Text="{Binding Summary}" />
+        </StackPanel>
+        <ListBox Grid.Column="1" Theme="{StaticResource Segmented}" Classes="sm" VerticalAlignment="Bottom"
+                 ItemsSource="{Binding Filters}" SelectedItem="{Binding Filter}"
+                 AutomationProperties.Name="Filter backups" />
+      </Grid>
+
+      <c:Banner Tone="Critical" Title="Something went wrong" Description="{Binding ErrorMessage}"
+                IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+      <ItemsControl ItemsSource="{Binding Rows}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:BackupRowViewModel">
+            <Border Classes="enter" Background="{StaticResource Bg2}" BorderBrush="{StaticResource Border1}" BorderThickness="1"
+                    CornerRadius="6" ClipToBounds="True">
+              <StackPanel>
+                <Border Classes="hover" Height="44" Padding="14,0,8,0" AutomationProperties.Name="{Binding AccessibleName}">
+                  <Grid ColumnDefinitions="96,78,70,120,*,Auto,Auto" ColumnSpacing="14">
+                    <TextBlock Classes="strong" Text="{Binding Day}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Classes="data t2" Text="{Binding Time}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Classes="data t2" Text="{Binding Size}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="3" Classes="compact t2" Text="{Binding PluginConfigsLabel}" VerticalAlignment="Center" />
+                    <Grid Grid.Column="4" ColumnDefinitions="Auto,*" ColumnSpacing="6" VerticalAlignment="Center">
+                      <Border Classes="type-mark" RenderTransform="rotate(45deg)" Margin="0,1,0,0"
+                              Background="{Binding TypeTone, Converter={x:Static c:ToneConverters.Main}}" />
+                      <TextBlock Grid.Column="1" Classes="compact t3" Text="{Binding TypeLabel}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                    </Grid>
+                    <c:StatusBadge Grid.Column="5" Classes="sm" Tone="{Binding IntegrityTone}" Label="{Binding IntegrityLabel}" />
+                    <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="2">
+                      <c:XvButton Classes="ghost sm" Icon="RotateCcw" Content="Restore" IsEnabled="{Binding CanRestore}"
+                                  Command="{Binding $parent[ItemsControl].((vm:BackupsViewModel)DataContext).RestoreCommand}"
+                                  CommandParameter="{Binding}" />
+                      <c:XvButton Classes="ghost sm" Icon="Eye" Content="Inspect"
+                                  Command="{Binding $parent[ItemsControl].((vm:BackupsViewModel)DataContext).InspectCommand}"
+                                  CommandParameter="{Binding}" />
+                      <c:XvButton Classes="ghost sm icon" Icon="FolderOpen" ToolTip.Tip="Reveal in Explorer"
+                                  AutomationProperties.Name="Reveal in Explorer"
+                                  Command="{Binding $parent[ItemsControl].((vm:BackupsViewModel)DataContext).RevealCommand}"
+                                  CommandParameter="{Binding}" />
+                      <c:XvButton Classes="ghost sm icon" Icon="Trash2" ToolTip.Tip="Delete" AutomationProperties.Name="Delete backup"
+                                  Command="{Binding $parent[ItemsControl].((vm:BackupsViewModel)DataContext).DeleteCommand}"
+                                  CommandParameter="{Binding}" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+                <Border IsVisible="{Binding IsExpanded}" Background="{StaticResource Bg1}" BorderBrush="{StaticResource Border1}"
+                        BorderThickness="0,1,0,0" Padding="14,12,14,14">
+                  <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                    <StackPanel Spacing="6">
+                      <TextBlock Classes="micro t3">
+                        <Run Text="PLUGIN CONFIGURATIONS · " /><Run Text="{Binding PluginCount}" />
+                      </TextBlock>
+                      <ItemsControl ItemsSource="{Binding ChipItems}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate><WrapPanel ItemSpacing="4" LineSpacing="4" /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="x:String">
+                            <Border Classes="chip"><TextBlock Text="{Binding}" /></Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6">
+                      <TextBlock Classes="micro t3" Text="ARCHIVE" />
+                      <StackPanel Spacing="3">
+                        <TextBlock Classes="data t2" FontSize="11.5" Text="{Binding FileName}" TextWrapping="Wrap" />
+                        <TextBlock Classes="data t2" FontSize="11.5" Text="{Binding HashLine}" TextWrapping="Wrap" />
+                        <TextBlock Classes="data t2" FontSize="11.5" Text="{Binding ContentsLine}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Border Classes="card" IsVisible="{Binding IsEmpty}">
+        <c:EmptyState Title="{Binding EmptyTitle}" Description="{Binding EmptyDescription}" />
+      </Border>
+    </StackPanel>
+  </Grid>
+</UserControl>
