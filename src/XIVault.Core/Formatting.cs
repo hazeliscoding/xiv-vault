@@ -1,4 +1,6 @@
 using System.Globalization;
+using XIVault.Core.Backup;
+using XIVault.Core.Configuration;
 
 namespace XIVault.Core;
 
@@ -64,6 +66,44 @@ public static class Formatting
 
     private static string Ago(int count, string noun) =>
         string.Create(CultureInfo.InvariantCulture, $"{count} {noun}{(count == 1 ? "" : "s")} ago");
+
+    public static string KindLabel(BackupKind? kind, bool longForm = false) => kind switch
+    {
+        BackupKind.Manual => "Manual",
+        BackupKind.Scheduled => "Scheduled",
+        BackupKind.PreRestore => longForm ? "Pre-Restore Safety Backup" : "Pre-Restore",
+        _ => "Unknown",
+    };
+
+    public static string IntegrityLabel(IntegrityState integrity) => integrity switch
+    {
+        IntegrityState.Verified => "Verified",
+        IntegrityState.Failed => "Failed",
+        _ => "Unverified",
+    };
+
+    /// <summary>"Weekly on Sunday and Wednesday at 12:00 PM", "Daily at 6:00 AM", "At Windows login".</summary>
+    public static string Schedule(ScheduleSettings settings)
+    {
+        var time = Time(DateTime.Today + settings.TimeOfDay.ToTimeSpan());
+        return settings.Frequency switch
+        {
+            ScheduleFrequency.Daily => $"Daily at {time}",
+            ScheduleFrequency.AtLogon => "At Windows login",
+            _ => $"Weekly on {JoinWords(settings.Days.Order().Select(day => day.ToString()))} at {time}",
+        };
+    }
+
+    public static string JoinWords(IEnumerable<string> words)
+    {
+        var list = words.ToList();
+        return list.Count switch
+        {
+            0 => "",
+            1 => list[0],
+            _ => string.Join(", ", list[..^1]) + " and " + list[^1],
+        };
+    }
 
     public static string Count(int count, string singular, string? plural = null) =>
         string.Create(CultureInfo.InvariantCulture, $"{count} {(count == 1 ? singular : plural ?? singular + "s")}");
