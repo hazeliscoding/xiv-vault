@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Renders every desktop screen to PNG with Avalonia's headless Skia renderer, against a fake
+    XIVLauncher folder in a temp directory. Used for the README screenshots and for checking the
+    UI against the mockup. Run it with the output folder as the only argument:
+    dotnet run (project tools/XIVault.Screenshots) docs/screenshots
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\XIVault.Desktop\XIVault.Desktop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Headless" />
+  </ItemGroup>
+
+</Project>
