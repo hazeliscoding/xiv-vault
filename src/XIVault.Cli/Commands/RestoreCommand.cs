@@ -46,7 +46,7 @@ internal sealed class RestoreCommand(
         Item(true, Formatting.Count(contents.PluginConfigCount, "plugin configuration"));
         Item(contents.DalamudConfig, "Dalamud settings");
         Item(contents.DalamudVfs, "Plugin collection database");
-        Item(contents.DalamudConfig, contents.CustomRepositoryCount is { } repos
+        Item(contents.DalamudConfig, contents.CustomRepositoryCount is { } repos and > 0
             ? $"Custom repository settings · {Formatting.Count(repos, "repo")}"
             : "Custom repository settings");
         Item(contents.DalamudUi, contents.DalamudUi ? "UI layout" : "UI layout — not included");
