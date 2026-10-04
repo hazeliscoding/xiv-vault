@@ -38,9 +38,10 @@ public sealed class ArchiveValidator
 {
     public const long MaxManifestBytes = 16 * 1024 * 1024;
 
-    // Real Dalamud configurations are tens of megabytes. The cap stops a crafted archive from
-    // claiming terabytes and filling the disk during extraction.
-    public const long MaxTotalBytes = 8L * 1024 * 1024 * 1024;
+    // Real Dalamud configurations are tens of megabytes. These caps keep a crafted archive (a zip
+    // bomb, or a manifest with absurd sizes) from tying up hashing or filling the disk on extraction.
+    public const long MaxTotalBytes = 2L * 1024 * 1024 * 1024;
+    public const int MaxFiles = 100_000;
 
     public ArchiveValidation Validate(string archivePath, bool verifyContents, CancellationToken cancellationToken = default)
     {
@@ -145,6 +146,12 @@ public sealed class ArchiveValidator
             return (null, new ArchiveIssue(ArchiveIssueCode.MalformedManifest, "manifest.json is missing required fields."));
         }
 
+        // Sizes come from the file, so they are bounded before anything adds them up.
+        if (manifest.Files.Count > MaxFiles || manifest.Files.Any(file => file.Size is < 0 or > MaxTotalBytes) || DeclaredTotal(manifest) > MaxTotalBytes)
+        {
+            return (null, new ArchiveIssue(ArchiveIssueCode.TooLarge, "The backup claims to hold more data than any Dalamud configuration could."));
+        }
+
         // The summary fields are shown to people before a restore, so they must describe the files
         // that would actually be written, not whatever the manifest claims.
         if (!SummaryMatchesFiles(manifest))
@@ -153,6 +160,22 @@ public sealed class ArchiveValidator
         }
 
         return (manifest, null);
+    }
+
+    /// <summary>The sum of the declared sizes, stopping once it passes the cap so it can't overflow.</summary>
+    private static long DeclaredTotal(BackupManifest manifest)
+    {
+        long total = 0;
+        foreach (var file in manifest.Files)
+        {
+            total += file.Size;
+            if (total > MaxTotalBytes)
+            {
+                return total;
+            }
+        }
+
+        return total;
     }
 
     private static bool SummaryMatchesFiles(BackupManifest manifest)
@@ -168,7 +191,7 @@ public sealed class ArchiveValidator
             && contents.DalamudUi == Has(BackupAllowlist.ArchivePathFor(PortableItem.DalamudUi))
             && statistics.FileCount == paths.Count
             && statistics.PluginConfigCount == BackupAllowlist.PluginNames(paths).Count
-            && statistics.TotalBytes == manifest.Files.Sum(file => file.Size);
+            && statistics.TotalBytes == DeclaredTotal(manifest);
     }
 
     private static ArchiveValidation Validate(ZipArchive zip, bool verifyContents, CancellationToken cancellationToken)
@@ -181,7 +204,6 @@ public sealed class ArchiveValidator
 
         var issues = new List<ArchiveIssue>();
         var expected = new Dictionary<string, ManifestFile>(StringComparer.OrdinalIgnoreCase);
-        long declaredTotal = 0;
         foreach (var file in manifest.Files)
         {
             if (file is null || string.IsNullOrEmpty(file.Path))
@@ -212,13 +234,11 @@ public sealed class ArchiveValidator
             {
                 issues.Add(new ArchiveIssue(ArchiveIssueCode.DuplicateEntry, $"manifest.json lists {file.Path} twice.", file.Path));
             }
-
-            declaredTotal += file.Size;
         }
 
-        if (declaredTotal > MaxTotalBytes)
+        if (zip.Entries.Count > MaxFiles + 1)
         {
-            issues.Add(new ArchiveIssue(ArchiveIssueCode.TooLarge, "The backup claims to hold more data than any Dalamud configuration could."));
+            issues.Add(new ArchiveIssue(ArchiveIssueCode.TooLarge, "The archive holds more files than any Dalamud configuration could."));
         }
 
         var seen = new Dictionary<string, ZipArchiveEntry>(StringComparer.OrdinalIgnoreCase);

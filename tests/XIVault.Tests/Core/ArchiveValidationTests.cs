@@ -144,6 +144,26 @@ public class ArchiveValidationTests : IDisposable
         Assert.Equal(ArchiveIssueCode.InvalidArchive, Assert.Single(result.Issues).Code);
     }
 
+    [Theory]
+    [InlineData("4611686018427387904", "4611686018427387904")]
+    [InlineData("9223372036854775807", "1")]
+    [InlineData("3000000000", "0")]
+    public void Absurd_declared_sizes_are_too_large_not_a_crash(string first, string second)
+    {
+        var result = Validate(new ArchiveBuilder().File("payload/dalamudConfig.json", "{}").RawManifest($$"""
+            {
+              "schemaVersion": 1, "xivaultVersion": "0.1.0", "createdAtUtc": "2026-09-28T18:38:00Z", "backupType": "manual",
+              "source": {}, "contents": { "pluginConfigs": true }, "statistics": {},
+              "files": [
+                { "path": "payload/pluginConfigs/A.json", "size": {{first}}, "sha256": "0000000000000000000000000000000000000000000000000000000000000000" },
+                { "path": "payload/pluginConfigs/B.json", "size": {{second}}, "sha256": "0000000000000000000000000000000000000000000000000000000000000000" }
+              ]
+            }
+            """));
+
+        Assert.Equal(ArchiveIssueCode.TooLarge, Assert.Single(result.Issues).Code);
+    }
+
     [Fact]
     public void Listed_files_missing_from_the_archive_are_rejected()
     {
