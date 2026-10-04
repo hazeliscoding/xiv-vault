@@ -56,6 +56,7 @@ public sealed record ScheduleSettings
     /// <summary>Local time of day, 24-hour "HH:mm".</summary>
     public string Time { get; init; } = "12:00";
 
+    [JsonIgnore]
     public TimeOnly TimeOfDay => TimeOnly.TryParseExact(Time, "HH:mm", out var time) ? time : new TimeOnly(12, 0);
 }
 
