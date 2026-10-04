@@ -28,6 +28,11 @@ internal abstract class XivaultCommand<TSettings>(CliOutput output) : AsyncComma
             Output.Error(ex.Message);
             return (int)ex.Kind;
         }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Output.Error($"A file operation failed: {ex.Message}");
+            return (int)XivaultErrorKind.Unexpected;
+        }
         catch (OperationCanceledException)
         {
             Output.Error("Cancelled.");

@@ -262,7 +262,7 @@ public sealed partial class RestoreViewModel : PageViewModel
                 BuildReview(Preview);
                 Step = 2;
             }
-            catch (XivaultException ex)
+            catch (Exception ex) when (ex is XivaultException or IOException or UnauthorizedAccessException)
             {
                 ErrorMessage = ex.Message;
             }
@@ -326,7 +326,7 @@ public sealed partial class RestoreViewModel : PageViewModel
                 };
             }
         }
-        catch (XivaultException ex)
+        catch (Exception ex) when (ex is XivaultException or IOException or UnauthorizedAccessException)
         {
             ErrorMessage = ex.Message;
         }
