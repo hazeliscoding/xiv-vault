@@ -75,7 +75,7 @@ public sealed class StateStore(IAppEnvironment environment) : IStateStore
 
         try
         {
-            var state = JsonSerializer.Deserialize(File.ReadAllText(StatePath), XivaultJsonContext.Default.AppState) ?? new AppState();
+            var state = JsonSerializer.Deserialize(AtomicFile.ReadAllText(StatePath), XivaultJsonContext.Default.AppState) ?? new AppState();
             return state with { Verifications = new(state.Verifications, StringComparer.OrdinalIgnoreCase) };
         }
         catch (Exception ex) when (ex is JsonException or IOException)

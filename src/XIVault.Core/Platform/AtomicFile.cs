@@ -1,5 +1,9 @@
 namespace XIVault.Core.Platform;
 
+/// <summary>
+/// Small settings files (config.json, state.json) that the app, the CLI and the scheduled task
+/// all read and write.
+/// </summary>
 internal static class AtomicFile
 {
     /// <summary>
@@ -13,7 +17,20 @@ internal static class AtomicFile
         try
         {
             File.WriteAllText(temp, contents);
-            File.Move(temp, path, overwrite: true);
+
+            // Another reader can hold the file for a moment; the rename waits for it instead of failing.
+            for (var attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    File.Move(temp, path, overwrite: true);
+                    return;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException && attempt < 10)
+                {
+                    Thread.Sleep(25 * attempt);
+                }
+            }
         }
         finally
         {
@@ -22,5 +39,13 @@ internal static class AtomicFile
                 File.Delete(temp);
             }
         }
+    }
+
+    /// <summary>Reads with full sharing, so a concurrent rename-over by a writer is never blocked.</summary>
+    public static string ReadAllText(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
     }
 }

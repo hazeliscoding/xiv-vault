@@ -36,7 +36,7 @@ public sealed class ConfigStore(IAppEnvironment environment) : IConfigStore
         {
             try
             {
-                var json = File.ReadAllText(ConfigPath);
+                var json = AtomicFile.ReadAllText(ConfigPath);
                 config = JsonSerializer.Deserialize(json, XivaultJsonContext.Default.XivaultConfig)
                     ?? throw new JsonException("The file is empty.");
             }
