@@ -1,0 +1,218 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="using:XivVault.Desktop.Controls">
+  <!-- The mockup's type scale. Sans for the interface, mono for evidence: times, sizes, hashes, paths. -->
+  <Style Selector="Window">
+    <Setter Property="FontFamily" Value="{StaticResource SansFont}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{StaticResource Text1}" />
+  </Style>
+
+  <Style Selector="TextBlock.page-title">
+    <Setter Property="FontSize" Value="20" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LineHeight" Value="24" />
+    <Setter Property="LetterSpacing" Value="-0.4" />
+  </Style>
+  <Style Selector="TextBlock.section-title">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LineHeight" Value="19.5" />
+  </Style>
+  <Style Selector="TextBlock.card-title">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LineHeight" Value="17" />
+  </Style>
+  <Style Selector="TextBlock.body">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="LineHeight" Value="19.5" />
+  </Style>
+  <Style Selector="TextBlock.body-strong">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LineHeight" Value="19.5" />
+  </Style>
+  <Style Selector="TextBlock.strong">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LineHeight" Value="19.5" />
+  </Style>
+  <Style Selector="TextBlock.compact">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="LineHeight" Value="17.4" />
+  </Style>
+  <Style Selector="TextBlock.label">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LineHeight" Value="13.2" />
+    <Setter Property="LetterSpacing" Value="0.66" />
+  </Style>
+  <Style Selector="TextBlock.micro">
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LineHeight" Value="12" />
+    <Setter Property="LetterSpacing" Value="0.8" />
+  </Style>
+  <Style Selector="TextBlock.data">
+    <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LineHeight" Value="16.8" />
+  </Style>
+  <Style Selector="TextBlock.data-value">
+    <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LineHeight" Value="17" />
+  </Style>
+  <Style Selector="TextBlock.metric">
+    <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+
+  <Style Selector="TextBlock.t1">
+    <Setter Property="Foreground" Value="{StaticResource Text1}" />
+  </Style>
+  <Style Selector="TextBlock.t2">
+    <Setter Property="Foreground" Value="{StaticResource Text2}" />
+  </Style>
+  <Style Selector="TextBlock.t3">
+    <Setter Property="Foreground" Value="{StaticResource Text3}" />
+  </Style>
+  <Style Selector="TextBlock.t4">
+    <Setter Property="Foreground" Value="{StaticResource Text4}" />
+  </Style>
+  <Style Selector="TextBlock.accent">
+    <Setter Property="Foreground" Value="{StaticResource AccentText}" />
+  </Style>
+  <Style Selector="TextBlock.healthy">
+    <Setter Property="Foreground" Value="{StaticResource HealthyText}" />
+  </Style>
+  <Style Selector="TextBlock.critical">
+    <Setter Property="Foreground" Value="{StaticResource CriticalText}" />
+  </Style>
+  <Style Selector="TextBlock.warning">
+    <Setter Property="Foreground" Value="{StaticResource WarningText}" />
+  </Style>
+
+  <!-- Surfaces used across screens. -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{StaticResource Bg2}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Border1}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+  <Style Selector="Border.panel">
+    <Setter Property="Background" Value="{StaticResource Bg1}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Border1}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+  <Style Selector="Border.glow">
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="BoxShadow" Value="{StaticResource AccentGlow}" />
+  </Style>
+  <Style Selector="Border.chip">
+    <Setter Property="Height" Value="16" />
+    <Setter Property="Padding" Value="4,0" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="Background" Value="{StaticResource Bg3}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Border1}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Border.chip > TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{StaticResource Text2}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.divider">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Background" Value="{StaticResource Border1}" />
+  </Style>
+  <!-- The rotated-square mark from the title bar. -->
+  <Style Selector="Border.diamond">
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="CornerRadius" Value="1" />
+  </Style>
+
+  <!-- Rows inside a card: a hairline above each one. Lists sit 1 px up so the first line hides under the card edge. -->
+  <Style Selector="Border.row">
+    <Setter Property="BorderBrush" Value="{StaticResource Border1}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.row:pointerover">
+    <Setter Property="Background" Value="{StaticResource Bg3}" />
+  </Style>
+  <Style Selector="Border.hover:pointerover">
+    <Setter Property="Background" Value="{StaticResource Bg3}" />
+  </Style>
+  <Style Selector="Border.setting">
+    <Setter Property="Padding" Value="16,12" />
+  </Style>
+  <Style Selector="Border.setting.divided">
+    <Setter Property="BorderBrush" Value="{StaticResource Border1}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+  </Style>
+
+  <!-- Radio circles in the restore wizard's backup list. -->
+  <Style Selector="ListBoxItem Ellipse.radio">
+    <Setter Property="Stroke" Value="{StaticResource Border3}" />
+  </Style>
+  <Style Selector="ListBoxItem:selected Ellipse.radio">
+    <Setter Property="Stroke" Value="{StaticResource Accent}" />
+  </Style>
+  <Style Selector="ListBoxItem Ellipse.radio-dot">
+    <Setter Property="Fill" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBoxItem:selected Ellipse.radio-dot">
+    <Setter Property="Fill" Value="{StaticResource Accent}" />
+  </Style>
+
+  <Style Selector="ItemsControl.rows">
+    <Setter Property="Margin" Value="0,-1,0,0" />
+  </Style>
+
+  <!-- Empty-state cards have a dashed edge; Border can't dash, so a Rectangle draws it. -->
+  <Style Selector="Rectangle.dashed-card">
+    <Setter Property="Stroke" Value="{StaticResource Border2}" />
+    <Setter Property="StrokeThickness" Value="1" />
+    <Setter Property="StrokeDashArray" Value="4,3" />
+    <Setter Property="RadiusX" Value="8" />
+    <Setter Property="RadiusY" Value="8" />
+    <Setter Property="Fill" Value="{StaticResource Bg2}" />
+  </Style>
+
+  <!-- The thin progress line in the backing-up card. -->
+  <Style Selector="ProgressBar.thin">
+    <Setter Property="Height" Value="3" />
+    <Setter Property="MinHeight" Value="3" />
+    <Setter Property="Background" Value="{StaticResource Bg4}" />
+    <Setter Property="Foreground" Value="{StaticResource Accent}" />
+    <Setter Property="CornerRadius" Value="2" />
+  </Style>
+
+  <!-- The 6 px rotated square that marks a backup's type. -->
+  <Style Selector="Border.type-mark">
+    <Setter Property="Width" Value="6" />
+    <Setter Property="Height" Value="6" />
+    <Setter Property="CornerRadius" Value="1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="TextBox.mono">
+    <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="TextBox">
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="ComboBox">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Height" Value="28" />
+  </Style>
+</Styles>

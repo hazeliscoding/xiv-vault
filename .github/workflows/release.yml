@@ -28,16 +28,16 @@ jobs:
           "VERSION=$version" >> $env:GITHUB_ENV
 
       - name: Test
-        run: dotnet test --solution XIVault.sln --configuration Release
+        run: dotnet test --solution XivVault.sln --configuration Release
 
       - name: Publish
         run: |
-          dotnet publish src/XIVault.Cli -p:PublishProfile=win-x64 -p:Version=${{ env.VERSION }}
-          dotnet publish src/XIVault.Desktop -p:PublishProfile=win-x64 -p:Version=${{ env.VERSION }}
+          dotnet publish src/XivVault.Cli -p:PublishProfile=win-x64 -p:Version=${{ env.VERSION }}
+          dotnet publish src/XivVault.Desktop -p:PublishProfile=win-x64 -p:Version=${{ env.VERSION }}
 
       - name: Smoke test the published CLI
         shell: pwsh
-        run: ./scripts/smoke-test.ps1 -Cli artifacts/publish/XIVault.Cli/xivault.exe
+        run: ./scripts/smoke-test.ps1 -Cli artifacts/publish/XivVault.Cli/xiv-vault.exe
 
       - name: Package
         shell: pwsh
@@ -50,8 +50,8 @@ jobs:
             Copy-Item $docs $stage
             Compress-Archive -Path "$stage/*" -DestinationPath "$out/$zip.zip" -Force
           }
-          Pack artifacts/publish/XIVault.Cli/xivault.exe 'xivault-cli-win-x64'
-          Pack artifacts/publish/XIVault.Desktop/XIVault.Desktop.exe 'XIVault.Desktop-win-x64'
+          Pack artifacts/publish/XivVault.Cli/xiv-vault.exe 'xiv-vault-cli-win-x64'
+          Pack artifacts/publish/XivVault.Desktop/XivVault.exe 'xiv-vault-desktop-win-x64'
           $sums = Get-ChildItem $out -Filter *.zip | ForEach-Object {
             "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
           }

@@ -4,11 +4,11 @@ XIV Vault bundles the following assets. NuGet dependencies carry their own licen
 
 ## IBM Plex Sans and IBM Plex Mono
 
-`src/XIVault.Desktop/Assets/Fonts/*.ttf`. Copyright © 2017 IBM Corp. with Reserved Font Name "Plex". Licensed under the SIL Open Font License 1.1; the full text is in `src/XIVault.Desktop/Assets/Fonts/OFL.txt`.
+`src/XivVault.Desktop/Assets/Fonts/*.ttf`. Copyright © 2017 IBM Corp. with Reserved Font Name "Plex". Licensed under the SIL Open Font License 1.1; the full text is in `src/XivVault.Desktop/Assets/Fonts/OFL.txt`.
 
 ## Lucide icons
 
-`src/XIVault.Desktop/Controls/LucideIcons.cs` holds path data generated from lucide-static 0.460.0 by `scripts/make-lucide-icons.mjs`.
+`src/XivVault.Desktop/Controls/LucideIcons.cs` holds path data generated from lucide-static 0.460.0 by `scripts/make-lucide-icons.mjs`.
 
 ```
 ISC License

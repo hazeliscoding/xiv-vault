@@ -10,8 +10,8 @@ XIV Vault is a Windows desktop app and a command-line tool built on one engine. 
 
 Download the latest release from [Releases](https://github.com/hazeliscoding/xiv-vault/releases):
 
-- `XIVault.Desktop-win-x64.zip`: the app. Unzip it anywhere, for example `%LOCALAPPDATA%\Programs\XIVault`, and run `XIVault.Desktop.exe`.
-- `xivault-cli-win-x64.zip`: the command line. Unzip `xivault.exe` into a folder on your `PATH`.
+- `xiv-vault-desktop-win-x64.zip`: the app. Unzip it anywhere, for example `%LOCALAPPDATA%\Programs\XIV Vault`, and run `XivVault.exe`.
+- `xiv-vault-cli-win-x64.zip`: the command line. Unzip `xiv-vault.exe` into a folder on your `PATH`.
 
 Both are self-contained: no .NET install is needed. Check downloads against `SHA256SUMS` on the release page. The builds are not code-signed yet, so Windows SmartScreen may ask you to confirm the first run.
 
@@ -34,27 +34,27 @@ Both are self-contained: no .NET install is needed. Check downloads against `SHA
 
 1. On the new PC, install XIVLauncher and start it once.
 2. Make your backups available: let OneDrive or Dropbox finish syncing, or plug in the drive.
-3. Install XIV Vault and open it. If the backups are in `OneDrive\XIVault`, XIV Vault finds them on its own. Otherwise choose the folder in **Settings**, or pick a backup file in the restore wizard.
+3. Install XIV Vault and open it. If the backups are in `OneDrive\XIV Vault`, XIV Vault finds them on its own. Otherwise choose the folder in **Settings**, or pick a backup file in the restore wizard.
 4. Open **Restore**, choose the newest backup, review it, and let the safety checks run. XIVLauncher and FFXIV must be closed.
 5. Select **Restore Configuration**, then open XIVLauncher. Dalamud downloads your plugins again and they pick up their restored settings.
 
 ## Command line
 
 ```powershell
-xivault backup                        # back up now
-xivault backup --quiet                # print nothing unless it fails
-xivault backup --destination D:\XIVault
-xivault list                          # backups in the backup folder
-xivault status                        # is the setup protected?
-xivault status --json
-xivault doctor                        # health checks; --report for a shareable copy
-xivault restore                       # choose from a list
-xivault restore latest                # asks before it changes anything; --yes for scripts
-xivault schedule weekly --day Sunday --time 18:30
-xivault schedule status
-xivault schedule remove
-xivault config                        # show settings; config set <key> <value> to change one
-xivault version
+xiv-vault backup                        # back up now
+xiv-vault backup --quiet                # print nothing unless it fails
+xiv-vault backup --destination D:\Backups
+xiv-vault list                          # backups in the backup folder
+xiv-vault status                        # is the setup protected?
+xiv-vault status --json
+xiv-vault doctor                        # health checks; --report for a shareable copy
+xiv-vault restore                       # choose from a list
+xiv-vault restore latest                # asks before it changes anything; --yes for scripts
+xiv-vault schedule weekly --day Sunday --time 18:30
+xiv-vault schedule status
+xiv-vault schedule remove
+xiv-vault config                        # show settings; config set <key> <value> to change one
+xiv-vault version
 ```
 
 `config set` takes `destination`, `retention`, `include-ui`, `compression` (`fast`, `balanced`, `maximum`) and `source` (the XIVLauncher folder, or `auto`). Add `--verbose` to any command to see each step.
@@ -76,7 +76,7 @@ Exit codes are stable, so scripts can rely on them:
 
 Turning on automatic backups creates one Windows scheduled task, **XIV Vault Scheduled Backup**, that runs as you with normal permissions. XIV Vault doesn't need to stay open, and there is no background service. If the PC was off at the scheduled time, the backup runs when it next starts. If FFXIV is running, the backup waits for the game to close (up to 6 hours) instead of copying files the game has open.
 
-The task runs the program that set it up: `XIVault.Desktop.exe --scheduled-backup` (no window) or `xivault backup --scheduled`. If you move XIV Vault to another folder, set the schedule again; **Diagnostics** warns when the task points to a missing program.
+The task runs the program that set it up: `XivVault.exe --scheduled-backup` (no window) or `xiv-vault backup --scheduled`. If you move XIV Vault to another folder, set the schedule again; **Diagnostics** warns when the task points to a missing program.
 
 ![Schedule](docs/screenshots/schedule.png)
 
@@ -84,7 +84,7 @@ The task runs the program that set it up: `XIVault.Desktop.exe --scheduled-backu
 
 A backup is only as safe as the place it lives. Good choices:
 
-- A folder synced by **OneDrive**, **Dropbox** or Google Drive. XIV Vault uses `%OneDrive%\XIVault` by default when OneDrive is set up.
+- A folder synced by **OneDrive**, **Dropbox** or Google Drive. XIV Vault uses `%OneDrive%\XIV Vault` by default when OneDrive is set up.
 - A **NAS** or network share.
 - An **external drive**, if you remember to plug it in.
 
@@ -132,16 +132,16 @@ The archive format is documented in [docs/backup-format.md](docs/backup-format.m
 
 ## Troubleshooting
 
-See [docs/troubleshooting.md](docs/troubleshooting.md). Start with **Diagnostics** (or `xivault doctor`), and attach its report to any issue.
+See [docs/troubleshooting.md](docs/troubleshooting.md). Start with **Diagnostics** (or `xiv-vault doctor`), and attach its report to any issue.
 
 ## Building from source
 
 ```powershell
 dotnet build
 dotnet test
-dotnet run --project src/XIVault.Desktop
-dotnet run --project src/XIVault.Cli -- status
-./scripts/smoke-test.ps1 -Cli src/XIVault.Cli/bin/Debug/net10.0/xivault.dll
+dotnet run --project src/XivVault.Desktop
+dotnet run --project src/XivVault.Cli -- status
+./scripts/smoke-test.ps1 -Cli src/XivVault.Cli/bin/Debug/net10.0/xiv-vault.dll
 ```
 
 Requires the .NET 10 SDK. [docs/architecture.md](docs/architecture.md) explains how the code fits together, and [ROADMAP.md](ROADMAP.md) records what is planned and the decisions behind it.

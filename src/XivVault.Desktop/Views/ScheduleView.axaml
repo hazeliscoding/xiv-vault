@@ -1,0 +1,125 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:XivVault.Desktop.Controls"
+             xmlns:vm="using:XivVault.Desktop.ViewModels"
+             xmlns:v="using:XivVault.Desktop.Views"
+             x:Class="XivVault.Desktop.Views.ScheduleView"
+             x:DataType="vm:ScheduleViewModel">
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" MaxWidth="880" />
+    </Grid.ColumnDefinitions>
+    <Grid ColumnDefinitions="*,260" ColumnSpacing="16">
+      <StackPanel Spacing="16">
+        <StackPanel Spacing="4">
+          <TextBlock Classes="page-title" Text="Schedule" />
+          <TextBlock Classes="body t2" Text="XIV Vault backs up on its own so you never have to remember." />
+        </StackPanel>
+
+        <c:Banner Tone="Critical" Title="Windows could not update the scheduled task" Description="{Binding ErrorMessage}"
+                  IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+        <Border Classes="card" Padding="16,14" BoxShadow="{StaticResource HighlightInset}"
+                BorderBrush="{Binding AutoEnabled, Converter={x:Static v:Converters.AccentBorderWhen}}">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Classes="section-title" Text="Automatic Backups" />
+              <TextBlock Classes="compact t2" Text="{Binding AutoDescription}" TextWrapping="Wrap" />
+            </StackPanel>
+            <c:XvSwitch Grid.Column="1" IsChecked="{Binding AutoEnabled}" AutomationProperties.Name="Automatic backups" />
+          </Grid>
+        </Border>
+
+        <Border Classes="card" Padding="16" Opacity="{Binding AutoEnabled, Converter={x:Static v:Converters.DimWhenOff}}">
+          <StackPanel Spacing="14">
+            <Grid ColumnDefinitions="150,*" ColumnSpacing="12">
+              <TextBlock Classes="strong" Text="Run" VerticalAlignment="Center" />
+              <ListBox Grid.Column="1" Theme="{StaticResource Segmented}" ItemsSource="{Binding Frequencies}" SelectedItem="{Binding Frequency}"
+                       AutomationProperties.Name="How often to back up" IsEnabled="{Binding AutoEnabled}" />
+            </Grid>
+            <Grid ColumnDefinitions="150,*" ColumnSpacing="12" IsVisible="{Binding IsWeekly}">
+              <TextBlock Classes="strong" Text="On" VerticalAlignment="Center" />
+              <ItemsControl Grid.Column="1" ItemsSource="{Binding Weekdays}" IsEnabled="{Binding AutoEnabled}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:WeekdayViewModel">
+                    <Button Theme="{StaticResource DayToggle}" Content="{Binding Label}" Classes.on="{Binding IsOn}"
+                                  Command="{Binding $parent[ItemsControl].((vm:ScheduleViewModel)DataContext).ToggleDayCommand}"
+                                  CommandParameter="{Binding}" AutomationProperties.Name="{Binding Day}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Grid>
+            <Grid ColumnDefinitions="150,*" ColumnSpacing="12" IsVisible="{Binding HasTime}">
+              <TextBlock Classes="strong" Text="At" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                <ComboBox Width="140" ItemsSource="{Binding TimeOptions}" SelectedItem="{Binding SelectedTime}"
+                          IsEnabled="{Binding AutoEnabled}" AutomationProperties.Name="Time of day">
+                  <ComboBox.SelectionBoxItemTemplate>
+                    <DataTemplate x:DataType="x:Object">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <c:Icon Kind="Clock" Size="13" Foreground="{StaticResource Text3}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding}" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ComboBox.SelectionBoxItemTemplate>
+                </ComboBox>
+                <TextBlock Classes="compact t3" TextWrapping="Wrap" MaxWidth="260" VerticalAlignment="Center"
+                           Text="Skipped while FFXIV is running, then retried after it closes." />
+              </StackPanel>
+            </Grid>
+            <Border Classes="divider" />
+            <Grid ColumnDefinitions="150,*" ColumnSpacing="12">
+              <TextBlock Classes="strong" Text="Keep latest" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                <Border BorderBrush="{StaticResource Border2}" BorderThickness="1" CornerRadius="4" Background="{StaticResource Bg3}" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal">
+                    <c:XvButton Classes="ghost icon" Icon="Minus" Command="{Binding RetentionDownCommand}" AutomationProperties.Name="Keep fewer backups" ToolTip.Tip="Fewer" />
+                    <TextBlock Classes="data-value" MinWidth="34" TextAlignment="Center" Text="{Binding Retention}" VerticalAlignment="Center" />
+                    <c:XvButton Classes="ghost icon" Icon="Plus" Command="{Binding RetentionUpCommand}" AutomationProperties.Name="Keep more backups" ToolTip.Tip="More" />
+                  </StackPanel>
+                </Border>
+                <TextBlock Classes="compact t3" TextWrapping="Wrap" MaxWidth="260" VerticalAlignment="Center" Text="{Binding RetentionHint}" />
+              </StackPanel>
+            </Grid>
+            <Grid ColumnDefinitions="150,*" ColumnSpacing="12">
+              <TextBlock Classes="strong" Text="Destination" VerticalAlignment="Center" />
+              <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Border Height="28" Padding="10,0" BorderBrush="{StaticResource Border1}" BorderThickness="1" CornerRadius="4" Background="{StaticResource BgInset}">
+                  <TextBlock Classes="data t2" Text="{Binding Destination}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                             ToolTip.Tip="{Binding Destination}" />
+                </Border>
+                <c:XvButton Grid.Column="1" Classes="secondary" Icon="FolderOpen" Content="Choose Folder" Command="{Binding ChooseFolderCommand}" />
+              </Grid>
+            </Grid>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <StackPanel Grid.Column="1" Spacing="12" Margin="0,52,0,0">
+        <Border Classes="card" Padding="16,14">
+          <StackPanel Spacing="14">
+            <StackPanel Spacing="3">
+              <TextBlock Classes="micro t3" Text="NEXT BACKUP" />
+              <TextBlock Classes="data-value" FontSize="14" Text="{Binding NextLabel}"
+                         Classes.t1="{Binding AutoEnabled}" Classes.t3="{Binding !AutoEnabled}" />
+            </StackPanel>
+            <StackPanel Spacing="3">
+              <TextBlock Classes="micro t3" Text="LAST RUN" />
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                <c:StatusDot Tone="{Binding LastRunTone}" Diameter="5" VerticalAlignment="Center" />
+                <TextBlock Classes="data-value" Text="{Binding LastRunLabel}" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="panel" Padding="14,12">
+          <TextBlock Classes="compact t3" TextWrapping="Wrap"
+                     Text="Scheduled backups run as a Windows task, so XIV Vault does not need to stay open." />
+        </Border>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</UserControl>

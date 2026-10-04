@@ -11,10 +11,10 @@ These are the working rules for agents in this repo. XIV Vault (Apache-2.0) back
 
 ## Architecture (hard rules)
 
-- All behavior lives in `src/XIVault.Core`. `XIVault.Cli` and `XIVault.Desktop` only present it. Never duplicate backup, restore, discovery, validation or scheduling logic in a front end.
+- All behavior lives in `src/XivVault.Core`. `XivVault.Cli` and `XivVault.Desktop` only present it. Never duplicate backup, restore, discovery, validation or scheduling logic in a front end.
 - File system, process, clock and environment access goes through the small services in Core (`IAppEnvironment`, `IProcessInspector`, `TimeProvider`, `ICommandRunner`), so tests can run in temp directories.
 - Avalonia 12 ignores a `RenderTransform` set by a style unless the element already has one, so give it `RenderTransform="none"` (or set the transform inline).
-- Check UI changes with `dotnet run --project tools/XIVault.Screenshots -- <folder>`, which renders every screen to PNG without touching the real profile or Task Scheduler.
+- Check UI changes with `dotnet run --project tools/XivVault.Screenshots -- <folder>`, which renders every screen to PNG without touching the real profile or Task Scheduler.
 - Desktop view models take interfaces only (`IDialogService`, `IShellService`, `IClipboardService`, `IFilePicker`). No Avalonia types in view models and no logic in code-behind.
 
 ## The safety contract
@@ -33,8 +33,8 @@ XIV Vault is trusted with configuration people spent years building. Never break
 
 - `dotnet build` and `dotnet test` from the repo root. Tests use temp directories and never need a real XIVLauncher install.
 - `dotnet format --verify-no-changes` is the CI style check. Run `dotnet format` before committing.
-- `dotnet run --project src/XIVault.Cli -- <command>` runs the CLI; `dotnet run --project src/XIVault.Desktop` runs the app.
-- `dotnet run scripts/make-icons.cs` rebuilds `docs/brand/xivault.ico` from `docs/brand/app-icon.svg`.
+- `dotnet run --project src/XivVault.Cli -- <command>` runs the CLI; `dotnet run --project src/XivVault.Desktop` runs the app.
+- `dotnet run scripts/make-icons.cs` rebuilds `docs/brand/xiv-vault.ico` from `docs/brand/app-icon.svg`.
 
 ## Working style
 

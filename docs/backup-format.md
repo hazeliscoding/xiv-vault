@@ -6,7 +6,7 @@ An XIV Vault backup is an ordinary ZIP file. Any ZIP tool can open it. The manif
 
 | Name | Made by |
 |---|---|
-| `xivault-YYYY-MM-DD-HHmmss.zip` | Back Up Now, `xivault backup`, scheduled backups |
+| `xiv-vault-YYYY-MM-DD-HHmmss.zip` | Back Up Now, `xiv-vault backup`, scheduled backups |
 | `pre-restore-YYYY-MM-DD-HHmmss.zip` | The safety snapshot every restore takes first |
 
 Times are local. A second backup in the same second gets `-2`, `-3` and so on. While a backup is being written it is named `….zip.tmp`; it is renamed only after it has been verified.
@@ -14,7 +14,7 @@ Times are local. A second backup in the same second gets `-2`, `-3` and so on. W
 ## Layout
 
 ```
-xivault-2026-10-04-131900.zip
+xiv-vault-2026-10-04-131900.zip
 ├── manifest.json
 └── payload/
     ├── dalamudConfig.json
@@ -33,7 +33,7 @@ Entry names use forward slashes and are relative. Every file under `payload/` is
 ```json
 {
   "schemaVersion": 1,
-  "xivaultVersion": "0.1.0",
+  "xivVaultVersion": "0.1.0",
   "createdAtUtc": "2026-10-04T18:19:00Z",
   "backupType": "manual",
   "source": {
@@ -65,7 +65,7 @@ Entry names use forward slashes and are relative. Every file under `payload/` is
 | Field | Meaning |
 |---|---|
 | `schemaVersion` | Format version. This document describes version 1. |
-| `xivaultVersion` | The XIV Vault version that wrote the archive. |
+| `xivVaultVersion` | The XIV Vault version that wrote the archive. |
 | `createdAtUtc` | When the backup was taken, UTC, whole seconds. |
 | `backupType` | `manual`, `scheduled` or `preRestore`. |
 | `source.layout` | `standard` or `dalamudUserData`: where Dalamud kept its files. Informational; a restore follows the target PC's layout. |

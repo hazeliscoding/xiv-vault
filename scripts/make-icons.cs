@@ -16,7 +16,7 @@ var pngs = sizes.Select(size => Render(picture, size)).ToList();
 
 File.WriteAllBytes(Path.Combine(brand, "app-icon-256.png"), pngs[^1]);
 
-using var ico = File.Create(Path.Combine(brand, "xivault.ico"));
+using var ico = File.Create(Path.Combine(brand, "xiv-vault.ico"));
 using var writer = new BinaryWriter(ico);
 writer.Write((ushort)0);
 writer.Write((ushort)1);
@@ -40,7 +40,7 @@ foreach (var png in pngs)
     writer.Write(png);
 }
 
-Console.WriteLine($"Wrote xivault.ico ({string.Join(", ", sizes)}) and app-icon-256.png");
+Console.WriteLine($"Wrote xiv-vault.ico ({string.Join(", ", sizes)}) and app-icon-256.png");
 
 static byte[] Render(SKPicture picture, int size)
 {

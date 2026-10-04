@@ -1,10 +1,10 @@
 # Architecture
 
-XIV Vault is one engine with two front ends. Everything that touches backups lives in `XIVault.Core`; the CLI and the desktop app only present it.
+XIV Vault is one engine with two front ends. Everything that touches backups lives in `XivVault.Core`; the CLI and the desktop app only present it.
 
 ```
                  ┌──────────────────────────┐
-                 │       XIVault.Core       │
+                 │       XivVault.Core       │
                  │  discovery · backup      │
                  │  validation · restore    │
                  │  retention · scheduling  │
@@ -12,28 +12,28 @@ XIV Vault is one engine with two front ends. Everything that touches backups liv
                  └────────────┬─────────────┘
                ┌──────────────┴──────────────┐
       ┌────────┴────────┐          ┌─────────┴─────────┐
-      │   XIVault.Cli   │          │  XIVault.Desktop  │
+      │   XivVault.Cli   │          │  XivVault.Desktop  │
       │ Spectre.Console │          │ Avalonia · MVVM   │
       └─────────────────┘          └───────────────────┘
 ```
 
-Both front ends call `services.AddXivaultCore()` and resolve the same services from Microsoft.Extensions.DependencyInjection.
+Both front ends call `services.AddXivVaultCore()` and resolve the same services from Microsoft.Extensions.DependencyInjection.
 
 ## Projects
 
 | Project | Role |
 |---|---|
-| `src/XIVault.Core` | The engine. No UI code. |
-| `src/XIVault.Cli` | `xivault.exe`: commands, output formatting, exit codes. |
-| `src/XIVault.Desktop` | `XIVault.Desktop.exe`: views, view models, theme. Also the headless `--scheduled-backup` entry point. |
-| `tests/XIVault.Tests` | Core, CLI and view model tests. All run in temp folders. |
-| `tools/XIVault.Screenshots` | Renders every desktop screen to PNG with Avalonia's headless Skia renderer, against a fake XIVLauncher folder. |
+| `src/XivVault.Core` | The engine. No UI code. |
+| `src/XivVault.Cli` | `xiv-vault.exe`: commands, output formatting, exit codes. |
+| `src/XivVault.Desktop` | `XivVault.exe`: views, view models, theme. Also the headless `--scheduled-backup` entry point. |
+| `tests/XivVault.Tests` | Core, CLI and view model tests. All run in temp folders. |
+| `tools/XivVault.Screenshots` | Renders every desktop screen to PNG with Avalonia's headless Skia renderer, against a fake XIVLauncher folder. |
 
 ## Core services
 
 | Service | Responsibility |
 |---|---|
-| `IConfigStore` / `ConfigStore` | `%LOCALAPPDATA%\XIVault\config.json`: destination, retention, UI layout option, compression, XIVLauncher override, schedule preferences. |
+| `IConfigStore` / `ConfigStore` | `%LOCALAPPDATA%\XIV Vault\config.json`: destination, retention, UI layout option, compression, XIVLauncher override, schedule preferences. |
 | `IStateStore` / `StateStore` | `state.json`: cached verification results and the last scheduled run. Losing it is harmless. |
 | `IXivLauncherLocator` / `WindowsXivLauncherLocator` | Finds the XIVLauncher folder: explicit override, then known paths (`%AppData%\XIVLauncher`, `XIVLauncherCN`), then layout detection (`dalamudUserData`), then validation. A folder only counts if it holds XIVLauncher or Dalamud files. |
 | `PortableStateScanner` | Lists the allowlisted files in a Dalamud data folder. Metadata only. |
@@ -46,18 +46,18 @@ Both front ends call `services.AddXivaultCore()` and resolve the same services f
 | `GameProcessGuard` | Detects XIVLauncher and FFXIV processes. |
 | `WindowsTaskScheduler`, `ScheduleService` | The `XIV Vault Scheduled Backup` task through `schtasks /xml`, kept in step with the saved preferences. |
 | `ScheduledBackupRunner` | What the task runs: waits for FFXIV, backs up, records the result. |
-| `StatusService` | The protection summary the Overview and `xivault status` show. |
+| `StatusService` | The protection summary the Overview and `xiv-vault status` show. |
 | `DiagnosticsService` | The four health-check groups and the shareable report. |
 
 `OperationLock` is a named mutex per data folder. Backups, restores and retention take it, so the scheduled task and the app never work on the backup folder at the same time.
 
-Platform access goes through small interfaces so tests can replace it: `IAppEnvironment` (folders and user), `IProcessInspector`, `ICommandRunner` (schtasks) and `TimeProvider`. `XIVAULT_DATA_DIR` redirects config, state and logs, which the smoke test uses.
+Platform access goes through small interfaces so tests can replace it: `IAppEnvironment` (folders and user), `IProcessInspector`, `ICommandRunner` (schtasks) and `TimeProvider`. `XIV_VAULT_DATA_DIR` redirects config, state and logs, which the smoke test uses.
 
 ## Backup flow
 
 1. Load config, locate XIVLauncher, scan the allowlisted files.
 2. Create the destination folder; failure there is "destination unavailable" (exit 7).
-3. Stream each file into `xivault-<time>.zip.tmp`, hashing it on the way, then write `manifest.json`.
+3. Stream each file into `xiv-vault-<time>.zip.tmp`, hashing it on the way, then write `manifest.json`.
 4. Flush to disk, re-open the archive and check every hash with `ArchiveValidator`.
 5. Rename to `.zip`, record it as verified, run retention.
 

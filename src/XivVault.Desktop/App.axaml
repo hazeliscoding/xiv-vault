@@ -1,0 +1,30 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:XivVault.Desktop.ViewModels"
+             xmlns:v="using:XivVault.Desktop.Views"
+             x:Class="XivVault.Desktop.App"
+             Name="XIV Vault"
+             RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://XivVault/Themes/Tokens.axaml" />
+        <ResourceInclude Source="avares://XivVault/Themes/Controls.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.DataTemplates>
+    <DataTemplate DataType="vm:OverviewViewModel"><v:OverviewView /></DataTemplate>
+    <DataTemplate DataType="vm:BackupsViewModel"><v:BackupsView /></DataTemplate>
+    <DataTemplate DataType="vm:RestoreViewModel"><v:RestoreView /></DataTemplate>
+    <DataTemplate DataType="vm:ScheduleViewModel"><v:ScheduleView /></DataTemplate>
+    <DataTemplate DataType="vm:DiagnosticsViewModel"><v:DiagnosticsView /></DataTemplate>
+    <DataTemplate DataType="vm:SettingsViewModel"><v:SettingsView /></DataTemplate>
+  </Application.DataTemplates>
+
+  <Application.Styles>
+    <FluentTheme />
+    <StyleInclude Source="avares://XivVault/Themes/Typography.axaml" />
+  </Application.Styles>
+</Application>

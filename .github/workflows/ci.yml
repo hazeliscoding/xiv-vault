@@ -26,17 +26,17 @@ jobs:
           global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore XIVault.sln
+        run: dotnet restore XivVault.sln
 
       - name: Build
-        run: dotnet build XIVault.sln --configuration Release --no-restore
+        run: dotnet build XivVault.sln --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test --solution XIVault.sln --configuration Release --no-build
+        run: dotnet test --solution XivVault.sln --configuration Release --no-build
 
       - name: Format
-        run: dotnet format XIVault.sln --verify-no-changes --no-restore
+        run: dotnet format XivVault.sln --verify-no-changes --no-restore
 
       - name: Smoke test
         shell: pwsh
-        run: ./scripts/smoke-test.ps1 -Cli src/XIVault.Cli/bin/Release/net10.0/xivault.dll
+        run: ./scripts/smoke-test.ps1 -Cli src/XivVault.Cli/bin/Release/net10.0/xiv-vault.dll

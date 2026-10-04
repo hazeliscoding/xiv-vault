@@ -14,7 +14,7 @@ if (!opentypePath) {
 }
 
 const opentype = createRequire(import.meta.url)(resolve(opentypePath));
-const font = opentype.loadSync("src/XIVault.Desktop/Assets/Fonts/IBMPlexSans-SemiBold.ttf");
+const font = opentype.loadSync("src/XivVault.Desktop/Assets/Fonts/IBMPlexSans-SemiBold.ttf");
 const size = 40;
 const text = "XIV Vault";
 

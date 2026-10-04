@@ -5,11 +5,11 @@
 .DESCRIPTION
   Creates a fake XIVLauncher folder (portable files plus things XIV Vault must never touch), then:
   backup -> inspect the ZIP -> change the source -> restore latest -> check what changed and what
-  didn't -> check the safety snapshot. Uses XIVAULT_DATA_DIR so the real profile is never used.
+  didn't -> check the safety snapshot. Uses XIV_VAULT_DATA_DIR so the real profile is never used.
 
 .EXAMPLE
-  ./scripts/smoke-test.ps1 -Cli artifacts/publish/XIVault.Cli/xivault.exe
-  ./scripts/smoke-test.ps1 -Cli src/XIVault.Cli/bin/Release/net10.0/xivault.dll
+  ./scripts/smoke-test.ps1 -Cli artifacts/publish/XivVault.Cli/xiv-vault.exe
+  ./scripts/smoke-test.ps1 -Cli src/XivVault.Cli/bin/Release/net10.0/xiv-vault.dll
 #>
 param(
     [Parameter(Mandatory = $true)][string]$Cli
@@ -19,21 +19,21 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $Cli = (Resolve-Path $Cli).Path
-$root = Join-Path ([IO.Path]::GetTempPath()) ("xivault-smoke-" + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+$root = Join-Path ([IO.Path]::GetTempPath()) ("xiv-vault-smoke-" + [Guid]::NewGuid().ToString('N').Substring(0, 8))
 $launcher = Join-Path $root 'XIVLauncher'
 $backups = Join-Path $root 'Backups'
-$env:XIVAULT_DATA_DIR = Join-Path $root 'data'
+$env:XIV_VAULT_DATA_DIR = Join-Path $root 'data'
 $failures = 0
 
 # Runs the CLI, shows its output, and returns only its exit code.
-function Invoke-Xivault {
+function Invoke-XivVault {
     param([string[]]$Arguments)
     if ($Cli.EndsWith('.dll')) { & dotnet $Cli @Arguments | Out-Host } else { & $Cli @Arguments | Out-Host }
     return $LASTEXITCODE
 }
 
 # Runs the CLI and returns its standard output as one string.
-function Get-XivaultOutput {
+function Get-XivVaultOutput {
     param([string[]]$Arguments)
     if ($Cli.EndsWith('.dll')) { $text = & dotnet $Cli @Arguments } else { $text = & $Cli @Arguments }
     return ($text | Out-String)
@@ -65,13 +65,13 @@ try {
     Write-File (Join-Path $launcher 'installedPlugins/Artisan/1.0.0/Artisan.dll') 'binary v1'
     Write-File (Join-Path $launcher 'unrelated-file.txt') 'leave me alone'
 
-    Check ((Invoke-Xivault @('config', 'set', 'source', $launcher)) -eq 0) 'config set source'
-    Check ((Invoke-Xivault @('config', 'set', 'destination', $backups)) -eq 0) 'config set destination'
-    Check ((Invoke-Xivault @('config', 'set', 'include-ui', 'true')) -eq 0) 'config set include-ui'
+    Check ((Invoke-XivVault @('config', 'set', 'source', $launcher)) -eq 0) 'config set source'
+    Check ((Invoke-XivVault @('config', 'set', 'destination', $backups)) -eq 0) 'config set destination'
+    Check ((Invoke-XivVault @('config', 'set', 'include-ui', 'true')) -eq 0) 'config set include-ui'
 
     Write-Host 'Back up'
-    Check ((Invoke-Xivault @('backup', '--quiet')) -eq 0) 'backup exits 0'
-    $archive = Get-ChildItem $backups -Filter 'xivault-*.zip' | Select-Object -First 1
+    Check ((Invoke-XivVault @('backup', '--quiet')) -eq 0) 'backup exits 0'
+    $archive = Get-ChildItem $backups -Filter 'xiv-vault-*.zip' | Select-Object -First 1
     Check ($null -ne $archive) 'archive created'
     Check ((Get-ChildItem $backups -Filter '*.tmp').Count -eq 0) 'no temp files left'
 
@@ -94,7 +94,7 @@ try {
     Write-File (Join-Path $launcher 'installedPlugins/Artisan/1.0.0/Artisan.dll') 'binary v2'
 
     Write-Host 'Restore latest'
-    Check ((Invoke-Xivault @('restore', 'latest', '--yes')) -eq 0) 'restore exits 0'
+    Check ((Invoke-XivVault @('restore', 'latest', '--yes')) -eq 0) 'restore exits 0'
     Check ((Get-Content -Raw (Join-Path $launcher 'pluginConfigs/Artisan.json')) -eq '{ "original": true }') 'plugin config restored'
     Check ((Get-Content -Raw (Join-Path $launcher 'dalamudConfig.json')) -eq '{ "ThirdRepoList": [] }') 'dalamudConfig.json restored'
     Check ((Get-Content -Raw (Join-Path $launcher 'installedPlugins/Artisan/1.0.0/Artisan.dll')) -eq 'binary v2') 'installedPlugins untouched'
@@ -113,13 +113,13 @@ try {
     }
 
     Write-Host 'Status and diagnostics'
-    Check (@((Get-XivaultOutput @('list', '--json')) | ConvertFrom-Json).Count -eq 2) 'list shows backup and snapshot'
-    Check (((Get-XivaultOutput @('status', '--json')) | ConvertFrom-Json).state -eq 'protected') 'status is protected'
-    Check ((Invoke-Xivault @('doctor')) -eq 0) 'doctor finds no problems'
+    Check (@((Get-XivVaultOutput @('list', '--json')) | ConvertFrom-Json).Count -eq 2) 'list shows backup and snapshot'
+    Check (((Get-XivVaultOutput @('status', '--json')) | ConvertFrom-Json).state -eq 'protected') 'status is protected'
+    Check ((Invoke-XivVault @('doctor')) -eq 0) 'doctor finds no problems'
 }
 finally {
     Remove-Item -Recurse -Force $root -ErrorAction SilentlyContinue
-    Remove-Item Env:XIVAULT_DATA_DIR -ErrorAction SilentlyContinue
+    Remove-Item Env:XIV_VAULT_DATA_DIR -ErrorAction SilentlyContinue
 }
 
 if ($failures -gt 0) {

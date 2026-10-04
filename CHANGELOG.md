@@ -18,7 +18,7 @@ First release.
 - Diagnostics for XIVLauncher, Dalamud, the backup folder and scheduling, with a shareable report that holds no configuration contents.
 - Desktop app (Avalonia): Overview, Backups, Restore wizard, Schedule, Diagnostics and Settings.
 - Command line: `backup`, `restore`, `list`, `status`, `doctor`, `schedule`, `config` and `version`, with JSON output and stable exit codes.
-- Self-contained Windows x64 builds: `XIVault.Desktop-win-x64.zip` and `xivault-cli-win-x64.zip`.
+- Self-contained Windows x64 builds: `xiv-vault-desktop-win-x64.zip` and `xiv-vault-cli-win-x64.zip`.
 
 [Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/hazeliscoding/xiv-vault/releases/tag/v0.1.0

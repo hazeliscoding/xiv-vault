@@ -1,0 +1,95 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="using:XivVault.Desktop.Controls">
+  <!--
+    Every animation lives here. App leaves this file out when Windows animations are off
+    (Settings > Accessibility > Visual effects), so nothing moves for people who asked for that.
+  -->
+
+  <Style Selector="c|Spinner.spin">
+    <Style.Animations>
+      <Animation Duration="0:0:0.7" IterationCount="Infinite">
+        <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <Style Selector="c|AetherRing > Panel.ring-outer">
+    <Style.Animations>
+      <Animation Duration="0:0:1.1" IterationCount="Infinite">
+        <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="360" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="c|AetherRing > Ellipse.ring-middle">
+    <Style.Animations>
+      <Animation Duration="0:0:2.6" IterationCount="Infinite">
+        <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="-360" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="c|AetherRing > Border.ring-core">
+    <Style.Animations>
+      <Animation Duration="0:0:1.4" IterationCount="Infinite">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.55" /></KeyFrame>
+        <KeyFrame Cue="50%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.55" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <Style Selector="c|FlowLine > Line.flow-dash">
+    <Style.Animations>
+      <Animation Duration="0:0:1.2" IterationCount="Infinite">
+        <KeyFrame Cue="0%"><Setter Property="StrokeDashOffset" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="StrokeDashOffset" Value="-14" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- Rows, cards and checks arrive with a short rise; "enter-N" staggers them. -->
+  <Style Selector=":is(Control).enter">
+    <Style.Animations>
+      <Animation Duration="0:0:0.26" Easing="CubicEaseOut" FillMode="Backward">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0" />
+          <Setter Property="TranslateTransform.Y" Value="5" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+          <Setter Property="TranslateTransform.Y" Value="0" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- The brief glow when a backup or restore finishes. -->
+  <Style Selector="Border.complete-pulse">
+    <Style.Animations>
+      <Animation Duration="0:0:1.6" Easing="CubicEaseOut" IterationCount="1">
+        <KeyFrame Cue="0%"><Setter Property="BoxShadow" Value="0 0 0 0 #003CD5DE" /></KeyFrame>
+        <KeyFrame Cue="30%"><Setter Property="BoxShadow" Value="0 0 0 1 #733CD5DE, 0 0 28 0 #403CD5DE" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="BoxShadow" Value="0 0 0 0 #003CD5DE" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <Style Selector="c|XvSwitch /template/ Ellipse#PART_Knob">
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <Style Selector="Border.progress-fill">
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Width" Duration="0:0:0.12" />
+      </Transitions>
+    </Setter>
+  </Style>
+</Styles>

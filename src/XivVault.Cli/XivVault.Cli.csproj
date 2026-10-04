@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>XivVault.Cli</RootNamespace>
+    <AssemblyName>xiv-vault</AssemblyName>
+    <AssemblyTitle>XIV Vault command line</AssemblyTitle>
+    <ApplicationIcon>..\..\docs\brand\xiv-vault.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\XivVault.Core\XivVault.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" />
+    <PackageReference Include="Spectre.Console.Cli" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="XivVault.Tests" />
+  </ItemGroup>
+
+</Project>
