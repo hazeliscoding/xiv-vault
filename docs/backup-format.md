@@ -86,7 +86,7 @@ An archive is restored only if all of these hold:
 - `contents` and `statistics` match the file list, so the restore review describes what would actually be written.
 - Every file in the archive is in the manifest, and every manifest file is in the archive, once.
 - Sizes and SHA-256 hashes match.
-- The declared total is below 8 GB, so a crafted archive can't fill the disk.
+- The declared total is at most 2 GB and the archive lists at most 100,000 files, so a crafted archive can't fill the disk or tie up the PC.
 
 Restore re-checks every hash after extracting to a temp folder, so an archive changed after validation is still caught.
 
