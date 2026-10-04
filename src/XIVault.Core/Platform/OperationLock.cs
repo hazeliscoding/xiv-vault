@@ -5,7 +5,7 @@ namespace XIVault.Core.Platform;
 
 /// <summary>
 /// Lets only one backup, restore or retention pass run at a time, across processes: the scheduled
-/// task can start while the app is restoring. One lock per XIVault data folder.
+/// task can start while the app is restoring. One lock per XIV Vault data folder.
 /// </summary>
 public sealed class OperationLock(IAppEnvironment environment)
 {
@@ -35,7 +35,7 @@ public sealed class OperationLock(IAppEnvironment environment)
             mutex.Dispose();
             throw new XivaultException(
                 XivaultErrorKind.Unexpected,
-                "Another XIVault backup or restore is still running. Try again when it finishes.");
+                "Another XIV Vault backup or restore is still running. Try again when it finishes.");
         }
 
         return new Handle(mutex);

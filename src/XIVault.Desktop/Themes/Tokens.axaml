@@ -1,7 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!--
-    Tokens from the approved XIVault mockup: the Quorum design system with XIVault's overrides
+    Tokens from the approved XIV Vault mockup: the Quorum design system with XIV Vault's overrides
     (IBM Plex, blue accent, cyan healthy). Names follow the mockup's CSS variables.
   -->
   <FontFamily x:Key="SansFont">avares://XIVault.Desktop/Assets/Fonts#IBM Plex Sans</FontFamily>

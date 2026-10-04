@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>XIVault.Cli</RootNamespace>
     <AssemblyName>xivault</AssemblyName>
+    <AssemblyTitle>XIV Vault command line</AssemblyTitle>
     <ApplicationIcon>..\..\docs\brand\xivault.ico</ApplicationIcon>
   </PropertyGroup>
 

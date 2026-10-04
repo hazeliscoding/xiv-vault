@@ -9,13 +9,13 @@ public interface IBackupCatalog
     /// <summary>Archives in <paramref name="destination"/>, newest first. Reads manifests only.</summary>
     IReadOnlyList<BackupRecord> List(string destination);
 
-    /// <summary>Reads one archive, wherever it is. Null when the file is not an XIVault backup.</summary>
+    /// <summary>Reads one archive, wherever it is. Null when the file is not a XIV Vault backup.</summary>
     BackupRecord? Read(string archivePath);
 
     /// <summary>Fully verifies an archive (every hash) and remembers the result.</summary>
     BackupRecord Verify(BackupRecord record, CancellationToken cancellationToken = default);
 
-    /// <summary>Deletes an archive. Only XIVault archives in the given folder can be deleted.</summary>
+    /// <summary>Deletes an archive. Only XIV Vault archives in the given folder can be deleted.</summary>
     void Delete(BackupRecord record, string destination);
 }
 
@@ -83,7 +83,7 @@ public sealed class BackupCatalog(ArchiveValidator validator, IStateStore stateS
 
         if (!record.HasManifest && !BackupNaming.LooksLikeOurs(record.FileName))
         {
-            throw new XivaultException(XivaultErrorKind.InvalidConfiguration, $"{record.FileName} is not an XIVault backup.");
+            throw new XivaultException(XivaultErrorKind.InvalidConfiguration, $"{record.FileName} is not a XIV Vault backup.");
         }
 
         File.Delete(file);

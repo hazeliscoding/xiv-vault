@@ -105,7 +105,7 @@ public sealed partial class ScheduleViewModel : PageViewModel
     public bool HasTime => Frequency?.Value != ScheduleFrequency.AtLogon;
 
     public string AutoDescription => AutoEnabled
-        ? "On · runs as a Windows scheduled task even when XIVault is closed"
+        ? "On · runs as a Windows scheduled task even when XIV Vault is closed"
         : "Off · backups only happen when you press Back Up Now";
 
     public string RetentionHint
@@ -194,7 +194,7 @@ public sealed partial class ScheduleViewModel : PageViewModel
     [RelayCommand]
     private async Task ChooseFolderAsync()
     {
-        var folder = await _picker.PickFolderAsync("Choose where XIVault keeps backups", Destination);
+        var folder = await _picker.PickFolderAsync("Choose where XIV Vault keeps backups", Destination);
         if (folder is null)
         {
             return;

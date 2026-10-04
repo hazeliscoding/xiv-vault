@@ -290,7 +290,7 @@ public class DiagnosticsViewModelTests
         Assert.True(diagnostics.HasBanner);
         var copy = diagnostics.CopyReportCommand.ExecuteAsync(null);
         Assert.True(diagnostics.Copied);
-        Assert.StartsWith("XIVault diagnostic report", host.Clipboard.Text);
+        Assert.StartsWith("XIV Vault diagnostic report", host.Clipboard.Text);
         await copy;
         Assert.False(diagnostics.Copied);
     }

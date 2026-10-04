@@ -136,7 +136,7 @@ public sealed class RestoreService : IRestoreService
     private RestorePreview Preview(string archivePath, string? source)
     {
         var record = _catalog.Read(archivePath)
-            ?? throw new XivaultException(XivaultErrorKind.RestoreValidationFailed, $"{Path.GetFileName(archivePath)} is not an XIVault backup.");
+            ?? throw new XivaultException(XivaultErrorKind.RestoreValidationFailed, $"{Path.GetFileName(archivePath)} is not a XIV Vault backup.");
         var manifest = record.Manifest
             ?? throw new XivaultException(XivaultErrorKind.RestoreValidationFailed, record.Problem ?? "The backup has no readable manifest.");
 
@@ -204,7 +204,7 @@ public sealed class RestoreService : IRestoreService
         var record = _catalog.Read(archivePath);
         if (record is null)
         {
-            checks.Add(new SafetyCheck(SafetyCheckId.IntegrityVerified, "Backup integrity verified", false, "not an XIVault backup"));
+            checks.Add(new SafetyCheck(SafetyCheckId.IntegrityVerified, "Backup integrity verified", false, "not a XIV Vault backup"));
         }
         else
         {
@@ -299,7 +299,7 @@ public sealed class RestoreService : IRestoreService
             target, config.BackupDestination!, BackupKind.PreRestore, includeDalamudUi: true, config, null, cancellationToken, applyRetention: false);
         _logger.LogInformation("Pre-restore snapshot {File} created", snapshot.Record.FileName);
 
-        var workRoot = Path.Combine(_environment.TempPath, "XIVault", "restore-" + Guid.NewGuid().ToString("N")[..12]);
+        var workRoot = Path.Combine(_environment.TempPath, "XIV Vault", "restore-" + Guid.NewGuid().ToString("N")[..12]);
         var staging = Path.Combine(workRoot, "staged");
         var rollback = Path.Combine(workRoot, "replaced");
         try
@@ -383,7 +383,7 @@ public sealed class RestoreService : IRestoreService
 
         static XivaultException LinkRefused(string path) => new(
             XivaultErrorKind.RestoreValidationFailed,
-            $"{path} is a link to another location. XIVault does not back up or restore through links; replace it with a normal folder or file and try again.");
+            $"{path} is a link to another location. XIV Vault does not back up or restore through links; replace it with a normal folder or file and try again.");
     }
 
     private void EnsureNothingRunning()

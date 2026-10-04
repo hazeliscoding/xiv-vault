@@ -1,10 +1,10 @@
 # AGENTS.md
 
-These are the working rules for agents in this repo. XIVault (Apache-2.0) backs up and restores the portable XIVLauncher / Dalamud configuration on Windows, with a CLI and an Avalonia desktop app on one .NET engine.
+These are the working rules for agents in this repo. XIV Vault (Apache-2.0) backs up and restores the portable XIVLauncher / Dalamud configuration on Windows, with a CLI and an Avalonia desktop app on one .NET engine.
 
 ## Sources of truth
 
-- `README.md`: what XIVault does, how to use it, and the safety model.
+- `README.md`: what XIV Vault does, how to use it, and the safety model.
 - `ROADMAP.md`: decisions already made, the milestones, and what is out of scope. Check it before proposing features, and respect those decisions unless the owner reopens them.
 - Work from the next unchecked item in `ROADMAP.md`. Tick it off when it is done and record new decisions there, dated.
 - The desktop UI implements the approved mockup. Don't redesign it.
@@ -19,7 +19,7 @@ These are the working rules for agents in this repo. XIVault (Apache-2.0) backs 
 
 ## The safety contract
 
-XIVault is trusted with configuration people spent years building. Never break these rules.
+XIV Vault is trusted with configuration people spent years building. Never break these rules.
 
 - **Allowlist only.** Back up and restore `pluginConfigs/`, `dalamudConfig.json`, `dalamudVfs.db` and optionally `dalamudUI.ini`. Never `installedPlugins/`, `runtime/`, `addon/`, logs, caches or binaries. Never archive the whole XIVLauncher folder.
 - **Atomic backups.** Write `*.zip.tmp`, verify it, then rename. Retention runs only after a backup is verified and renamed.

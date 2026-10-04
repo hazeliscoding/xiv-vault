@@ -11,7 +11,7 @@
     </Grid.ColumnDefinitions>
   <StackPanel Spacing="16">
     <StackPanel Spacing="4">
-      <TextBlock Classes="page-title" Text="XIVault" />
+      <TextBlock Classes="page-title" Text="XIV Vault" />
       <TextBlock Classes="body t2" Text="{Binding Subtitle}" />
     </StackPanel>
 
@@ -175,7 +175,7 @@
             <Border Classes="diamond" RenderTransform="rotate(45deg)" Width="10" Height="10" BorderBrush="{StaticResource AccentText}" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-            <TextBlock Classes="body-strong" Text="XIVault" />
+            <TextBlock Classes="body-strong" Text="XIV Vault" />
             <TextBlock Classes="data t3" FontSize="11" Text="snapshot · compress · verify" TextWrapping="Wrap" />
           </StackPanel>
         </Grid>

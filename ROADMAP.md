@@ -1,6 +1,6 @@
 # Roadmap
 
-XIVault is a Windows-first backup and restore utility for the portable XIVLauncher / Dalamud configuration, with a CLI and an Avalonia desktop app on one shared engine. This file tracks what gets built, in what order, and the decisions already made.
+XIV Vault is a Windows-first backup and restore utility for the portable XIVLauncher / Dalamud configuration, with a CLI and an Avalonia desktop app on one shared engine. This file tracks what gets built, in what order, and the decisions already made.
 
 ## Decisions (2026-10-04)
 
@@ -13,15 +13,16 @@ XIVault is a Windows-first backup and restore utility for the portable XIVLaunch
 - **Restore never deletes.** A plugin config that exists now but not in the backup stays. Each file is replaced through a temp file and a rename. If anything fails mid-restore, the files already replaced are put back from a local copy and the restore reports failure.
 - **Safety snapshots** are `pre-restore-*.zip` files in the backup destination, shown in Backups as Pre-Restore. They always include `dalamudUI.ini` when it exists, because a restore may replace it. The newest 3 are kept, separately from the regular retention count.
 - **Restore targets need XIVLauncher, not Dalamud config.** A fresh PC that has only run XIVLauncher is a valid restore target. Backups need at least one portable item to exist.
-- **Scheduling** uses Windows Task Scheduler (`schtasks /create /xml`) with one task, `XIVault Scheduled Backup`, running as the current user with least privilege. Turning automatic backups off removes the task and keeps the preferences. XIVault computes the next run itself and the scheduled run records its own result, so nothing depends on the locale of `schtasks` output.
+- **Scheduling** uses Windows Task Scheduler (`schtasks /create /xml`) with one task, `XIV Vault Scheduled Backup`, running as the current user with least privilege. Turning automatic backups off removes the task and keeps the preferences. XIV Vault computes the next run itself and the scheduled run records its own result, so nothing depends on the locale of `schtasks` output.
 - **The task runs the app that created it.** The desktop app registers itself with `--scheduled-backup` and runs without a window. The CLI registers `xivault backup --scheduled`.
 - **Scheduled backups wait for FFXIV to close** (checking every minute, for up to 6 hours) instead of copying a database the game has open. Manual backups run at once.
 - **Integrity state** is cached per archive (path, size, modified time) in `%LOCALAPPDATA%\XIVault\state.json`. Archives that were never verified on this PC are verified in the background when listed.
 - **Default destination:** `%OneDrive%\XIVault` when OneDrive is set up, otherwise `Documents\XIVault`.
-- **UI** implements the Claude Design "XIVault" mockup, built on the Quorum design system with XIVault's overrides: IBM Plex Sans and Mono, accent `#6C9EFF`, healthy `#3CD5DE`. Dark only, like the mockup. Fonts are bundled TTFs (OFL) and icons are Lucide paths (ISC) compiled into the app, so nothing loads from a CDN.
+- **UI** implements the Claude Design "XIV Vault" mockup, built on the Quorum design system with XIV Vault's overrides: IBM Plex Sans and Mono, accent `#6C9EFF`, healthy `#3CD5DE`. Dark only, like the mockup. Fonts are bundled TTFs (OFL) and icons are Lucide paths (ISC) compiled into the app, so nothing loads from a CDN.
 - **The mockup's sample values are not used.** Version is 0.1.0, not the mockup's 1.4.0, and every number on screen comes from `XIVault.Core`.
 - **Compression** follows the mockup: Fast, Balanced (default) and Maximum map to the .NET `CompressionLevel` values.
-- **Brand:** the diamond from the mockup's title bar. The wordmark is IBM Plex Sans SemiBold converted to paths. Assets are in `docs/brand/`, and `scripts/make-icons.cs` builds `xivault.ico` from `app-icon.svg`.
+- **Name:** the product is **XIV Vault** and the repository is `xiv-vault`. Technical names from the handoff stay as they were, because they are file names, folders and a file format: the `xivault` command, `XIVault.*` projects and executables, the release zip names, `%LOCALAPPDATA%XIVault`, the default `XIVault` backup folder, `xivault-*.zip` archives and the manifest's `xivaultVersion` field.
+- **Brand:** the diamond from the mockup's title bar. The wordmark, "XIV Vault", is IBM Plex Sans SemiBold converted to paths by `scripts/make-lockup.mjs`. Assets are in `docs/brand/`, and `scripts/make-icons.cs` builds `xivault.ico` from `app-icon.svg`.
 
 - **Screenshots** come from `tools/XIVault.Screenshots`, which renders the real views with Avalonia's headless Skia renderer against a fake XIVLauncher folder and a fake Task Scheduler. It is also how the UI was checked against the mockup.
 - **Fresh-PC states** that the mockup doesn't cover follow its patterns: "Setting up a new PC?" (XIVLauncher present, no Dalamud settings) leads to Restore, and "XIVLauncher not found" leads to Settings. The restore wizard also accepts a backup file picked from anywhere.
@@ -101,4 +102,4 @@ An independent review of the restore and validation code found failure modes; th
 - Cloud APIs (Google Drive, Dropbox, OneDrive, S3). A folder synced by their own clients is enough.
 - Accounts, telemetry, a web dashboard.
 - A Windows service or tray daemon.
-- Plugin-specific backup adapters, or a Dalamud plugin version of XIVault.
+- Plugin-specific backup adapters, or a Dalamud plugin version of XIV Vault.

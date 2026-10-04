@@ -94,7 +94,7 @@ public sealed class ArchiveValidator
         var entries = zip.Entries.Where(entry => entry.FullName == BackupAllowlist.ManifestEntryName).ToList();
         if (entries.Count == 0)
         {
-            return (null, new ArchiveIssue(ArchiveIssueCode.MissingManifest, "The archive has no manifest.json, so it was not made by XIVault."));
+            return (null, new ArchiveIssue(ArchiveIssueCode.MissingManifest, "The archive has no manifest.json, so it was not made by XIV Vault."));
         }
 
         if (entries.Count > 1)
@@ -128,14 +128,14 @@ public sealed class ArchiveValidator
         {
             return (null, new ArchiveIssue(
                 ArchiveIssueCode.UnsupportedSchema,
-                "manifest.json has no supported schemaVersion. The archive predates XIVault 0.1 or was not made by XIVault."));
+                "manifest.json has no supported schemaVersion. The archive predates XIV Vault 0.1 or was not made by XIV Vault."));
         }
 
         if (manifest.SchemaVersion > BackupManifest.CurrentSchemaVersion)
         {
             return (null, new ArchiveIssue(
                 ArchiveIssueCode.UnsupportedSchema,
-                $"The backup uses format version {manifest.SchemaVersion}, made by a newer XIVault. Update XIVault to restore it."));
+                $"The backup uses format version {manifest.SchemaVersion}, made by a newer XIV Vault. Update XIV Vault to restore it."));
         }
 
         // System.Text.Json assigns an explicit null over the initializer defaults.
@@ -220,7 +220,7 @@ public sealed class ArchiveValidator
 
             if (!BackupAllowlist.TryClassify(file.Path, out _, out _))
             {
-                issues.Add(new ArchiveIssue(ArchiveIssueCode.NotAllowlisted, $"manifest.json lists a file XIVault never backs up: {file.Path}", file.Path));
+                issues.Add(new ArchiveIssue(ArchiveIssueCode.NotAllowlisted, $"manifest.json lists a file XIV Vault never backs up: {file.Path}", file.Path));
                 continue;
             }
 

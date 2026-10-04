@@ -2,7 +2,7 @@ using System.Text;
 
 namespace XIVault.Tests.Support;
 
-/// <summary>Builds an XIVLauncher folder that looks like a real one, including the parts XIVault must ignore.</summary>
+/// <summary>Builds an XIVLauncher folder that looks like a real one, including the parts XIV Vault must ignore.</summary>
 public sealed class FakeXivLauncher
 {
     public static readonly string[] DefaultPlugins = ["Artisan", "AutoRetainer", "Pandora's Box", "Splatoon", "Waymark Preset Plugin"];
@@ -39,7 +39,7 @@ public sealed class FakeXivLauncher
             fake.WritePluginConfig(plugin, $$"""{ "Version": 1, "Plugin": "{{plugin}}" }""");
         }
 
-        // A plugin that keeps a folder of its own, with nested data and a cache XIVault must skip.
+        // A plugin that keeps a folder of its own, with nested data and a cache XIV Vault must skip.
         var nested = Path.Combine(fake.PluginConfigs, "AutoRetainer", "profiles");
         Directory.CreateDirectory(nested);
         File.WriteAllText(Path.Combine(nested, "main.json"), """{ "Retainers": 10 }""");

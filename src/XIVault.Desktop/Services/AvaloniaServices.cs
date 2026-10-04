@@ -78,9 +78,9 @@ public sealed class WindowServices : IClipboardService, IFilePicker
 
         var options = new FilePickerOpenOptions
         {
-            Title = "Choose an XIVault backup",
+            Title = "Choose a XIV Vault backup",
             AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("XIVault backup") { Patterns = ["*.zip"] }],
+            FileTypeFilter = [new FilePickerFileType("XIV Vault backup") { Patterns = ["*.zip"] }],
         };
         if (startFolder is not null && Directory.Exists(startFolder))
         {

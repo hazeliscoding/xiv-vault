@@ -3,7 +3,7 @@
   End-to-end check of a built CLI against a throwaway XIVLauncher folder.
 
 .DESCRIPTION
-  Creates a fake XIVLauncher folder (portable files plus things XIVault must never touch), then:
+  Creates a fake XIVLauncher folder (portable files plus things XIV Vault must never touch), then:
   backup -> inspect the ZIP -> change the source -> restore latest -> check what changed and what
   didn't -> check the safety snapshot. Uses XIVAULT_DATA_DIR so the real profile is never used.
 

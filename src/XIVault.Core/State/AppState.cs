@@ -5,7 +5,7 @@ using XIVault.Core.Serialization;
 
 namespace XIVault.Core.State;
 
-/// <summary>What XIVault remembers between runs. Never holds configuration contents.</summary>
+/// <summary>What XIV Vault remembers between runs. Never holds configuration contents.</summary>
 public sealed record AppState
 {
     public ScheduledRunRecord? LastScheduledRun { get; init; }

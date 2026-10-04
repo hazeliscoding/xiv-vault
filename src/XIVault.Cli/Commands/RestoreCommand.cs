@@ -75,7 +75,7 @@ internal sealed class RestoreCommand(
         }
 
         Output.Line();
-        Output.Detail("XIVault will create a safety backup of your current configuration before restoring anything.");
+        Output.Detail("XIV Vault will create a safety backup of your current configuration before restoring anything.");
         if (!settings.Yes)
         {
             if (!Output.Interactive)
@@ -144,7 +144,7 @@ internal sealed class RestoreCommand(
         var path = candidates.FirstOrDefault(File.Exists)
             ?? throw new XivaultException(XivaultErrorKind.RestoreValidationFailed, $"No backup named {requested} was found.");
         return catalog.Read(path)
-            ?? throw new XivaultException(XivaultErrorKind.RestoreValidationFailed, $"{Path.GetFileName(path)} is not an XIVault backup.");
+            ?? throw new XivaultException(XivaultErrorKind.RestoreValidationFailed, $"{Path.GetFileName(path)} is not a XIV Vault backup.");
     }
 
     private static XivaultErrorKind ExitCodeFor(SafetyCheckId id) => id switch

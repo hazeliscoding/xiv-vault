@@ -87,7 +87,7 @@
           <StackPanel Margin="20,22" Spacing="6">
             <TextBlock Classes="section-title" Text="No backups found" />
             <TextBlock Classes="body t2" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left">
-              <Run Text="XIVault looked in " /><Run Text="{Binding Destination}" /><Run Text=". On a new PC, wait for OneDrive or Dropbox to finish syncing, choose the folder that holds your backups in Settings, or pick a backup file directly." />
+              <Run Text="XIV Vault looked in " /><Run Text="{Binding Destination}" /><Run Text=". On a new PC, wait for OneDrive or Dropbox to finish syncing, choose the folder that holds your backups in Settings, or pick a backup file directly." />
             </TextBlock>
           </StackPanel>
         </Panel>
@@ -156,7 +156,7 @@
               </StackPanel>
             </Border>
           </Grid>
-          <c:Banner Tone="Info" Icon="ShieldCheck" Title="XIVault will create a safety backup of your current configuration before restoring anything."
+          <c:Banner Tone="Info" Icon="ShieldCheck" Title="XIV Vault will create a safety backup of your current configuration before restoring anything."
                     Description="It appears in Backups as a Pre-Restore Safety Backup and can be restored the same way." />
         </StackPanel>
         <Grid ColumnDefinitions="*,Auto">

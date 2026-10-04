@@ -27,7 +27,7 @@ public sealed class WindowsTaskScheduler(
     TimeProvider clock,
     ILogger<WindowsTaskScheduler> logger) : IBackupScheduler
 {
-    public const string TaskName = "XIVault Scheduled Backup";
+    public const string TaskName = "XIV Vault Scheduled Backup";
     private const string Schtasks = "schtasks.exe";
 
     public async Task<ScheduleStatus> GetStatusAsync(CancellationToken cancellationToken = default)

@@ -13,7 +13,7 @@
       <StackPanel Spacing="16">
         <StackPanel Spacing="4">
           <TextBlock Classes="page-title" Text="Schedule" />
-          <TextBlock Classes="body t2" Text="XIVault backs up on its own so you never have to remember." />
+          <TextBlock Classes="body t2" Text="XIV Vault backs up on its own so you never have to remember." />
         </StackPanel>
 
         <c:Banner Tone="Critical" Title="Windows could not update the scheduled task" Description="{Binding ErrorMessage}"
@@ -117,7 +117,7 @@
         </Border>
         <Border Classes="panel" Padding="14,12">
           <TextBlock Classes="compact t3" TextWrapping="Wrap"
-                     Text="Scheduled backups run as a Windows task, so XIVault does not need to stay open." />
+                     Text="Scheduled backups run as a Windows task, so XIV Vault does not need to stay open." />
         </Border>
       </StackPanel>
     </Grid>

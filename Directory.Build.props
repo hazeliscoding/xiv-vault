@@ -12,10 +12,10 @@
 
     <Version>0.1.0</Version>
     <Authors>Hazel Granados</Authors>
-    <Company>XIVault</Company>
-    <Product>XIVault</Product>
+    <Company>XIV Vault</Company>
+    <Product>XIV Vault</Product>
     <Copyright>Copyright 2026 Hazel Granados</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/hazeliscoding/xivault</RepositoryUrl>
+    <RepositoryUrl>https://github.com/hazeliscoding/xiv-vault</RepositoryUrl>
   </PropertyGroup>
 </Project>

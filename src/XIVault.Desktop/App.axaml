@@ -3,7 +3,7 @@
              xmlns:vm="using:XIVault.Desktop.ViewModels"
              xmlns:v="using:XIVault.Desktop.Views"
              x:Class="XIVault.Desktop.App"
-             Name="XIVault"
+             Name="XIV Vault"
              RequestedThemeVariant="Dark">
   <Application.Resources>
     <ResourceDictionary>

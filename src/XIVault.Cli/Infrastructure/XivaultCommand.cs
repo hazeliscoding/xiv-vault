@@ -7,7 +7,7 @@ namespace XIVault.Cli.Infrastructure;
 internal class GlobalSettings : CommandSettings
 {
     [CommandOption("-v|--verbose")]
-    [Description("Show what XIVault is doing, step by step.")]
+    [Description("Show what XIV Vault is doing, step by step.")]
     public bool Verbose { get; init; }
 }
 

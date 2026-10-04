@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace XIVault.Core.Logging;
 
 /// <summary>
-/// Daily log files under the XIVault data folder, kept for two weeks. Log messages carry paths,
+/// Daily log files under the XIV Vault data folder, kept for two weeks. Log messages carry paths,
 /// counts and results; callers never pass configuration contents.
 /// </summary>
 public sealed class FileLoggerProvider : ILoggerProvider

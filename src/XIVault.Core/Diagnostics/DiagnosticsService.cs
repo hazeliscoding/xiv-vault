@@ -226,7 +226,7 @@ public sealed class DiagnosticsService(
             checks.Add(new("Task installed", DiagnosticStatus.Healthy, WindowsTaskScheduler.TaskName));
             if (schedule.CommandMissing)
             {
-                checks.Add(new("Task points to a missing program", DiagnosticStatus.Error, "set the schedule again from this copy of XIVault"));
+                checks.Add(new("Task points to a missing program", DiagnosticStatus.Error, "set the schedule again from this copy of XIV Vault"));
             }
 
             checks.Add(new(

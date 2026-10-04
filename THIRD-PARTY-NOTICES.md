@@ -1,6 +1,6 @@
 # Third-party notices
 
-XIVault bundles the following assets. NuGet dependencies carry their own licenses in their packages.
+XIV Vault bundles the following assets. NuGet dependencies carry their own licenses in their packages.
 
 ## IBM Plex Sans and IBM Plex Mono
 

@@ -58,7 +58,7 @@ internal sealed class StatusCommand(
             ? $"[{CliOutput.Critical}]not found[/]"
             : Markup.Escape(paths.Friendly(installation.RootPath) + (installation.LauncherVersion is { } version ? $" · v{version}" : "")));
 
-        Output.Markup($"[bold]XIVault[/] [{CliOutput.Dim}]{XivaultInfo.Version}[/]");
+        Output.Markup($"[bold]XIV Vault[/] [{CliOutput.Dim}]{XivaultInfo.Version}[/]");
         Output.Write(grid);
         return 0;
     }

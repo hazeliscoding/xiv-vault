@@ -23,7 +23,7 @@ public static class BackupNaming
         return name;
     }
 
-    /// <summary>File names XIVault itself creates. Used to flag our own archives whose manifest is unreadable.</summary>
+    /// <summary>File names XIV Vault itself creates. Used to flag our own archives whose manifest is unreadable.</summary>
     public static bool LooksLikeOurs(string fileName) =>
         fileName.EndsWith(Extension, StringComparison.OrdinalIgnoreCase)
         && (fileName.StartsWith(RegularPrefix, StringComparison.OrdinalIgnoreCase)

@@ -147,7 +147,7 @@ public sealed partial class SettingsViewModel : PageViewModel
     [RelayCommand]
     private async Task ChooseFolderAsync()
     {
-        var folder = await _picker.PickFolderAsync("Choose where XIVault keeps backups", Destination);
+        var folder = await _picker.PickFolderAsync("Choose where XIV Vault keeps backups", Destination);
         if (folder is not null)
         {
             Save(config => config with { BackupDestination = folder });

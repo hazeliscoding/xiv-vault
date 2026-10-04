@@ -388,7 +388,7 @@ public sealed partial class RestoreViewModel : PageViewModel
         var record = _catalog.Read(file);
         if (record is not { HasManifest: true })
         {
-            ErrorMessage = $"{Path.GetFileName(file)} is not an XIVault backup.";
+            ErrorMessage = $"{Path.GetFileName(file)} is not a XIV Vault backup.";
             return;
         }
 

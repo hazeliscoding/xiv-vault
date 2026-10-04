@@ -101,7 +101,7 @@ internal sealed class VersionCommand(CliOutput output) : XivaultCommand<GlobalSe
 {
     protected override Task<int> RunAsync(GlobalSettings settings, CancellationToken cancellationToken)
     {
-        Output.Out.Profile.Out.Writer.WriteLine($"XIVault {XivaultInfo.Version}");
+        Output.Out.Profile.Out.Writer.WriteLine($"XIV Vault {XivaultInfo.Version}");
         if (settings.Verbose)
         {
             Output.Detail($".NET {Environment.Version} · {System.Runtime.InteropServices.RuntimeInformation.OSDescription}");

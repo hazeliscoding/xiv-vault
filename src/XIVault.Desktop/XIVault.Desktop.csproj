@@ -4,6 +4,8 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>XIVault.Desktop</RootNamespace>
     <AssemblyName>XIVault.Desktop</AssemblyName>
+    <!-- Shown by Windows as the file description, e.g. in Task Manager. -->
+    <AssemblyTitle>XIV Vault</AssemblyTitle>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\..\docs\brand\xivault.ico</ApplicationIcon>
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>

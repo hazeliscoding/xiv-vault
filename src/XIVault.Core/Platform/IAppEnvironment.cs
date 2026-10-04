@@ -21,6 +21,6 @@ public interface IAppEnvironment
     /// <summary>DOMAIN\user, used as the principal of the scheduled task.</summary>
     string UserAccount { get; }
 
-    /// <summary>Folder for XIVault's own config, state and logs.</summary>
+    /// <summary>Folder for XIV Vault's own config, state and logs.</summary>
     string DataDirectory { get; }
 }

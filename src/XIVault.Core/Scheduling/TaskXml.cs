@@ -44,7 +44,7 @@ public static class TaskXml
             new XAttribute("version", "1.2"),
             new XElement(
                 Ns + "RegistrationInfo",
-                new XElement(Ns + "Description", "Backs up the portable XIVLauncher / Dalamud configuration with XIVault."),
+                new XElement(Ns + "Description", "Backs up the portable XIVLauncher / Dalamud configuration with XIV Vault."),
                 new XElement(Ns + "URI", @"\" + WindowsTaskScheduler.TaskName)),
             new XElement(Ns + "Triggers", trigger),
             new XElement(

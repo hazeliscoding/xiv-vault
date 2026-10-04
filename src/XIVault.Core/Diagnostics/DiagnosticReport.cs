@@ -61,8 +61,8 @@ public sealed record DiagnosticReport(DateTime GeneratedAtUtc, string XivaultVer
     public string ToText()
     {
         var text = new StringBuilder()
-            .AppendLine("XIVault diagnostic report")
-            .Append(CultureInfo.InvariantCulture, $"Generated {GeneratedAtUtc:yyyy-MM-dd HH:mm} UTC · XIVault {XivaultVersion} · {OsVersion}")
+            .AppendLine("XIV Vault diagnostic report")
+            .Append(CultureInfo.InvariantCulture, $"Generated {GeneratedAtUtc:yyyy-MM-dd HH:mm} UTC · XIV Vault {XivaultVersion} · {OsVersion}")
             .AppendLine()
             .AppendLine();
         foreach (var group in Groups)

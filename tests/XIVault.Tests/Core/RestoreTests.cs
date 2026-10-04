@@ -309,7 +309,7 @@ public class RestoreTests
         Assert.True(preview.IsOlderThanCurrent);
     }
 
-    /// <summary>Every file except XIVault's own folders (backups, state), which a restore attempt may update.</summary>
+    /// <summary>Every file except XIV Vault's own folders (backups, state), which a restore attempt may update.</summary>
     private static List<string> OutsideXivault(string root) =>
         Snapshot(root).Where(path => !path.Contains(@"\XIVault\", StringComparison.Ordinal)).ToList();
 

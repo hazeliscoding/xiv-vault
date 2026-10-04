@@ -148,7 +148,7 @@ public class CliTests
 
         Assert.Equal(0, code);
         Assert.Equal(4, JsonDocument.Parse(json).RootElement.GetProperty("groups").GetArrayLength());
-        Assert.StartsWith("XIVault diagnostic report", report);
+        Assert.StartsWith("XIV Vault diagnostic report", report);
     }
 
     [Fact]
@@ -309,6 +309,6 @@ public class CliTests
         var (code, output) = await Run(host, "version");
 
         Assert.Equal(0, code);
-        Assert.Equal($"XIVault {XIVault.Core.XivaultInfo.Version}", output.Trim());
+        Assert.Equal($"XIV Vault {XIVault.Core.XivaultInfo.Version}", output.Trim());
     }
 }

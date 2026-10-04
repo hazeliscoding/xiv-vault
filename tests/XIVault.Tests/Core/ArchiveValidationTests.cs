@@ -116,7 +116,7 @@ public class ArchiveValidationTests : IDisposable
 
         var issue = Assert.Single(result.Issues);
         Assert.Equal(ArchiveIssueCode.UnsupportedSchema, issue.Code);
-        Assert.Contains("newer XIVault", issue.Message);
+        Assert.Contains("newer XIV Vault", issue.Message);
     }
 
     [Fact]

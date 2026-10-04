@@ -5,7 +5,7 @@
         xmlns:s="using:XIVault.Desktop.Services"
         x:Class="XIVault.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="XIVault"
+        Title="XIV Vault"
         Icon="avares://XIVault.Desktop/Assets/xivault.ico"
         Width="1100" Height="720" MinWidth="920" MinHeight="600"
         WindowStartupLocation="CenterScreen"
@@ -21,7 +21,7 @@
           <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
             <Border Classes="diamond" RenderTransform="rotate(45deg)" Width="10" Height="10" BorderBrush="{StaticResource Accent}"
                     BoxShadow="0 0 8 0 #736C9EFF" />
-            <TextBlock Text="XIVault" FontSize="12" FontWeight="Medium" Foreground="{StaticResource Text2}" />
+            <TextBlock Text="XIV Vault" FontSize="12" FontWeight="Medium" Foreground="{StaticResource Text2}" />
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
             <Button Theme="{StaticResource CaptionButton}" Content="—" Click="OnMinimize"
@@ -45,13 +45,13 @@
                 <StackPanel Spacing="6">
                   <TextBlock Classes="micro t3" Text="WHAT IS PROTECTED" />
                   <TextBlock Classes="compact t2" TextWrapping="Wrap"
-                             Text="XIVault protects portable Dalamud configuration. Plugin binaries are reinstalled by Dalamud rather than copied between machines." />
+                             Text="XIV Vault protects portable Dalamud configuration. Plugin binaries are reinstalled by Dalamud rather than copied between machines." />
                 </StackPanel>
               </Border>
-              <Grid ColumnDefinitions="*,Auto" Margin="10,0">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="10,0,4,0">
                 <TextBlock Classes="data t3" FontSize="11" Text="{Binding VersionLabel}" VerticalAlignment="Center" />
                 <Button Grid.Column="1" Theme="{StaticResource LinkButton}" Foreground="{StaticResource Text3}"
-                        Command="{Binding OpenGitHubCommand}" AutomationProperties.Name="Open XIVault on GitHub">
+                        Command="{Binding OpenGitHubCommand}" AutomationProperties.Name="Open XIV Vault on GitHub">
                   <StackPanel Orientation="Horizontal" Spacing="4">
                     <c:Icon Kind="Github" Size="12" VerticalAlignment="Center" />
                     <TextBlock Classes="data" FontSize="11" Text="GitHub" VerticalAlignment="Center" />

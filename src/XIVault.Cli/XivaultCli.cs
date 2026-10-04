@@ -85,13 +85,13 @@ public static class XivaultCli
             });
             config.AddBranch("config", settings =>
             {
-                settings.SetDescription("Show or change XIVault's settings.");
+                settings.SetDescription("Show or change XIV Vault's settings.");
                 settings.SetDefaultCommand<ConfigShowCommand>();
                 settings.AddCommand<ConfigShowCommand>("show").WithDescription("Show the current settings.");
                 settings.AddCommand<ConfigSetCommand>("set").WithDescription("Change a setting.").WithExample("config", "set", "retention", "15");
                 settings.AddCommand<ConfigPathCommand>("path").WithDescription("Print where the settings file is.");
             });
-            config.AddCommand<VersionCommand>("version").WithDescription("Print the XIVault version.");
+            config.AddCommand<VersionCommand>("version").WithDescription("Print the XIV Vault version.");
         });
 
         return await app.RunAsync(args, cancellationToken).ConfigureAwait(false);

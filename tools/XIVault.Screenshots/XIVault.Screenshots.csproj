@@ -4,7 +4,7 @@
     Renders every desktop screen to PNG with Avalonia's headless Skia renderer, against a fake
     XIVLauncher folder in a temp directory. Used for the README screenshots and for checking the
     UI against the mockup. Arguments: the output folder, then optionally the fake profile folder
-    whose paths appear on screen, e.g. docs/screenshots C:/XIVault-demo
+    whose paths appear on screen, e.g. docs/screenshots C:/Demo
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>

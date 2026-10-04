@@ -22,7 +22,7 @@ public sealed partial class NavItemViewModel(AppPage page, string label, string 
 
 public sealed partial class MainWindowViewModel : ObservableObject
 {
-    public const string RepositoryUrl = "https://github.com/hazeliscoding/xivault";
+    public const string RepositoryUrl = "https://github.com/hazeliscoding/xiv-vault";
 
     private readonly Dictionary<AppPage, PageViewModel> _pages;
     private readonly DesktopSession _session;
@@ -70,7 +70,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     public partial string ConnectionLabel { get; private set; } = "Checking backup folder";
 
-    public string VersionLabel { get; } = "XIVault " + XivaultInfo.Version;
+    public string VersionLabel { get; } = "XIV Vault " + XivaultInfo.Version;
 
     public Task InitializeAsync() => ShowAsync(AppPage.Overview, null);
 

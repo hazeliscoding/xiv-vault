@@ -1,6 +1,6 @@
 # Architecture
 
-XIVault is one engine with two front ends. Everything that touches backups lives in `XIVault.Core`; the CLI and the desktop app only present it.
+XIV Vault is one engine with two front ends. Everything that touches backups lives in `XIVault.Core`; the CLI and the desktop app only present it.
 
 ```
                  ┌──────────────────────────┐
@@ -44,7 +44,7 @@ Both front ends call `services.AddXivaultCore()` and resolve the same services f
 | `RetentionService` | Keeps the newest N regular backups and the newest 3 pre-restore snapshots, separately. Damaged archives are neither counted nor deleted. |
 | `RestoreService` | Preview, safety checks and the restore itself. |
 | `GameProcessGuard` | Detects XIVLauncher and FFXIV processes. |
-| `WindowsTaskScheduler`, `ScheduleService` | The `XIVault Scheduled Backup` task through `schtasks /xml`, kept in step with the saved preferences. |
+| `WindowsTaskScheduler`, `ScheduleService` | The `XIV Vault Scheduled Backup` task through `schtasks /xml`, kept in step with the saved preferences. |
 | `ScheduledBackupRunner` | What the task runs: waits for FFXIV, backs up, records the result. |
 | `StatusService` | The protection summary the Overview and `xivault status` show. |
 | `DiagnosticsService` | The four health-check groups and the shareable report. |

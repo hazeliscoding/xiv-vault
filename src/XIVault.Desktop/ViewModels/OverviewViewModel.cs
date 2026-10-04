@@ -251,7 +251,7 @@ public sealed partial class OverviewViewModel : PageViewModel
             case ProtectionState.NotDetected:
                 State = OverviewState.NotDetected;
                 Subtitle = "XIVLauncher was not found on this PC.";
-                NotDetectedDescription = "Install XIVLauncher and start it once, or point XIVault at its folder in Settings. Your backups are safe either way.";
+                NotDetectedDescription = "Install XIVLauncher and start it once, or point XIV Vault at its folder in Settings. Your backups are safe either way.";
                 break;
             case ProtectionState.NoConfiguration:
                 State = OverviewState.NoConfiguration;

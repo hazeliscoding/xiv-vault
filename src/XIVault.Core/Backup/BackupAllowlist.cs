@@ -9,7 +9,7 @@ public enum PortableItem
 }
 
 /// <summary>
-/// The security and portability boundary: the only paths XIVault ever reads from XIVLauncher
+/// The security and portability boundary: the only paths XIV Vault ever reads from XIVLauncher
 /// or writes back to it. Everything else (installedPlugins, runtime, addon, logs, caches) is
 /// machine-specific and stays out.
 /// </summary>

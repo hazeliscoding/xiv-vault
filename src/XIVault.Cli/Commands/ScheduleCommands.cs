@@ -82,7 +82,7 @@ internal abstract class ScheduleApplyCommand<TSettings>(CliOutput output, Schedu
         var status = await schedules.ApplyAsync(desired, CommandFactory(), cancellationToken);
         Output.Success($"Automatic backups on: {Formatting.Schedule(desired)}");
         Output.Detail(status.NextRunLocal is { } next
-            ? $"Next backup {Formatting.FullDate(next)}. Runs as the Windows task \"{WindowsTaskScheduler.TaskName}\"; XIVault does not need to stay open."
+            ? $"Next backup {Formatting.FullDate(next)}. Runs as the Windows task \"{WindowsTaskScheduler.TaskName}\"; XIV Vault does not need to stay open."
             : $"Runs as the Windows task \"{WindowsTaskScheduler.TaskName}\" at your next sign-in.");
         return 0;
     }
@@ -158,7 +158,7 @@ internal sealed class ScheduleStatusCommand(CliOutput output, ScheduleService sc
             Output.Detail(status.NextRunLocal is { } next ? $"Next backup: {Formatting.DayAndTime(next, now)}" : "Next backup: at next Windows login");
             if (status.CommandMissing)
             {
-                Output.Warning("The task points to a program that no longer exists. Run the schedule command again from this copy of XIVault.");
+                Output.Warning("The task points to a program that no longer exists. Run the schedule command again from this copy of XIV Vault.");
             }
         }
 

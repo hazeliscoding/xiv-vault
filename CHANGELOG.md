@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to XIVault are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
+All notable changes to XIV Vault are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
@@ -20,5 +20,5 @@ First release.
 - Command line: `backup`, `restore`, `list`, `status`, `doctor`, `schedule`, `config` and `version`, with JSON output and stable exit codes.
 - Self-contained Windows x64 builds: `XIVault.Desktop-win-x64.zip` and `xivault-cli-win-x64.zip`.
 
-[Unreleased]: https://github.com/hazeliscoding/xivault/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/hazeliscoding/xivault/releases/tag/v0.1.0
+[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/hazeliscoding/xiv-vault/releases/tag/v0.1.0

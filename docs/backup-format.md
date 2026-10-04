@@ -1,6 +1,6 @@
 # Backup format
 
-An XIVault backup is an ordinary ZIP file. Any ZIP tool can open it. The manifest inside is the only source of metadata; the file name is just for people.
+An XIV Vault backup is an ordinary ZIP file. Any ZIP tool can open it. The manifest inside is the only source of metadata; the file name is just for people.
 
 ## File names
 
@@ -65,7 +65,7 @@ Entry names use forward slashes and are relative. Every file under `payload/` is
 | Field | Meaning |
 |---|---|
 | `schemaVersion` | Format version. This document describes version 1. |
-| `xivaultVersion` | The XIVault version that wrote the archive. |
+| `xivaultVersion` | The XIV Vault version that wrote the archive. |
 | `createdAtUtc` | When the backup was taken, UTC, whole seconds. |
 | `backupType` | `manual`, `scheduled` or `preRestore`. |
 | `source.layout` | `standard` or `dalamudUserData`: where Dalamud kept its files. Informational; a restore follows the target PC's layout. |
@@ -80,7 +80,7 @@ Entry names use forward slashes and are relative. Every file under `payload/` is
 An archive is restored only if all of these hold:
 
 - It opens as a ZIP and has exactly one `manifest.json`.
-- The manifest parses, has all required fields, and `schemaVersion` is supported. A missing version counts as unsupported; a higher one means "made by a newer XIVault".
+- The manifest parses, has all required fields, and `schemaVersion` is supported. A missing version counts as unsupported; a higher one means "made by a newer XIV Vault".
 - Every path is relative and safe: no `..`, no leading `/`, no drive letters or `:`, no backslashes, no device names such as `NUL`, no trailing dots or spaces.
 - Every manifest path is on the allowlist: `payload/dalamudConfig.json`, `payload/dalamudVfs.db`, `payload/dalamudUI.ini`, or a file under `payload/pluginConfigs/`. Paths that backups skip are refused too: `logs`, `cache` and `temp` folders, and temporary files such as `*.tmp`.
 - `contents` and `statistics` match the file list, so the restore review describes what would actually be written.
