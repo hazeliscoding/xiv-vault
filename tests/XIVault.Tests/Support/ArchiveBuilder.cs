@@ -13,6 +13,7 @@ public sealed class ArchiveBuilder
     private readonly List<JsonObject> _files = [];
     private string? _rawManifest;
     private int? _schemaVersion = 1;
+    private JsonObject? _claimedContents;
 
     public static string Sha256(byte[] data) => Convert.ToHexStringLower(SHA256.HashData(data));
 
@@ -48,6 +49,13 @@ public sealed class ArchiveBuilder
         return this;
     }
 
+    /// <summary>Makes the manifest claim contents that differ from its file list.</summary>
+    public ArchiveBuilder ClaimContents(bool pluginConfigs, bool dalamudConfig, bool dalamudVfs, bool dalamudUi)
+    {
+        _claimedContents = new JsonObject { ["pluginConfigs"] = pluginConfigs, ["dalamudConfig"] = dalamudConfig, ["dalamudVfs"] = dalamudVfs, ["dalamudUi"] = dalamudUi };
+        return this;
+    }
+
     public ArchiveBuilder RawManifest(string json)
     {
         _rawManifest = json;
@@ -70,6 +78,8 @@ public sealed class ArchiveBuilder
         return path;
     }
 
+    private List<string> Paths => _files.Select(file => (string)file["path"]!).ToList();
+
     private string BuildManifest()
     {
         var root = new JsonObject
@@ -78,8 +88,20 @@ public sealed class ArchiveBuilder
             ["createdAtUtc"] = "2026-09-28T18:38:00Z",
             ["backupType"] = "manual",
             ["source"] = new JsonObject { ["platform"] = "windows", ["layout"] = "standard" },
-            ["contents"] = new JsonObject { ["pluginConfigs"] = true, ["dalamudConfig"] = true, ["dalamudVfs"] = false, ["dalamudUi"] = false },
-            ["statistics"] = new JsonObject { ["pluginConfigCount"] = 1, ["pluginConfigDirectories"] = 0, ["fileCount"] = _files.Count, ["totalBytes"] = 0 },
+            ["contents"] = _claimedContents ?? new JsonObject
+            {
+                ["pluginConfigs"] = Paths.Any(path => path.StartsWith("payload/pluginConfigs/", StringComparison.OrdinalIgnoreCase)),
+                ["dalamudConfig"] = Paths.Contains("payload/dalamudConfig.json"),
+                ["dalamudVfs"] = Paths.Contains("payload/dalamudVfs.db"),
+                ["dalamudUi"] = Paths.Contains("payload/dalamudUI.ini"),
+            },
+            ["statistics"] = new JsonObject
+            {
+                ["pluginConfigCount"] = XIVault.Core.Backup.BackupAllowlist.PluginNames(Paths).Count,
+                ["pluginConfigDirectories"] = 0,
+                ["fileCount"] = _files.Count,
+                ["totalBytes"] = _files.Sum(file => (int)file["size"]!),
+            },
             ["files"] = new JsonArray([.. _files.Select(file => (JsonNode)file.DeepClone())]),
         };
         if (_schemaVersion is { } version)

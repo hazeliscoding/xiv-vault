@@ -74,14 +74,22 @@ public static class BackupAllowlist
         }
 
         var pluginPrefix = PluginConfigsDirectory + "/";
-        if (rest.StartsWith(pluginPrefix, StringComparison.OrdinalIgnoreCase) && rest.Length > pluginPrefix.Length)
+        if (!rest.StartsWith(pluginPrefix, StringComparison.OrdinalIgnoreCase) || rest.Length == pluginPrefix.Length)
         {
-            item = PortableItem.PluginConfig;
-            relativeTarget = PluginConfigsDirectory + "/" + rest[pluginPrefix.Length..];
-            return true;
+            return false;
         }
 
-        return false;
+        // The same exclusions as the scanner: a restore must never write a file that the
+        // pre-restore snapshot would not have saved first.
+        var segments = rest[pluginPrefix.Length..].TrimEnd('/').Split('/');
+        if (segments[..^1].Any(IsExcludedPluginDirectory) || IsExcludedPluginFile(segments[^1]))
+        {
+            return false;
+        }
+
+        item = PortableItem.PluginConfig;
+        relativeTarget = PluginConfigsDirectory + "/" + rest[pluginPrefix.Length..];
+        return true;
     }
 
     public static bool IsExcludedPluginDirectory(string name) => ExcludedPluginDirectories.Contains(name);

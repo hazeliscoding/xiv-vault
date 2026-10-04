@@ -139,12 +139,36 @@ public sealed class ArchiveValidator
 
         // System.Text.Json assigns an explicit null over the initializer defaults.
         if (manifest.Files is null || manifest.Contents is null || manifest.Statistics is null || manifest.Source is null
-            || manifest.CreatedAtUtc == default || !Enum.IsDefined(manifest.BackupType))
+            || manifest.CreatedAtUtc == default || !Enum.IsDefined(manifest.BackupType)
+            || manifest.Files.Any(file => file is null || string.IsNullOrEmpty(file.Path) || file.Sha256 is null))
         {
             return (null, new ArchiveIssue(ArchiveIssueCode.MalformedManifest, "manifest.json is missing required fields."));
         }
 
+        // The summary fields are shown to people before a restore, so they must describe the files
+        // that would actually be written, not whatever the manifest claims.
+        if (!SummaryMatchesFiles(manifest))
+        {
+            return (null, new ArchiveIssue(ArchiveIssueCode.MalformedManifest, "manifest.json describes different contents than the files it lists."));
+        }
+
         return (manifest, null);
+    }
+
+    private static bool SummaryMatchesFiles(BackupManifest manifest)
+    {
+        var paths = manifest.Files.Select(file => file.Path).ToList();
+        bool Has(string archivePath) => paths.Any(path => string.Equals(path, archivePath, StringComparison.OrdinalIgnoreCase));
+        var pluginPrefix = BackupAllowlist.PayloadPrefix + BackupAllowlist.PluginConfigsDirectory + "/";
+        var contents = manifest.Contents;
+        var statistics = manifest.Statistics;
+        return contents.PluginConfigs == paths.Any(path => path.StartsWith(pluginPrefix, StringComparison.OrdinalIgnoreCase))
+            && contents.DalamudConfig == Has(BackupAllowlist.ArchivePathFor(PortableItem.DalamudConfig))
+            && contents.DalamudVfs == Has(BackupAllowlist.ArchivePathFor(PortableItem.DalamudVfs))
+            && contents.DalamudUi == Has(BackupAllowlist.ArchivePathFor(PortableItem.DalamudUi))
+            && statistics.FileCount == paths.Count
+            && statistics.PluginConfigCount == BackupAllowlist.PluginNames(paths).Count
+            && statistics.TotalBytes == manifest.Files.Sum(file => file.Size);
     }
 
     private static ArchiveValidation Validate(ZipArchive zip, bool verifyContents, CancellationToken cancellationToken)

@@ -152,7 +152,7 @@ public class ArchiveValidationTests : IDisposable
             .RawManifest("""
                 {
                   "schemaVersion": 1, "xivaultVersion": "0.1.0", "createdAtUtc": "2026-09-28T18:38:00Z", "backupType": "manual",
-                  "source": {}, "contents": {}, "statistics": {},
+                  "source": {}, "contents": { "dalamudVfs": true }, "statistics": { "fileCount": 1, "totalBytes": 1 },
                   "files": [ { "path": "payload/dalamudVfs.db", "size": 1, "sha256": "0000000000000000000000000000000000000000000000000000000000000000" } ]
                 }
                 """));
