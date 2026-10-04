@@ -7,6 +7,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\..\docs\brand\xivault.ico</ApplicationIcon>
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,7 +23,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="Assets\Fonts\*.ttf" />
+    <AvaloniaResource Include="..\..\docs\brand\xivault.ico" Link="Assets\xivault.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="XIVault.Tests" />
+    <InternalsVisibleTo Include="XIVault.Screenshots" />
   </ItemGroup>
 
 </Project>

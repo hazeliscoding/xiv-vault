@@ -1,0 +1,156 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Tokens from the approved XIVault mockup: the Quorum design system with XIVault's overrides
+    (IBM Plex, blue accent, cyan healthy). Names follow the mockup's CSS variables.
+  -->
+  <FontFamily x:Key="SansFont">avares://XIVault.Desktop/Assets/Fonts#IBM Plex Sans</FontFamily>
+  <FontFamily x:Key="MonoFont">avares://XIVault.Desktop/Assets/Fonts#IBM Plex Mono</FontFamily>
+
+  <Color x:Key="Bg0Color">#0A0C12</Color>
+  <Color x:Key="Bg1Color">#0E1119</Color>
+  <Color x:Key="Bg2Color">#141822</Color>
+  <Color x:Key="Bg3Color">#1A1F2B</Color>
+  <Color x:Key="Bg4Color">#212736</Color>
+  <Color x:Key="BgInsetColor">#07090C</Color>
+  <Color x:Key="AccentColor">#6C9EFF</Color>
+
+  <SolidColorBrush x:Key="WindowBackdrop" Color="#05070B" />
+  <SolidColorBrush x:Key="Bg0" Color="#0A0C12" />
+  <SolidColorBrush x:Key="Bg1" Color="#0E1119" />
+  <SolidColorBrush x:Key="Bg2" Color="#141822" />
+  <SolidColorBrush x:Key="Bg3" Color="#1A1F2B" />
+  <SolidColorBrush x:Key="Bg4" Color="#212736" />
+  <SolidColorBrush x:Key="BgInset" Color="#07090C" />
+  <SolidColorBrush x:Key="Border1" Color="#1E2430" />
+  <SolidColorBrush x:Key="Border2" Color="#2A3243" />
+  <SolidColorBrush x:Key="Border3" Color="#3A4453" />
+  <SolidColorBrush x:Key="Text1" Color="#E8ECF1" />
+  <SolidColorBrush x:Key="Text2" Color="#98A2B3" />
+  <SolidColorBrush x:Key="Text3" Color="#5F6B7A" />
+  <SolidColorBrush x:Key="Text4" Color="#3E4754" />
+  <SolidColorBrush x:Key="TextInverse" Color="#0A0C10" />
+
+  <SolidColorBrush x:Key="Accent" Color="#6C9EFF" />
+  <SolidColorBrush x:Key="AccentHover" Color="#8DB4FF" />
+  <SolidColorBrush x:Key="AccentActive" Color="#4F86F0" />
+  <SolidColorBrush x:Key="AccentText" Color="#A9C7FF" />
+  <SolidColorBrush x:Key="AccentSubtle" Color="#1A6C9EFF" />
+  <SolidColorBrush x:Key="AccentBorder" Color="#596C9EFF" />
+
+  <SolidColorBrush x:Key="Healthy" Color="#3CD5DE" />
+  <SolidColorBrush x:Key="HealthyText" Color="#86E7EC" />
+  <SolidColorBrush x:Key="HealthySubtle" Color="#1A3CD5DE" />
+  <SolidColorBrush x:Key="HealthyBorder" Color="#593CD5DE" />
+  <SolidColorBrush x:Key="Warning" Color="#F2B441" />
+  <SolidColorBrush x:Key="WarningText" Color="#F8CE7A" />
+  <SolidColorBrush x:Key="WarningSubtle" Color="#1FF2B441" />
+  <SolidColorBrush x:Key="WarningBorder" Color="#66F2B441" />
+  <SolidColorBrush x:Key="Critical" Color="#F0555D" />
+  <SolidColorBrush x:Key="CriticalText" Color="#FF8A90" />
+  <SolidColorBrush x:Key="CriticalSubtle" Color="#1FF0555D" />
+  <SolidColorBrush x:Key="CriticalBorder" Color="#73F0555D" />
+  <SolidColorBrush x:Key="Info" Color="#5B9CFF" />
+  <SolidColorBrush x:Key="InfoText" Color="#93BDFF" />
+  <SolidColorBrush x:Key="InfoSubtle" Color="#1F5B9CFF" />
+  <SolidColorBrush x:Key="InfoBorder" Color="#665B9CFF" />
+  <SolidColorBrush x:Key="Unknown" Color="#5F6B7A" />
+  <SolidColorBrush x:Key="UnknownText" Color="#98A2B3" />
+  <SolidColorBrush x:Key="UnknownSubtle" Color="#245F6B7A" />
+  <SolidColorBrush x:Key="UnknownBorder" Color="#735F6B7A" />
+  <SolidColorBrush x:Key="Paused" Color="#A6ADBB" />
+  <SolidColorBrush x:Key="PausedText" Color="#C4CAD4" />
+  <SolidColorBrush x:Key="PausedSubtle" Color="#1AA6ADBB" />
+  <SolidColorBrush x:Key="PausedBorder" Color="#59A6ADBB" />
+  <SolidColorBrush x:Key="Queued" Color="#B48EFF" />
+  <SolidColorBrush x:Key="QueuedText" Color="#CDB4FF" />
+  <SolidColorBrush x:Key="QueuedSubtle" Color="#1FB48EFF" />
+  <SolidColorBrush x:Key="QueuedBorder" Color="#66B48EFF" />
+  <SolidColorBrush x:Key="AccentMain" Color="#6C9EFF" />
+  <SolidColorBrush x:Key="Scrim" Color="#A6040609" />
+
+  <BoxShadows x:Key="HighlightInset">inset 0 1 0 0 #0AFFFFFF</BoxShadows>
+  <BoxShadows x:Key="AccentGlow">0 0 0 1 #596C9EFF, 0 0 20 0 #386C9EFF</BoxShadows>
+  <BoxShadows x:Key="WindowShadow">0 30 80 0 #99000000</BoxShadows>
+  <BoxShadows x:Key="Shadow1">0 1 2 0 #59000000</BoxShadows>
+  <BoxShadows x:Key="Shadow3">0 8 24 0 #80000000</BoxShadows>
+  <BoxShadows x:Key="Shadow4">0 24 64 0 #99000000</BoxShadows>
+  <BoxShadows x:Key="FocusRing">0 0 0 2 #0A0C12, 0 0 0 4 #6C9EFF</BoxShadows>
+  <BoxShadows x:Key="CompletePulse">0 0 28 1 #403CD5DE</BoxShadows>
+
+  <!-- Fluent resources, re-pointed at the tokens so inputs, selects and tooltips match. -->
+  <CornerRadius x:Key="ControlCornerRadius">4</CornerRadius>
+  <CornerRadius x:Key="OverlayCornerRadius">6</CornerRadius>
+  <x:Double x:Key="ControlContentThemeFontSize">13</x:Double>
+
+  <x:Double x:Key="TextControlThemeMinHeight">28</x:Double>
+  <Thickness x:Key="TextControlThemePadding">8,5,8,5</Thickness>
+  <Thickness x:Key="TextControlBorderThemeThickness">1</Thickness>
+  <Thickness x:Key="TextControlBorderThemeThicknessFocused">1</Thickness>
+  <SolidColorBrush x:Key="TextControlForeground" Color="#E8ECF1" />
+  <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#E8ECF1" />
+  <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#E8ECF1" />
+  <SolidColorBrush x:Key="TextControlForegroundDisabled" Color="#5F6B7A" />
+  <SolidColorBrush x:Key="TextControlBackground" Color="#07090C" />
+  <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#07090C" />
+  <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#07090C" />
+  <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="#0E1119" />
+  <SolidColorBrush x:Key="TextControlBorderBrush" Color="#2A3243" />
+  <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#3A4453" />
+  <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#6C9EFF" />
+  <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="#1E2430" />
+  <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#5F6B7A" />
+  <x:Double x:Key="TextControlPlaceholderOpacity">1</x:Double>
+  <Color x:Key="TextControlSelectionHighlightColor">#556C9EFF</Color>
+
+  <Thickness x:Key="ComboBoxPadding">10,0,0,0</Thickness>
+  <x:Double x:Key="ComboBoxMinHeight">28</x:Double>
+  <x:Double x:Key="ComboBoxThemeMinWidth">0</x:Double>
+  <Thickness x:Key="ComboBoxBorderThemeThickness">1</Thickness>
+  <SolidColorBrush x:Key="ComboBoxForeground" Color="#E8ECF1" />
+  <SolidColorBrush x:Key="ComboBoxBackground" Color="#07090C" />
+  <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#2A3243" />
+  <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#07090C" />
+  <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#3A4453" />
+  <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#0E1119" />
+  <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#6C9EFF" />
+  <SolidColorBrush x:Key="ComboBoxBackgroundDisabled" Color="#0E1119" />
+  <SolidColorBrush x:Key="ComboBoxBorderBrushDisabled" Color="#1E2430" />
+  <SolidColorBrush x:Key="ComboBoxForegroundDisabled" Color="#5F6B7A" />
+  <SolidColorBrush x:Key="ComboBoxForegroundFocused" Color="#E8ECF1" />
+  <SolidColorBrush x:Key="ComboBoxForegroundFocusedPressed" Color="#E8ECF1" />
+  <SolidColorBrush x:Key="ComboBoxBackgroundUnfocused" Color="#07090C" />
+  <SolidColorBrush x:Key="ComboBoxBackgroundBorderBrushUnfocused" Color="#2A3243" />
+  <SolidColorBrush x:Key="ComboBoxBackgroundBorderBrushFocused" Color="#6C9EFF" />
+  <SolidColorBrush x:Key="ComboBoxDropDownGlyphForeground" Color="#5F6B7A" />
+  <SolidColorBrush x:Key="ComboBoxDropDownGlyphForegroundFocused" Color="#98A2B3" />
+  <SolidColorBrush x:Key="ComboBoxDropDownGlyphForegroundFocusedPressed" Color="#98A2B3" />
+  <SolidColorBrush x:Key="ComboBoxDropDownGlyphForegroundDisabled" Color="#3E4754" />
+  <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#1A1F2B" />
+  <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#2A3243" />
+  <Thickness x:Key="ComboBoxDropdownBorderThickness">1</Thickness>
+  <Thickness x:Key="ComboBoxDropdownBorderPadding">4</Thickness>
+  <Thickness x:Key="ComboBoxDropdownContentMargin">0</Thickness>
+  <SolidColorBrush x:Key="ComboBoxItemForeground" Color="#E8ECF1" />
+  <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#212736" />
+  <SolidColorBrush x:Key="ComboBoxItemForegroundPointerOver" Color="#E8ECF1" />
+  <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#1A6C9EFF" />
+  <SolidColorBrush x:Key="ComboBoxItemForegroundSelected" Color="#E8ECF1" />
+  <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPointerOver" Color="#266C9EFF" />
+  <SolidColorBrush x:Key="ComboBoxItemForegroundSelectedPointerOver" Color="#E8ECF1" />
+  <SolidColorBrush x:Key="ComboBoxItemBackgroundPressed" Color="#212736" />
+  <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPressed" Color="#266C9EFF" />
+  <SolidColorBrush x:Key="ComboBoxItemPillFillBrush" Color="#6C9EFF" />
+
+  <SolidColorBrush x:Key="ToolTipBackground" Color="#1A1F2B" />
+  <SolidColorBrush x:Key="ToolTipForeground" Color="#E8ECF1" />
+  <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#2A3243" />
+  <Thickness x:Key="ToolTipBorderThemeThickness">1</Thickness>
+  <Thickness x:Key="ToolTipBorderThemePadding">8,6</Thickness>
+  <x:Double x:Key="ToolTipContentThemeFontSize">12</x:Double>
+  <x:Double x:Key="ToolTipContentMaxWidth">260</x:Double>
+
+  <SolidColorBrush x:Key="ScrollBarThumbFill" Color="#3A4453" />
+  <SolidColorBrush x:Key="ScrollBarThumbFillPointerOver" Color="#5F6B7A" />
+  <SolidColorBrush x:Key="ScrollBarThumbFillPressed" Color="#5F6B7A" />
+</ResourceDictionary>
