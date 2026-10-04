@@ -27,6 +27,16 @@ XIVault is a Windows-first backup and restore utility for the portable XIVLaunch
 - **Fresh-PC states** that the mockup doesn't cover follow its patterns: "Setting up a new PC?" (XIVLauncher present, no Dalamud settings) leads to Restore, and "XIVLauncher not found" leads to Settings. The restore wizard also accepts a backup file picked from anywhere.
 - **Restore steps:** the review screen compares the backup with this PC and warns when plugins changed after the backup. The live restore runs inside step 3, as in the mockup, with stages in the order the engine runs them: verify, snapshot, plugin configs, Dalamud settings.
 
+## Decisions (2026-10-04, after review)
+
+An independent review of the restore and validation code found failure modes; these rules close them.
+
+- **Links are refused.** Backups don't follow junctions or symlinks inside the XIVLauncher folder, so a restore refuses to write through one, and Diagnostics warns when `pluginConfigs` is a link.
+- **The archive being restored is untouchable.** It stays open, read-shared only, for the whole restore. Snapshot retention runs after the restore and never removes the new snapshot or that archive.
+- **Retention counts only verified backups.** Before deleting anything it verifies archives this PC hasn't checked, so a backup damaged after it was written never takes the place of a good one.
+- **One operation at a time.** A named mutex per data folder serializes backups, restores and retention between the app, the CLI and the scheduled task.
+- **Manifests must describe their files.** `contents` and `statistics` have to match the file list; paths that backups skip (`logs`, `cache`, temp files) are refused; archives are capped at 2 GB and 100,000 files, with sizes bounded before they are summed.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XIVault.Core`, `XIVault.Cli`, `XIVault.Desktop` and `XIVault.Tests`.
@@ -70,10 +80,10 @@ XIVault is a Windows-first backup and restore utility for the portable XIVLaunch
 
 ## M5: Release v0.1.0
 
-- [ ] Self-contained win-x64 publish for both apps: `xivault-cli-win-x64.zip`, `XIVault.Desktop-win-x64.zip`.
-- [ ] Release workflow on `v*` tags.
-- [ ] README with screenshots, `docs/architecture.md`, `docs/backup-format.md`, `docs/troubleshooting.md`.
-- [ ] End-to-end smoke test against a fake XIVLauncher folder.
+- [x] Self-contained win-x64 publish for both apps: `xivault-cli-win-x64.zip`, `XIVault.Desktop-win-x64.zip`.
+- [x] Release workflow on `v*` tags.
+- [x] README with screenshots, `docs/architecture.md`, `docs/backup-format.md`, `docs/troubleshooting.md`.
+- [x] End-to-end smoke test against a fake XIVLauncher folder.
 
 **Done when:** pushing `v0.1.0` publishes both zips to a draft GitHub release.
 
