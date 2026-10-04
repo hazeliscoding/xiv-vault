@@ -30,6 +30,14 @@ A file in the archive doesn't match its recorded hash: the file was damaged afte
 
 The archive is damaged or isn't an XIVault backup, so XIVault won't restore it. Choose an older backup. If the backup came from a newer XIVault, update XIVault first.
 
+## "Another XIVault backup or restore is still running"
+
+Only one backup or restore runs at a time, including scheduled ones. Wait for the other to finish (a scheduled backup may be waiting for FFXIV to close) and try again.
+
+## "… is a link to another location"
+
+Something inside the XIVLauncher folder, often `pluginConfigs`, is a junction or symbolic link. XIVault doesn't follow links, so those settings aren't in your backups and a restore won't write through them. **Diagnostics** shows this as a suggestion. Replace the link with a normal folder, then back up again.
+
 ## Automatic backups don't run
 
 - **Schedule** shows the next run and the last result. **Diagnostics → Scheduling** flags a missing task or a task that points to a program that no longer exists (for example after moving XIVault). Turning automatic backups off and on again recreates the task.

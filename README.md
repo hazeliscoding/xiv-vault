@@ -114,7 +114,9 @@ Inside `pluginConfigs\`, temporary files and `logs`/`cache` folders are skipped,
 - **Allowlist.** XIVault reads and writes only the items above. It never archives the whole XIVLauncher folder.
 - **Verified backups.** Each archive is written as `*.zip.tmp`, read back, and checked against the SHA-256 of every file before it is renamed. A failed backup never looks like a finished one, and old backups are only removed after a new one is verified.
 - **Guarded restores.** Before anything changes, XIVault checks the manifest and every hash, refuses while XIVLauncher or FFXIV runs, and takes a **pre-restore safety backup** (the newest 3 are kept). The archive is unpacked into a temporary folder and checked again, never extracted over XIVLauncher. Files the backup doesn't contain are never deleted. If a restore fails part-way, every file it changed is put back.
-- **Hostile archives are refused:** paths with `..`, absolute or drive paths, files outside the allowlist, files the manifest doesn't list, and checksum mismatches.
+- **Hostile archives are refused:** paths with `..`, absolute or drive paths, files outside the allowlist, files the manifest doesn't list, manifests that misdescribe their files, and checksum mismatches.
+- **No links.** Backups don't follow links (junctions or symlinks) inside the XIVLauncher folder, and restores refuse to write through them.
+- **One operation at a time.** A scheduled backup and the app never write to the backup folder at the same time.
 - **Nothing is executed** from a backup, and **nothing leaves your PC**: no accounts, no telemetry, no network calls.
 - **Logs and diagnostic reports** hold paths, counts and results, never configuration contents.
 

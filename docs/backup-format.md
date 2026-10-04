@@ -82,7 +82,8 @@ An archive is restored only if all of these hold:
 - It opens as a ZIP and has exactly one `manifest.json`.
 - The manifest parses, has all required fields, and `schemaVersion` is supported. A missing version counts as unsupported; a higher one means "made by a newer XIVault".
 - Every path is relative and safe: no `..`, no leading `/`, no drive letters or `:`, no backslashes, no device names such as `NUL`, no trailing dots or spaces.
-- Every manifest path is on the allowlist: `payload/dalamudConfig.json`, `payload/dalamudVfs.db`, `payload/dalamudUI.ini`, or anything under `payload/pluginConfigs/`.
+- Every manifest path is on the allowlist: `payload/dalamudConfig.json`, `payload/dalamudVfs.db`, `payload/dalamudUI.ini`, or a file under `payload/pluginConfigs/`. Paths that backups skip are refused too: `logs`, `cache` and `temp` folders, and temporary files such as `*.tmp`.
+- `contents` and `statistics` match the file list, so the restore review describes what would actually be written.
 - Every file in the archive is in the manifest, and every manifest file is in the archive, once.
 - Sizes and SHA-256 hashes match.
 - The declared total is below 8 GB, so a crafted archive can't fill the disk.

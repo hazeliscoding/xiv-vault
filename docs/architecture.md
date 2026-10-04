@@ -49,6 +49,8 @@ Both front ends call `services.AddXivaultCore()` and resolve the same services f
 | `StatusService` | The protection summary the Overview and `xivault status` show. |
 | `DiagnosticsService` | The four health-check groups and the shareable report. |
 
+`OperationLock` is a named mutex per data folder. Backups, restores and retention take it, so the scheduled task and the app never work on the backup folder at the same time.
+
 Platform access goes through small interfaces so tests can replace it: `IAppEnvironment` (folders and user), `IProcessInspector`, `ICommandRunner` (schtasks) and `TimeProvider`. `XIVAULT_DATA_DIR` redirects config, state and logs, which the smoke test uses.
 
 ## Backup flow
@@ -64,12 +66,13 @@ Any failure deletes the `.tmp`, so nothing half-written looks like a backup.
 ## Restore flow
 
 1. Validate the archive completely; refuse on any issue (exit 5).
-2. Locate the target. A folder where XIVLauncher has run but Dalamud hasn't is fine, which makes a fresh PC a valid target.
+2. Locate the target. A folder where XIVLauncher has run but Dalamud hasn't is fine, which makes a fresh PC a valid target. Refuse if any folder or file the restore would write is a link, since backups don't follow links.
 3. Refuse while XIVLauncher or FFXIV runs (exit 6).
-4. Take a pre-restore snapshot into the backup folder, including the UI layout. No snapshot, no restore.
+4. Take a pre-restore snapshot into the backup folder, including the UI layout. No snapshot, no restore. The archive being restored stays open, read-shared only, until the end.
 5. Extract the manifest's files into a private temp folder and re-hash them.
 6. Check processes again, then replace files one by one: copy next to the target and rename over it. The original of each replaced file is kept aside.
 7. On any failure, put every replaced file back and delete files the restore created. The snapshot is the second line of defense.
+8. Only then apply snapshot retention, which never removes the new snapshot or the archive that was restored.
 
 ## Desktop
 
