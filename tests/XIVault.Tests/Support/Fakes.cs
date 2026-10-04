@@ -26,7 +26,9 @@ public sealed class FakeCommandRunner : ICommandRunner
 {
     public List<(string File, IReadOnlyList<string> Arguments)> Calls { get; } = [];
 
-    public Func<string, IReadOnlyList<string>, CommandResult> Handler { get; set; } = (_, _) => new CommandResult(0, "", "");
+    /// <summary>By default there is no scheduled task: queries fail and everything else succeeds.</summary>
+    public Func<string, IReadOnlyList<string>, CommandResult> Handler { get; set; } = (_, args) =>
+        args.Count > 0 && args[0] == "/Query" ? new CommandResult(1, "", "ERROR: not found") : new CommandResult(0, "", "");
 
     public Task<CommandResult> RunAsync(string fileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken = default)
     {
