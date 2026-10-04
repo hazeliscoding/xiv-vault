@@ -23,7 +23,7 @@ XIVault is a Windows-first backup and restore utility for the portable XIVLaunch
 - **Compression** follows the mockup: Fast, Balanced (default) and Maximum map to the .NET `CompressionLevel` values.
 - **Brand:** the diamond from the mockup's title bar. The wordmark is IBM Plex Sans SemiBold converted to paths. Assets are in `docs/brand/`, and `scripts/make-icons.cs` builds `xivault.ico` from `app-icon.svg`.
 
-- **Screenshots** come from , which renders the real views with Avalonia's headless Skia renderer against a fake XIVLauncher folder and a fake Task Scheduler. It is also how the UI was checked against the mockup.
+- **Screenshots** come from `tools/XIVault.Screenshots`, which renders the real views with Avalonia's headless Skia renderer against a fake XIVLauncher folder and a fake Task Scheduler. It is also how the UI was checked against the mockup.
 - **Fresh-PC states** that the mockup doesn't cover follow its patterns: "Setting up a new PC?" (XIVLauncher present, no Dalamud settings) leads to Restore, and "XIVLauncher not found" leads to Settings. The restore wizard also accepts a backup file picked from anywhere.
 - **Restore steps:** the review screen compares the backup with this PC and warns when plugins changed after the backup. The live restore runs inside step 3, as in the mockup, with stages in the order the engine runs them: verify, snapshot, plugin configs, Dalamud settings.
 
