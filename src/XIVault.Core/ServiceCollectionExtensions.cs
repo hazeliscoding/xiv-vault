@@ -2,10 +2,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using XIVault.Core.Backup;
 using XIVault.Core.Configuration;
+using XIVault.Core.Diagnostics;
 using XIVault.Core.Discovery;
 using XIVault.Core.Platform;
 using XIVault.Core.Restore;
+using XIVault.Core.Scheduling;
 using XIVault.Core.State;
+using XIVault.Core.Status;
 
 namespace XIVault.Core;
 
@@ -36,6 +39,11 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IBackupService>(provider => provider.GetRequiredService<BackupService>());
         services.TryAddSingleton<GameProcessGuard>();
         services.TryAddSingleton<IRestoreService, RestoreService>();
+        services.TryAddSingleton<IBackupScheduler, WindowsTaskScheduler>();
+        services.TryAddSingleton<ScheduleService>();
+        services.TryAddSingleton<ScheduledBackupRunner>();
+        services.TryAddSingleton<IStatusService, StatusService>();
+        services.TryAddSingleton<IDiagnosticsService, DiagnosticsService>();
         return services;
     }
 }
