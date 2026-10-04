@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+artifacts/
+publish/
+TestResults/
+*.binlog
+
+# Editors
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Agent guidelines are committed; this overrides the global gitignore
+!AGENTS.md
+!CLAUDE.md
