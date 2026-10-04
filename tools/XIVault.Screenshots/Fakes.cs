@@ -9,7 +9,8 @@ internal sealed class FakeEnvironment : IAppEnvironment
 {
     public FakeEnvironment(string root)
     {
-        UserProfile = Path.Combine(root, "Users", "roze");
+        // The root stands in for the user profile, so screenshots show short, neutral paths.
+        UserProfile = root;
         RoamingAppData = Path.Combine(UserProfile, "AppData", "Roaming");
         LocalAppData = Path.Combine(UserProfile, "AppData", "Local");
         Documents = Path.Combine(UserProfile, "Documents");

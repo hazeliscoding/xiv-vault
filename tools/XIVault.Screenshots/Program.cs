@@ -23,9 +23,10 @@ internal static class Program
     {
         _output = Path.GetFullPath(args.FirstOrDefault() ?? "screenshots");
         Directory.CreateDirectory(_output);
-        var temp = Path.Combine(Path.GetTempPath(), "xivault-screens-" + Guid.NewGuid().ToString("N")[..8]);
-        using var world = World.Create(Path.Combine(temp, "history"), withHistory: true);
-        using var fresh = World.Create(Path.Combine(temp, "fresh"), withHistory: false);
+        // An optional second argument picks the fake profile folder; paths in the screenshots show it.
+        var root = args.Length > 1 ? Path.GetFullPath(args[1]) : Path.Combine(Path.GetTempPath(), "xivault-screens-" + Guid.NewGuid().ToString("N")[..8]);
+        using var world = World.Create(root, withHistory: true);
+        using var fresh = World.Create(root + "-fresh", withHistory: false);
 
         App.ServicesOverride = () => world.Services;
         BuildAvaloniaApp().SetupWithoutStarting();
