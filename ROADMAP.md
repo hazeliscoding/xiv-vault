@@ -23,6 +23,10 @@ XIVault is a Windows-first backup and restore utility for the portable XIVLaunch
 - **Compression** follows the mockup: Fast, Balanced (default) and Maximum map to the .NET `CompressionLevel` values.
 - **Brand:** the diamond from the mockup's title bar. The wordmark is IBM Plex Sans SemiBold converted to paths. Assets are in `docs/brand/`, and `scripts/make-icons.cs` builds `xivault.ico` from `app-icon.svg`.
 
+- **Screenshots** come from , which renders the real views with Avalonia's headless Skia renderer against a fake XIVLauncher folder and a fake Task Scheduler. It is also how the UI was checked against the mockup.
+- **Fresh-PC states** that the mockup doesn't cover follow its patterns: "Setting up a new PC?" (XIVLauncher present, no Dalamud settings) leads to Restore, and "XIVLauncher not found" leads to Settings. The restore wizard also accepts a backup file picked from anywhere.
+- **Restore steps:** the review screen compares the backup with this PC and warns when plugins changed after the backup. The live restore runs inside step 3, as in the mockup, with stages in the order the engine runs them: verify, snapshot, plugin configs, Dalamud settings.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XIVault.Core`, `XIVault.Cli`, `XIVault.Desktop` and `XIVault.Tests`.
@@ -58,9 +62,9 @@ XIVault is a Windows-first backup and restore utility for the portable XIVLaunch
 
 ## M4: Desktop
 
-- [ ] Shell: window chrome, navigation, theme tokens, fonts, icons, shared components.
-- [ ] Overview, Backups, Restore wizard, Schedule, Diagnostics, Settings on real Core data.
-- [ ] Polish: keyboard and focus, screen-reader names, reduced motion, empty and error states, confirmations.
+- [x] Shell: window chrome, navigation, theme tokens, fonts, icons, shared components.
+- [x] Overview, Backups, Restore wizard, Schedule, Diagnostics, Settings on real Core data.
+- [x] Polish: keyboard and focus, screen-reader names, reduced motion, empty and error states, confirmations.
 
 **Done when:** from a clean state the app detects XIVLauncher, backs up, shows the backup in history, schedules weekly backups and restores a previous backup through the wizard.
 
