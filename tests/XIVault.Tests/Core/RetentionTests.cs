@@ -74,6 +74,23 @@ public class RetentionTests
     }
 
     [Fact]
+    public async Task A_backup_damaged_since_it_was_last_checked_does_not_count_as_kept()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        host.UpdateConfig(config => config with { RetentionCount = 2 });
+        var oldest = await host.BackUpAsync();
+        var damaged = await host.BackUpAsync();
+        Corrupt(damaged.Record.FilePath);
+
+        await host.BackUpAsync();
+
+        Assert.True(File.Exists(oldest.Record.FilePath), "Two good backups must remain, so the oldest good one stays.");
+        Assert.True(File.Exists(damaged.Record.FilePath), "Damaged archives are left for the user to inspect.");
+        Assert.Equal(IntegrityState.Failed, host.Catalog.Read(damaged.Record.FilePath)!.Integrity);
+    }
+
+    [Fact]
     public async Task Other_files_in_the_backup_folder_are_never_touched()
     {
         using var host = new TestHost();

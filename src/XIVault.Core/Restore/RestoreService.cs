@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using XIVault.Core.Backup;
 using XIVault.Core.Configuration;
@@ -34,12 +35,17 @@ internal sealed class RenameRestoreFileWriter : IRestoreFileWriter
         var temp = targetPath + ".xivault-restore";
         File.Copy(stagedPath, temp, overwrite: true);
         File.SetLastWriteTimeUtc(temp, File.GetLastWriteTimeUtc(stagedPath));
-        if (File.Exists(targetPath) && File.GetAttributes(targetPath).HasFlag(FileAttributes.ReadOnly))
+        var readOnly = File.Exists(targetPath) && File.GetAttributes(targetPath).HasFlag(FileAttributes.ReadOnly);
+        if (readOnly)
         {
             File.SetAttributes(targetPath, File.GetAttributes(targetPath) & ~FileAttributes.ReadOnly);
         }
 
         File.Move(temp, targetPath, overwrite: true);
+        if (readOnly)
+        {
+            File.SetAttributes(targetPath, File.GetAttributes(targetPath) | FileAttributes.ReadOnly);
+        }
     }
 }
 
@@ -54,6 +60,8 @@ public sealed class RestoreService : IRestoreService
     private readonly GameProcessGuard _guard;
     private readonly PathDisplay _paths;
     private readonly IAppEnvironment _environment;
+    private readonly RetentionService _retention;
+    private readonly OperationLock _operationLock;
     private readonly ILogger<RestoreService> _logger;
     private readonly IRestoreFileWriter _writer;
 
@@ -67,8 +75,10 @@ public sealed class RestoreService : IRestoreService
         GameProcessGuard guard,
         PathDisplay paths,
         IAppEnvironment environment,
+        RetentionService retention,
+        OperationLock operationLock,
         ILogger<RestoreService> logger)
-        : this(configStore, locator, validator, catalog, backupService, scanner, guard, paths, environment, logger, new RenameRestoreFileWriter())
+        : this(configStore, locator, validator, catalog, backupService, scanner, guard, paths, environment, retention, operationLock, logger, new RenameRestoreFileWriter())
     {
     }
 
@@ -82,6 +92,8 @@ public sealed class RestoreService : IRestoreService
         GameProcessGuard guard,
         PathDisplay paths,
         IAppEnvironment environment,
+        RetentionService retention,
+        OperationLock operationLock,
         ILogger<RestoreService> logger,
         IRestoreFileWriter writer)
     {
@@ -94,12 +106,26 @@ public sealed class RestoreService : IRestoreService
         _guard = guard;
         _paths = paths;
         _environment = environment;
+        _retention = retention;
+        _operationLock = operationLock;
         _logger = logger;
         _writer = writer;
     }
 
     public Task<RestorePreview> PreviewAsync(string archivePath, string? source = null, CancellationToken cancellationToken = default) =>
-        Task.Run(() => Preview(archivePath, source), cancellationToken);
+        Task.Run(
+            () =>
+            {
+                try
+                {
+                    return Preview(archivePath, source);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+                {
+                    throw new XivaultException(XivaultErrorKind.RestoreValidationFailed, $"The backup could not be read ({ex.Message}).", ex);
+                }
+            },
+            cancellationToken);
 
     public Task<IReadOnlyList<SafetyCheck>> CheckAsync(string archivePath, string? source = null, CancellationToken cancellationToken = default) =>
         Task.Run(() => Check(archivePath, source, cancellationToken), cancellationToken);
@@ -224,17 +250,34 @@ public sealed class RestoreService : IRestoreService
 
     private RestoreResult Restore(RestoreRequest request, IProgress<RestoreProgress>? progress, CancellationToken cancellationToken)
     {
+        using var held = _operationLock.Acquire();
         var stopwatch = Stopwatch.StartNew();
         var config = _configStore.Load();
 
         progress?.Report(new RestoreProgress(RestoreStage.VerifyingIntegrity, 0, "Verifying backup integrity"));
         var archivePath = Path.GetFullPath(request.ArchivePath);
-        var validation = _validator.Validate(archivePath, verifyContents: true, cancellationToken);
-        if (File.Exists(archivePath))
+
+        // Held open with read sharing only, so nothing (retention, a sync client, another process)
+        // can replace or delete the archive between checking it and unpacking it.
+        FileStream archive;
+        try
         {
-            _catalog.Remember(new FileInfo(archivePath), validation.IsValid, validation.ArchiveSha256, validation.IsValid ? null : validation.Summary);
+            archive = new FileStream(archivePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            throw new XivaultException(XivaultErrorKind.RestoreValidationFailed, $"The backup could not be opened ({ex.Message}).", ex);
         }
 
+        using var archiveHandle = archive;
+        var validation = _validator.Validate(archive, verifyContents: true, cancellationToken);
+        if (validation.IsValid)
+        {
+            archive.Position = 0;
+            validation = validation with { ArchiveSha256 = Convert.ToHexStringLower(SHA256.HashData(archive)) };
+        }
+
+        _catalog.Remember(new FileInfo(archivePath), validation.IsValid, validation.ArchiveSha256, validation.IsValid ? null : validation.Summary);
         if (!validation.IsValid)
         {
             throw new XivaultException(XivaultErrorKind.RestoreValidationFailed, $"The backup can't be restored: {validation.Summary}");
@@ -248,10 +291,12 @@ public sealed class RestoreService : IRestoreService
         }
 
         var target = located.Installation!;
+        EnsureNoLinks(target.DataPath, manifest);
         EnsureNothingRunning();
 
         progress?.Report(new RestoreProgress(RestoreStage.CreatingSafetySnapshot, 10, "Creating pre-restore safety backup"));
-        var snapshot = _backupService.Create(target, config.BackupDestination!, BackupKind.PreRestore, includeDalamudUi: true, config, null, cancellationToken);
+        var snapshot = _backupService.Create(
+            target, config.BackupDestination!, BackupKind.PreRestore, includeDalamudUi: true, config, null, cancellationToken, applyRetention: false);
         _logger.LogInformation("Pre-restore snapshot {File} created", snapshot.Record.FileName);
 
         var workRoot = Path.Combine(_environment.TempPath, "XIVault", "restore-" + Guid.NewGuid().ToString("N")[..12]);
@@ -260,7 +305,8 @@ public sealed class RestoreService : IRestoreService
         try
         {
             progress?.Report(new RestoreProgress(RestoreStage.Extracting, 30, "Unpacking backup"));
-            var staged = Extract(archivePath, manifest, staging, cancellationToken);
+            archive.Position = 0;
+            var staged = Extract(archive, manifest, staging, cancellationToken);
 
             EnsureNothingRunning();
             var applied = Apply(staged, target.DataPath, rollback, manifest, progress, cancellationToken);
@@ -287,7 +333,57 @@ public sealed class RestoreService : IRestoreService
         finally
         {
             TryDeleteDirectory(workRoot);
+
+            // Snapshot retention runs only now, and never removes the snapshot just taken or the
+            // archive being restored, even when that archive is itself the oldest snapshot.
+            try
+            {
+                _retention.Apply(
+                    Path.GetDirectoryName(snapshot.Record.FilePath)!,
+                    BackupKind.PreRestore,
+                    config.RetentionCount,
+                    [snapshot.Record.FilePath, archivePath]);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XivaultException)
+            {
+                _logger.LogWarning(ex, "Safety snapshot retention was skipped");
+            }
         }
+    }
+
+    /// <summary>
+    /// Backups never follow links under the Dalamud folder, so a restore must not write through one
+    /// either: the safety snapshot would not have saved what lies behind it.
+    /// </summary>
+    private static void EnsureNoLinks(string dataPath, BackupManifest manifest)
+    {
+        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(dataPath));
+        var checkedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in manifest.Files)
+        {
+            if (!BackupAllowlist.TryClassify(file.Path, out _, out var relative))
+            {
+                continue;
+            }
+
+            var target = ArchivePaths.ResolveUnder(root, relative);
+            if (new FileInfo(target).LinkTarget is not null)
+            {
+                throw LinkRefused(target);
+            }
+
+            for (var folder = Path.GetDirectoryName(target); folder is not null && folder.Length > root.Length; folder = Path.GetDirectoryName(folder))
+            {
+                if (checkedFolders.Add(folder) && new DirectoryInfo(folder).LinkTarget is not null)
+                {
+                    throw LinkRefused(folder);
+                }
+            }
+        }
+
+        static XivaultException LinkRefused(string path) => new(
+            XivaultErrorKind.RestoreValidationFailed,
+            $"{path} is a link to another location. XIVault does not back up or restore through links; replace it with a normal folder or file and try again.");
     }
 
     private void EnsureNothingRunning()
@@ -306,11 +402,11 @@ public sealed class RestoreService : IRestoreService
     /// Extracts the manifest's files into a private folder and re-checks every hash. The archive is
     /// never extracted over the XIVLauncher folder, and nothing the manifest doesn't list is touched.
     /// </summary>
-    private static List<StagedFile> Extract(string archivePath, BackupManifest manifest, string staging, CancellationToken cancellationToken)
+    private static List<StagedFile> Extract(Stream archive, BackupManifest manifest, string staging, CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(staging);
         var staged = new List<StagedFile>();
-        using var zip = ZipFile.OpenRead(archivePath);
+        using var zip = new ZipArchive(archive, ZipArchiveMode.Read, leaveOpen: true);
         var entries = zip.Entries
             .Where(entry => !ArchivePaths.IsDirectoryEntry(entry.FullName))
             .ToDictionary(entry => entry.FullName, StringComparer.OrdinalIgnoreCase);
@@ -412,7 +508,15 @@ public sealed class RestoreService : IRestoreService
             var (target, original) = replaced[i];
             try
             {
-                TryDelete(target + ".xivault-restore");
+                File.Delete(target + ".xivault-restore");
+            }
+            catch (Exception ex) when (IsFileSystemError(ex))
+            {
+                _logger.LogWarning(ex, "Rollback could not remove a temporary file");
+            }
+
+            try
+            {
                 if (original is null)
                 {
                     // The restore created this file, so removing it returns the folder to its earlier state.
@@ -423,10 +527,15 @@ public sealed class RestoreService : IRestoreService
                 }
                 else
                 {
+                    if (File.Exists(target))
+                    {
+                        File.SetAttributes(target, File.GetAttributes(target) & ~FileAttributes.ReadOnly);
+                    }
+
                     File.Copy(original, target, overwrite: true);
                 }
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex) when (IsFileSystemError(ex))
             {
                 ok = false;
                 _logger.LogError(ex, "Rollback could not restore a file");
@@ -442,13 +551,17 @@ public sealed class RestoreService : IRestoreService
                     Directory.Delete(directory);
                 }
             }
-            catch (IOException)
+            catch (Exception ex) when (IsFileSystemError(ex))
             {
+                _logger.LogWarning(ex, "Rollback could not remove a folder it created");
             }
         }
 
         return ok;
     }
+
+    private static bool IsFileSystemError(Exception ex) =>
+        ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException;
 
     private static void CreateParents(string dataPath, string target, List<string> created)
     {
@@ -524,24 +637,24 @@ public sealed class RestoreService : IRestoreService
         }
     }
 
-    private static void TryDelete(string path)
-    {
-        if (File.Exists(path))
-        {
-            File.Delete(path);
-        }
-    }
-
+    /// <summary>The temp folder holds copies of configuration, so read-only files must not keep it alive.</summary>
     private void TryDeleteDirectory(string path)
     {
         try
         {
-            if (Directory.Exists(path))
+            if (!Directory.Exists(path))
             {
-                Directory.Delete(path, recursive: true);
+                return;
             }
+
+            foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+            {
+                File.SetAttributes(file, FileAttributes.Normal);
+            }
+
+            Directory.Delete(path, recursive: true);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (IsFileSystemError(ex))
         {
             _logger.LogWarning(ex, "Could not remove the temporary restore folder");
         }

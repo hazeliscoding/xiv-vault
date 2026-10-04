@@ -49,6 +49,7 @@ public sealed class BackupService(
     BackupCatalog catalog,
     RetentionService retention,
     PathDisplay paths,
+    OperationLock operationLock,
     TimeProvider clock,
     ILogger<BackupService> logger) : IBackupService
 {
@@ -88,7 +89,8 @@ public sealed class BackupService(
 
     /// <summary>
     /// Writes, verifies and finalizes one archive, then applies retention. Also used by restore for
-    /// the pre-restore snapshot, which always includes the UI layout and may be empty on a fresh PC.
+    /// the pre-restore snapshot, which always includes the UI layout and may be empty on a fresh PC;
+    /// restore applies snapshot retention itself, after it is done with the archive it restores.
     /// </summary>
     internal BackupResult Create(
         XivLauncherInstallation installation,
@@ -97,13 +99,23 @@ public sealed class BackupService(
         bool includeDalamudUi,
         XivaultConfig config,
         IProgress<BackupProgress>? progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool applyRetention = true)
     {
+        using var held = operationLock.Acquire();
         var stopwatch = Stopwatch.StartNew();
         var reporter = new ProgressReporter(progress);
         reporter.Report(BackupStage.Scanning, 0, "Scanning plugin configurations");
 
-        var snapshot = scanner.Scan(installation.DataPath, includeDalamudUi);
+        PortableSnapshot snapshot;
+        try
+        {
+            snapshot = scanner.Scan(installation.DataPath, includeDalamudUi);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            throw new XivaultException(XivaultErrorKind.Unexpected, $"The Dalamud files could not be read ({ex.Message}).", ex);
+        }
         if (snapshot.Files.Count == 0 && kind != BackupKind.PreRestore)
         {
             throw new XivaultException(
@@ -117,12 +129,13 @@ public sealed class BackupService(
         var tempPath = finalPath + BackupNaming.TempSuffix;
         logger.LogInformation("Creating {Kind} backup {File} from {Count} files", kind, finalName, snapshot.Files.Count);
 
+        ArchiveValidation validation;
         try
         {
             WriteArchive(tempPath, snapshot, installation, kind, config.Compression, reporter, cancellationToken);
 
             reporter.Report(BackupStage.Verifying, 86, "Verifying hashes");
-            var validation = validator.Validate(tempPath, verifyContents: true, cancellationToken);
+            validation = validator.Validate(tempPath, verifyContents: true, cancellationToken);
             if (!validation.IsValid)
             {
                 throw new XivaultException(
@@ -132,21 +145,39 @@ public sealed class BackupService(
 
             reporter.Report(BackupStage.Finalizing, 96, $"Saving to {paths.Friendly(destination)}");
             File.Move(tempPath, finalPath, overwrite: false);
-            catalog.Remember(new FileInfo(finalPath), valid: true, validation.ArchiveSha256, problem: null);
-
-            var removed = retention.Apply(destination, kind, config.RetentionCount, finalPath);
-            var record = catalog.Read(finalPath)
-                ?? throw new XivaultException(XivaultErrorKind.BackupValidationFailed, "The new backup could not be read back.");
-            reporter.Report(BackupStage.Completed, 100, "Backup complete");
-            logger.LogInformation("Backup {File} finished in {Elapsed} ms", finalName, stopwatch.ElapsedMilliseconds);
-            return new BackupResult(record, removed, stopwatch.Elapsed);
         }
-        catch
+        catch (Exception ex)
         {
             // Nothing that failed may look like a finished backup.
             TryDelete(tempPath);
+            if (ex is IOException or UnauthorizedAccessException)
+            {
+                throw new XivaultException(XivaultErrorKind.Unexpected, $"The backup could not be completed ({ex.Message}).", ex);
+            }
+
             throw;
         }
+
+        // The backup is finished and verified from here on; nothing below may report it as failed.
+        catalog.Remember(new FileInfo(finalPath), valid: true, validation.ArchiveSha256, problem: null);
+        IReadOnlyList<string> removed = [];
+        if (applyRetention)
+        {
+            try
+            {
+                removed = retention.Apply(destination, kind, config.RetentionCount, [finalPath]);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XivaultException)
+            {
+                logger.LogWarning(ex, "Retention was skipped");
+            }
+        }
+
+        var record = catalog.Read(finalPath)
+            ?? new BackupRecord(finalPath, new FileInfo(finalPath).Length, File.GetLastWriteTimeUtc(finalPath), validation.Manifest, IntegrityState.Verified, validation.ArchiveSha256, null);
+        reporter.Report(BackupStage.Completed, 100, "Backup complete");
+        logger.LogInformation("Backup {File} finished in {Elapsed} ms", finalName, stopwatch.ElapsedMilliseconds);
+        return new BackupResult(record, removed, stopwatch.Elapsed);
     }
 
     private string PrepareDestination(string destination)

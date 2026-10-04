@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IConfigStore, ConfigStore>();
         services.TryAddSingleton<IStateStore, StateStore>();
         services.TryAddSingleton<PathDisplay>();
+        services.TryAddSingleton<OperationLock>();
         services.TryAddSingleton<IXivLauncherLocator, WindowsXivLauncherLocator>();
         services.TryAddSingleton<PortableStateScanner>();
         services.TryAddSingleton<ArchiveValidator>();

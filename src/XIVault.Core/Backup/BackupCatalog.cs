@@ -100,12 +100,20 @@ public sealed class BackupCatalog(ArchiveValidator validator, IStateStore stateS
     {
         info.Refresh();
         var entry = new VerificationRecord(info.Length, info.LastWriteTimeUtc, valid, archiveSha256, clock.GetUtcNow().UtcDateTime, problem);
-        stateStore.Update(state =>
+        try
         {
-            state.Verifications[info.FullName] = entry;
-            PruneMissing(state);
-            return state;
-        });
+            stateStore.Update(state =>
+            {
+                state.Verifications[info.FullName] = entry;
+                PruneMissing(state);
+                return state;
+            });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // The cache only saves re-checking later; failing to write it must not fail a backup.
+            logger.LogWarning(ex, "Could not record the verification result");
+        }
     }
 
     private static void PruneMissing(AppState state)

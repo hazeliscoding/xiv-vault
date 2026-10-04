@@ -185,6 +185,8 @@ public class RestoreTests
             provider.GetRequiredService<GameProcessGuard>(),
             provider.GetRequiredService<PathDisplay>(),
             provider.GetRequiredService<IAppEnvironment>(),
+            provider.GetRequiredService<RetentionService>(),
+            provider.GetRequiredService<OperationLock>(),
             NullLogger<RestoreService>.Instance,
             writer)));
         var launcher = host.CreateLauncher();

@@ -85,9 +85,17 @@ public sealed class DiagnosticsService(
         checks.Add(artifacts.DalamudConfig
             ? new("Configuration file found", DiagnosticStatus.Healthy, BackupAllowlist.DalamudConfigFile)
             : new("Configuration file missing", missing, BackupAllowlist.DalamudConfigFile));
-        checks.Add(artifacts.PluginConfigs
-            ? new("Plugin configuration directory found", DiagnosticStatus.Healthy, BackupAllowlist.PluginConfigsDirectory + "\\")
-            : new("Plugin configuration directory missing", missing, BackupAllowlist.PluginConfigsDirectory + "\\"));
+        var pluginFolder = new DirectoryInfo(Path.Combine(installation.DataPath, BackupAllowlist.PluginConfigsDirectory));
+        if (artifacts.PluginConfigs && pluginFolder.LinkTarget is not null)
+        {
+            checks.Add(new("Plugin configuration directory is a link", DiagnosticStatus.Warning, "links are not followed, so plugin settings are not backed up"));
+        }
+        else
+        {
+            checks.Add(artifacts.PluginConfigs
+                ? new("Plugin configuration directory found", DiagnosticStatus.Healthy, BackupAllowlist.PluginConfigsDirectory + "\\")
+                : new("Plugin configuration directory missing", missing, BackupAllowlist.PluginConfigsDirectory + "\\"));
+        }
         checks.Add(artifacts.DalamudVfs
             ? new("Plugin database found", DiagnosticStatus.Healthy, BackupAllowlist.DalamudVfsFile)
             : new("Plugin database missing", missing, BackupAllowlist.DalamudVfsFile));
