@@ -52,9 +52,11 @@ jobs:
           }
           Pack artifacts/publish/XIVault.Cli/xivault.exe 'xivault-cli-win-x64'
           Pack artifacts/publish/XIVault.Desktop/XIVault.Desktop.exe 'XIVault.Desktop-win-x64'
-          Get-ChildItem $out -Filter *.zip | ForEach-Object {
+          $sums = Get-ChildItem $out -Filter *.zip | ForEach-Object {
             "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
-          } | Set-Content "$out/SHA256SUMS" -Encoding ascii
+          }
+          # LF endings, so `sha256sum -c SHA256SUMS` works on any platform.
+          [IO.File]::WriteAllText("$out/SHA256SUMS", ($sums -join "`n") + "`n")
           Get-Content "$out/SHA256SUMS"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
