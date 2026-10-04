@@ -1,4 +1,6 @@
 using Avalonia;
+using Avalonia.Automation;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
@@ -129,6 +131,18 @@ public sealed class StatusBadge : ToneControl
 {
     public static readonly StyledProperty<string?> LabelProperty = AvaloniaProperty.Register<StatusBadge, string?>(nameof(Label));
 
+    // Template text isn't visible to screen readers, so the badge carries its label as its name.
+    public StatusBadge() => AutomationProperties.SetControlTypeOverride(this, AutomationControlType.Text);
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == LabelProperty)
+        {
+            AutomationProperties.SetName(this, Label);
+        }
+    }
+
     public string? Label
     {
         get => GetValue(LabelProperty);
@@ -158,7 +172,11 @@ public sealed class Banner : ToneControl
     private string? _resolvedIcon;
     private IBrush? _titleBrush;
 
-    public Banner() => Tone = Tone.Info;
+    public Banner()
+    {
+        AutomationProperties.SetControlTypeOverride(this, AutomationControlType.Text);
+        Tone = Tone.Info;
+    }
 
     public IBrush? TitleBrush
     {
@@ -217,6 +235,14 @@ public sealed class Banner : ToneControl
             TitleBrush = Tone == Tone.Critical
                 ? ToneBrushes.Text(Tone.Critical)
                 : Application.Current?.TryGetResource("Text1", null, out var text) == true ? text as IBrush : null;
+
+            // Problems are announced as soon as they appear; other messages wait for a pause.
+            AutomationProperties.SetLiveSetting(this, Tone == Tone.Critical ? AutomationLiveSetting.Assertive : AutomationLiveSetting.Polite);
+        }
+
+        if (change.Property == TitleProperty || change.Property == DescriptionProperty)
+        {
+            AutomationProperties.SetName(this, string.Join(". ", new[] { Title, Description }.Where(text => !string.IsNullOrEmpty(text))));
         }
     }
 }
@@ -230,7 +256,20 @@ public sealed class EmptyState : ToneControl
 
     public static readonly StyledProperty<string> IconProperty = AvaloniaProperty.Register<EmptyState, string>(nameof(Icon), "Inbox");
 
-    public EmptyState() => Tone = Tone.Unknown;
+    public EmptyState()
+    {
+        AutomationProperties.SetControlTypeOverride(this, AutomationControlType.Text);
+        Tone = Tone.Unknown;
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == TitleProperty || change.Property == DescriptionProperty)
+        {
+            AutomationProperties.SetName(this, string.Join(". ", new[] { Title, Description }.Where(text => !string.IsNullOrEmpty(text))));
+        }
+    }
 
     public string? Title
     {

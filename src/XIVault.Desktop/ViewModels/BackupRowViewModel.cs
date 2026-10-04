@@ -69,6 +69,9 @@ public sealed partial class BackupRowViewModel : ObservableObject
 
     public bool CanRestore => Record.HasManifest && Record.Integrity != IntegrityState.Failed;
 
+    /// <summary>List items are announced by their ToString, so it reads like the row looks.</summary>
+    public override string ToString() => AccessibleName;
+
     public string AccessibleName => $"{Day} {Time}, {TypeLabel}, {Size}, {PluginConfigsLabel}, {IntegrityLabel}";
 
     partial void OnIsVerifyingChanged(bool value)

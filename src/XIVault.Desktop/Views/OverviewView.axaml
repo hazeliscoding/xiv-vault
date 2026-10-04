@@ -37,7 +37,8 @@
               <TextBlock Classes="data-value" FontSize="14" Text="{Binding PluginCount}" />
               <StackPanel Orientation="Horizontal" Spacing="4">
                 <TextBlock Classes="compact t3" Text="plugin configurations" VerticalAlignment="Center" />
-                <Button Theme="{StaticResource ExplainButton}" AutomationProperties.Name="Explain plugin configurations">
+                <Button Theme="{StaticResource ExplainButton}" AutomationProperties.Name="Explain plugin configurations"
+                        AutomationProperties.HelpText="{x:Static vm:OverviewViewModel.PluginConfigsExplanation}" Click="OnExplainClick">
                   <ToolTip.Tip>
                     <StackPanel Spacing="3" MaxWidth="240">
                       <TextBlock Classes="micro t3" Text="PLUGIN CONFIGURATIONS" />
@@ -56,8 +57,8 @@
                          Foreground="{Binding IntegrityTone, Converter={x:Static c:ToneConverters.Text}}" />
               <TextBlock Classes="compact t3" Text="backup integrity" />
             </StackPanel>
-            <StackPanel Spacing="3">
-              <TextBlock Classes="data-value" FontSize="14" Text="{Binding Destination}" />
+            <StackPanel Spacing="3" MaxWidth="300">
+              <TextBlock Classes="data-value" FontSize="14" Text="{Binding Destination}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Destination}" />
               <TextBlock Classes="compact t3" Text="destination" />
             </StackPanel>
           </WrapPanel>
@@ -159,35 +160,35 @@
     <!-- Flow diagram -->
     <Border Classes="panel" Padding="20,16">
       <Grid ColumnDefinitions="*,80,*,80,*">
-        <StackPanel Orientation="Horizontal" Spacing="12">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
           <Border Width="30" Height="30" CornerRadius="6" Background="{StaticResource Bg2}" BorderBrush="{StaticResource Border2}" BorderThickness="1">
             <c:Icon Kind="Monitor" Foreground="{StaticResource Text2}" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
-          <StackPanel Spacing="2" VerticalAlignment="Center">
+          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
             <TextBlock Classes="body-strong" Text="XIVLauncher" />
-            <TextBlock Classes="data t3" FontSize="11" Text="{Binding LauncherPath}" TextTrimming="CharacterEllipsis" />
+            <TextBlock Classes="data t3" FontSize="11" Text="{Binding LauncherPath}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding LauncherPath}" />
           </StackPanel>
-        </StackPanel>
+        </Grid>
         <c:FlowLine Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" />
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12">
+        <Grid Grid.Column="2" ColumnDefinitions="Auto,*" ColumnSpacing="12">
           <Border Width="30" Height="30" CornerRadius="6" Background="{StaticResource AccentSubtle}" BorderBrush="{StaticResource AccentBorder}" BorderThickness="1">
             <Border Classes="diamond" RenderTransform="rotate(45deg)" Width="10" Height="10" BorderBrush="{StaticResource AccentText}" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
-          <StackPanel Spacing="2" VerticalAlignment="Center">
+          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
             <TextBlock Classes="body-strong" Text="XIVault" />
             <TextBlock Classes="data t3" FontSize="11" Text="snapshot · compress · verify" TextWrapping="Wrap" />
           </StackPanel>
-        </StackPanel>
+        </Grid>
         <c:FlowLine Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center" />
-        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="12">
+        <Grid Grid.Column="4" ColumnDefinitions="Auto,*" ColumnSpacing="12">
           <Border Width="30" Height="30" CornerRadius="6" Background="{StaticResource Bg2}" BorderBrush="{StaticResource Border2}" BorderThickness="1">
             <c:Icon Kind="Cloud" Foreground="{StaticResource Text2}" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
-          <StackPanel Spacing="2" VerticalAlignment="Center">
+          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
             <TextBlock Classes="body-strong" Text="Backup Storage" />
-            <TextBlock Classes="data t3" FontSize="11" Text="{Binding Destination}" TextTrimming="CharacterEllipsis" />
+            <TextBlock Classes="data t3" FontSize="11" Text="{Binding Destination}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Destination}" />
           </StackPanel>
-        </StackPanel>
+        </Grid>
       </Grid>
     </Border>
 
@@ -195,7 +196,7 @@
     <StackPanel Spacing="8">
       <Grid ColumnDefinitions="*,Auto" Margin="4,0">
         <TextBlock Classes="card-title" Text="Recent backups" VerticalAlignment="Bottom" />
-        <Button Grid.Column="1" Theme="{StaticResource LinkButton}" Command="{Binding AllBackupsCommand}">
+        <Button Grid.Column="1" Theme="{StaticResource LinkButton}" Command="{Binding AllBackupsCommand}" AutomationProperties.Name="All backups">
           <TextBlock Classes="compact" Text="All backups ›" />
         </Button>
       </Grid>
