@@ -43,6 +43,22 @@ public sealed class PathDisplay(IAppEnvironment environment)
             : path;
     }
 
+    /// <summary>
+    /// Replaces the profile folder anywhere in free text, such as an error message that quotes a
+    /// path, so nothing in a shared report carries the user name.
+    /// </summary>
+    public string RedactText(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return text;
+        }
+
+        var profile = Path.TrimEndingDirectorySeparator(environment.UserProfile);
+        var redacted = text.Replace(profile, "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
+        return redacted.Replace(profile.Replace('\\', '/'), "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static string Join(string service, string relative) =>
         relative.Length == 0 ? service : service + " / " + relative.Replace('\\', '/').Replace("/", " / ");
 

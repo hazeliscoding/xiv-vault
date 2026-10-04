@@ -35,9 +35,15 @@ public sealed class DiagnosticsService(
                 clock.GetUtcNow().UtcDateTime,
                 XivaultInfo.Version,
                 RuntimeInformation.OSDescription,
-                [Launcher(status), Dalamud(status), Destination(status), Scheduling(status)]),
+                [.. new[] { Launcher(status), Dalamud(status), Destination(status), Scheduling(status) }.Select(Redact)]),
             cancellationToken).ConfigureAwait(false);
     }
+
+    // Error messages quote full paths; the report is meant to be pasted into public issues.
+    private DiagnosticGroup Redact(DiagnosticGroup group) => group with
+    {
+        Checks = [.. group.Checks.Select(check => check with { Label = paths.RedactText(check.Label), Detail = paths.RedactText(check.Detail) })],
+    };
 
     private string Show(string path) => paths.Redact(paths.Friendly(path));
 

@@ -124,6 +124,29 @@ public class DiagnosticsAndStatusTests
     }
 
     [Fact]
+    public async Task Error_messages_that_quote_paths_are_redacted_in_the_report()
+    {
+        using var host = new TestHost();
+        var missing = Path.Combine(host.Environment.UserProfile, "Games", "XIVLauncher");
+        host.UpdateConfig(config => config with { XivLauncherPathOverride = missing });
+        host.State.Update(state => state with
+        {
+            LastScheduledRun = new ScheduledRunRecord(
+                DateTime.UtcNow,
+                ScheduledRunResult.Failed,
+                $"The backup folder {host.Environment.UserProfile}\\OneDrive\\XIVault is not available.",
+                null),
+        });
+
+        var report = await host.Get<IDiagnosticsService>().RunAsync(Ct);
+        var text = report.ToText();
+
+        Assert.DoesNotContain(host.Environment.UserProfile, text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(@"%USERPROFILE%\Games\XIVLauncher", text);
+        Assert.Contains(@"%USERPROFILE%\OneDrive\XIVault", text);
+    }
+
+    [Fact]
     public void Paths_are_shown_the_way_people_know_them()
     {
         using var env = new TestEnvironment();
