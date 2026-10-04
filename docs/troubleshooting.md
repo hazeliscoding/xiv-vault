@@ -32,7 +32,7 @@ The archive is damaged or isn't an XIVault backup, so XIVault won't restore it. 
 
 ## "Another XIVault backup or restore is still running"
 
-Only one backup or restore runs at a time, including scheduled ones. Wait for the other to finish (a scheduled backup may be waiting for FFXIV to close) and try again.
+Only one backup or restore runs at a time, including scheduled ones. XIVault waits up to five minutes for the other one to finish before showing this. Try again in a moment.
 
 ## "… is a link to another location"
 
