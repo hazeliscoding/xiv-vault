@@ -27,32 +27,32 @@ XIVault is a Windows-first backup and restore utility for the portable XIVLaunch
 
 - [x] Solution with `XIVault.Core`, `XIVault.Cli`, `XIVault.Desktop` and `XIVault.Tests`.
 - [x] Brand assets and app icon.
-- [ ] CI on `windows-latest`: restore, build, test, `dotnet format --verify-no-changes`.
+- [x] CI on `windows-latest`: restore, build, test, `dotnet format --verify-no-changes`.
 
 **Done when:** CI is green on a pull request.
 
 ## M1: Core engine
 
-- [ ] Configuration (`%LOCALAPPDATA%\XIVault\config.json`) and app state.
-- [ ] `IXivLauncherLocator` / `WindowsXivLauncherLocator`: override, known paths, layout detection (`dalamudUserData`), validation.
-- [ ] Backup: allowlist, ZIP + manifest, SHA-256, atomic finalize, retention.
-- [ ] Archive validation: schema, hashes, traversal, absolute paths, unknown files.
-- [ ] Restore: process check, safety snapshot, temp extraction, allowlisted apply, rollback on failure.
+- [x] Configuration (`%LOCALAPPDATA%\XIVault\config.json`) and app state.
+- [x] `IXivLauncherLocator` / `WindowsXivLauncherLocator`: override, known paths, layout detection (`dalamudUserData`), validation.
+- [x] Backup: allowlist, ZIP + manifest, SHA-256, atomic finalize, retention.
+- [x] Archive validation: schema, hashes, traversal, absolute paths, unknown files.
+- [x] Restore: process check, safety snapshot, temp extraction, allowlisted apply, rollback on failure.
 
 **Done when:** tests back up a fake XIVLauncher folder, restore it, and the traversal, checksum, running-process and partial-failure cases fail safely.
 
 ## M2: CLI
 
-- [ ] `backup`, `restore`, `list`, `status`, `doctor`, `schedule`, `config`, `version`, with `--json`, `--quiet` and `--verbose` where they apply.
-- [ ] Stable exit codes, documented in the README.
+- [x] `backup`, `restore`, `list`, `status`, `doctor`, `schedule`, `config`, `version`, with `--json`, `--quiet` and `--verbose` where they apply.
+- [x] Stable exit codes, documented in the README.
 
 **Done when:** `xivault backup`, `list`, `status`, `doctor` and `restore latest` work against a fake XIVLauncher folder.
 
 ## M3: Scheduling and diagnostics
 
-- [ ] Task Scheduler integration: daily, weekly, at Windows login.
-- [ ] Scheduled run: waits for FFXIV, records its result.
-- [ ] Diagnostics service and a report that holds paths, versions and results only.
+- [x] Task Scheduler integration: daily, weekly, at Windows login.
+- [x] Scheduled run: waits for FFXIV, records its result.
+- [x] Diagnostics service and a report that holds paths, versions and results only.
 
 **Done when:** `xivault schedule weekly --day Sunday` creates the task, `schedule status` reads it back, and `doctor` reports all four groups.
 
