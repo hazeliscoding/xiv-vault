@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Version from tag
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "Tag ${{ github.ref_name }} is not a version" }
+          "VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Test
+        run: dotnet test --solution XIVault.sln --configuration Release
+
+      - name: Publish
+        run: |
+          dotnet publish src/XIVault.Cli -p:PublishProfile=win-x64 -p:Version=${{ env.VERSION }}
+          dotnet publish src/XIVault.Desktop -p:PublishProfile=win-x64 -p:Version=${{ env.VERSION }}
+
+      - name: Smoke test the published CLI
+        shell: pwsh
+        run: ./scripts/smoke-test.ps1 -Cli artifacts/publish/XIVault.Cli/xivault.exe
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $out = New-Item -ItemType Directory -Force artifacts/release
+          $docs = 'README.md', 'LICENSE', 'THIRD-PARTY-NOTICES.md', 'CHANGELOG.md'
+          function Pack($exe, $zip) {
+            $stage = New-Item -ItemType Directory -Force "artifacts/stage/$zip"
+            Copy-Item $exe $stage
+            Copy-Item $docs $stage
+            Compress-Archive -Path "$stage/*" -DestinationPath "$out/$zip.zip" -Force
+          }
+          Pack artifacts/publish/XIVault.Cli/xivault.exe 'xivault-cli-win-x64'
+          Pack artifacts/publish/XIVault.Desktop/XIVault.Desktop.exe 'XIVault.Desktop-win-x64'
+          Get-ChildItem $out -Filter *.zip | ForEach-Object {
+            "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+          } | Set-Content "$out/SHA256SUMS" -Encoding ascii
+          Get-Content "$out/SHA256SUMS"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release
+          path: artifacts/release/*
+          if-no-files-found: error
+
+  # The only job with write access. It runs no repository code, only the GitHub CLI.
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release
+          path: release
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" release/* \
+            --repo "${{ github.repository }}" \
+            --draft \
+            --title "XIVault ${{ github.ref_name }}" \
+            --notes "Windows x64, self-contained: no .NET install needed. See CHANGELOG.md for what changed. Verify downloads against SHA256SUMS."
