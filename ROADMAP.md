@@ -47,6 +47,14 @@ An independent review of the restore and validation code found failure modes; th
 - **Desktop executable:** `XIV-Vault.exe`. The assembly stays `XivVault`, because .NET compares assembly names without case and the tests load the app and the CLI (`xiv-vault`) together; publishing renames the single-file exe. The CLI stays `xiv-vault.exe`. Windows treats the two as the same file name, so they ship in separate zips and the README says to keep them in separate folders. "Another copy is running" matches processes by path, so a CLI command never holds up an update.
 - **Release assets:** Setup, this version's full (and, from the second release on, delta) update package and `releases.win.json` join the two zips. `SHA256SUMS` covers Setup and the zips.
 
+## Decisions (2026-10-05, road to 1.0)
+
+- **v0.1.0 is published.** From here on, every release must update cleanly from the one before it.
+- **1.0 means safe to trust and stable to build on:** proven on real setups other than the author's, compatibility promises written down (0.1.0 backups always restore; the CLI, its JSON output and exit codes stay stable), and updates proven across releases.
+- **Restoring only some plugins is part of 1.0.** It removes the biggest limitation of a restore, which today returns every plugin in the backup to its old settings.
+- **Synced folders are the main case to harden.** Listing backups opens every archive, and verification reads each one in full, so on a new PC with OneDrive Files On-Demand, opening XIV Vault downloads every backup.
+- **Code signing waits until after 1.0**, once there is an established userbase. Until then SmartScreen asks users to confirm Setup and the zips, and the README says so.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
@@ -105,11 +113,44 @@ An independent review of the restore and validation code found failure modes; th
 
 **Done when:** Setup installs XIV Vault, an installed copy updates itself to a newer version, and uninstalling removes the scheduled task.
 
+## M7: First users (0.1.x)
+
+- [ ] Back up and restore on the author's own setup with the published release; fix what turns up.
+- [ ] Release 0.1.1: the first update installed copies take from GitHub, and the first delta package.
+- [ ] Issue templates: a bug report that asks for the Diagnostics report, and a feature request.
+- [ ] Winget manifests for Setup and the CLI.
+
+**Done when:** a 0.1.0 install updates itself to 0.1.1 from GitHub, and `winget install` works for both.
+
+## M8: Fresh PC and synced folders (0.2)
+
+- [ ] List backups without downloading them: names and sizes from the folder, manifests only for files already on this PC.
+- [ ] Verify only the latest backup and the one being restored, not every archive in the folder.
+- [ ] A restore whose backup is still in the cloud shows the download and its size before anything changes.
+- [ ] XIVLauncher layouts and folders that users report.
+
+**Done when:** on a new PC with OneDrive Files On-Demand, opening XIV Vault downloads nothing until a restore is chosen.
+
+## M9: Restore only some plugins (0.3)
+
+- [ ] Choose plugins in the review step of the restore wizard; Dalamud settings are their own choice.
+- [ ] The same choice on the command line: `xiv-vault restore <backup> --plugin <name>`.
+- [ ] The safety backup still holds everything a full restore would replace.
+
+**Done when:** restoring one plugin's settings leaves every other plugin and Dalamud's settings as they were.
+
+## M10: 1.0
+
+- [ ] Real 0.1.0 archives kept as test files, which every later version must validate and restore.
+- [ ] The stable parts written down: backup format, CLI commands and options, JSON output, exit codes, and what a major version may change.
+- [ ] A release checklist that installs the previous release and updates it before a draft is published.
+- [ ] Every screen checked with Narrator.
+
+**Done when:** every item above is checked, the last two releases updated cleanly from the one before, and no data-loss issue is open.
+
 ## Later
 
-- Winget manifest.
-- Code signing.
-- Restoring a chosen subset of plugin configs.
+- Code signing, after 1.0 once there is an established userbase.
 - Light theme.
 
 ## Not planned
