@@ -157,4 +157,36 @@ public class DiagnosticsAndStatusTests
         Assert.Equal(@"%USERPROFILE%\Documents\XIV Vault", paths.Redact(Path.Combine(env.Documents, "XIV Vault")));
         Assert.Equal(@"D:\XIV Vault", paths.Friendly(@"D:\XIV Vault"));
     }
+
+    [Fact]
+    public void Text_that_is_not_a_full_path_is_never_resolved_against_the_current_folder()
+    {
+        // The installed app runs from a folder inside the user profile. Redacting a friendly path
+        // must not join it to that folder.
+        var profile = Path.GetDirectoryName(Environment.CurrentDirectory)!;
+        var paths = new PathDisplay(new ProfileAt(profile));
+
+        Assert.Equal(@"%AppData%\XIVLauncher", paths.Redact(@"%AppData%\XIVLauncher"));
+        Assert.Equal("OneDrive / XIV Vault", paths.Redact("OneDrive / XIV Vault"));
+        Assert.Equal(@"%USERPROFILE%\Documents", paths.Redact(Path.Combine(profile, "Documents")));
+    }
+
+    private sealed class ProfileAt(string profile) : IAppEnvironment
+    {
+        public string RoamingAppData => Path.Combine(profile, "AppData", "Roaming");
+
+        public string LocalAppData => Path.Combine(profile, "AppData", "Local");
+
+        public string UserProfile => profile;
+
+        public string Documents => Path.Combine(profile, "Documents");
+
+        public string? OneDrive => null;
+
+        public string TempPath => Path.GetTempPath();
+
+        public string UserAccount => @"PC\user";
+
+        public string DataDirectory => Path.Combine(LocalAppData, "XIV Vault");
+    }
 }

@@ -65,6 +65,14 @@ public sealed class PathDisplay(IAppEnvironment environment)
     private static bool TryRelative(string root, string path, out string relative)
     {
         relative = "";
+
+        // Display text such as %AppData%\XIVLauncher isn't a path. Resolving it would join it to
+        // the current folder, which for the installed app is inside the user profile.
+        if (!Path.IsPathFullyQualified(root) || !Path.IsPathFullyQualified(path))
+        {
+            return false;
+        }
+
         try
         {
             var fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
