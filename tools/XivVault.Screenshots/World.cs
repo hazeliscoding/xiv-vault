@@ -38,9 +38,11 @@ internal sealed class World : IDisposable
         collection.AddSingleton<TimeProvider>(Clock);
         collection.AddSingleton<IProcessInspector, NoProcesses>();
         collection.AddSingleton<ICommandRunner, FakeScheduler>();
+        collection.AddXivVaultDesktop();
+
+        // The desktop registers its own UI services, so these replace them afterwards.
         collection.AddSingleton<IMotionSettings, StillMotion>();
         collection.AddSingleton<IShellService, NoShell>();
-        collection.AddXivVaultDesktop();
         _services = collection.BuildServiceProvider();
         CreateLauncher(withHistory ? 40 : 43);
         if (withHistory)
