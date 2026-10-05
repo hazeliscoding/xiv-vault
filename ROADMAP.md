@@ -38,6 +38,14 @@ An independent review of the restore and validation code found failure modes; th
 - **One operation at a time.** A named mutex per data folder serializes backups, restores and retention between the app, the CLI and the scheduled task.
 - **Manifests must describe their files.** `contents` and `statistics` have to match the file list; paths that backups skip (`logs`, `cache`, temp files) are refused; archives are capped at 2 GB and 100,000 files, with sizes bounded before they are summed.
 
+## Decisions (2026-10-05, installer and updates)
+
+- **Installer:** the desktop app also ships as `xiv-vault-setup-win-x64.exe`, built with Velopack (MIT) by `release.yml`. It installs per user into `%LOCALAPPDATA%\XivVault` with a Start menu shortcut and no administrator prompt. Settings, state and logs stay in `%LOCALAPPDATA%\XIV Vault`, so uninstalling keeps them. The desktop zip stays as a portable copy that doesn't update. The CLI stays a zip; winget remains the way to update it.
+- **The update check is on by default**, with a switch in Settings. It reads the public release list from GitHub and sends nothing about the user or their backups. It is the only network call XIV Vault makes, and the README's safety model says so. Portable copies never check.
+- **Updates install only when the user chooses**, with Update and Restart in Settings; the sidebar shows when one is available. Installing ends every copy running from the install folder, so an update waits while a backup or restore runs anywhere, or while another copy (such as a scheduled backup) is open. Downloaded updates are never applied at startup, so a scheduled run never replaces its own program.
+- **Uninstalling removes the scheduled task** when it starts the installed copy, and keeps the schedule preferences.
+- **Release assets:** Setup, this version's full (and, from the second release on, delta) update package and `releases.win.json` join the two zips. `SHA256SUMS` covers Setup and the zips.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
@@ -87,6 +95,14 @@ An independent review of the restore and validation code found failure modes; th
 - [x] End-to-end smoke test against a fake XIVLauncher folder.
 
 **Done when:** pushing `v0.1.0` publishes both zips to a draft GitHub release.
+
+## M6: Installer and updates
+
+- [x] Setup and update packages built with `vpk` in the release workflow, with a delta from the previous release.
+- [x] Update check when the app opens, Update and Restart, and the switch in Settings; a notice in the sidebar.
+- [x] Updates wait for backups, restores and other running copies; uninstalling removes the scheduled task.
+
+**Done when:** Setup installs XIV Vault, an installed copy updates itself to a newer version, and uninstalling removes the scheduled task.
 
 ## Later
 

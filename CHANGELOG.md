@@ -4,7 +4,7 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-10-04
+## [0.1.0] - 2026-10-05
 
 First release.
 
@@ -18,7 +18,8 @@ First release.
 - Diagnostics for XIVLauncher, Dalamud, the backup folder and scheduling, with a shareable report that holds no configuration contents.
 - Desktop app (Avalonia): Overview, Backups, Restore wizard, Schedule, Diagnostics and Settings.
 - Command line: `backup`, `restore`, `list`, `status`, `doctor`, `schedule`, `config` and `version`, with JSON output and stable exit codes.
-- Self-contained Windows x64 builds: `xiv-vault-desktop-win-x64.zip` and `xiv-vault-cli-win-x64.zip`.
+- Installer: `xiv-vault-setup-win-x64.exe` installs the desktop app for the current user and keeps it up to date from GitHub releases. Updates install only when chosen in Settings, wait for running backups, restores and scheduled backups, and the check can be turned off. Uninstalling removes the scheduled backup task.
+- Self-contained Windows x64 builds: `xiv-vault-setup-win-x64.exe`, plus portable `xiv-vault-desktop-win-x64.zip` and `xiv-vault-cli-win-x64.zip`.
 
 [Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/hazeliscoding/xiv-vault/releases/tag/v0.1.0

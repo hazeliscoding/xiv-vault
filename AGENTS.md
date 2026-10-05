@@ -15,7 +15,8 @@ These are the working rules for agents in this repo. XIV Vault (Apache-2.0) back
 - File system, process, clock and environment access goes through the small services in Core (`IAppEnvironment`, `IProcessInspector`, `TimeProvider`, `ICommandRunner`), so tests can run in temp directories.
 - Avalonia 12 ignores a `RenderTransform` set by a style unless the element already has one, so give it `RenderTransform="none"` (or set the transform inline).
 - Check UI changes with `dotnet run --project tools/XivVault.Screenshots -- <folder>`, which renders every screen to PNG without touching the real profile or Task Scheduler.
-- Desktop view models take interfaces only (`IDialogService`, `IShellService`, `IClipboardService`, `IFilePicker`). No Avalonia types in view models and no logic in code-behind.
+- Desktop view models take interfaces only (`IDialogService`, `IShellService`, `IClipboardService`, `IFilePicker`, `IAppUpdater`). No Avalonia or Velopack types in view models and no logic in code-behind.
+- Config and state records use `{ get; set; }` with defaults, not `init`: source-generated System.Text.Json sets an init property missing from the file to its type's default, so files from older versions would lose new defaults.
 
 ## The safety contract
 
@@ -28,6 +29,7 @@ XIV Vault is trusted with configuration people spent years building. Never break
 - **Never execute anything from a backup.**
 - **Never log or report configuration contents.** Logs and the diagnostic report hold paths, counts, versions and results only.
 - The safety snapshot and hash verification are not settings. Don't add a way to turn them off.
+- **Updates never interrupt work.** An update installs only when the user chooses it, never while a backup or restore runs or another copy is open, and never at startup. The update check is the only network call; it sends nothing about the user or their backups. No silent installs, no telemetry.
 
 ## Commands
 
@@ -35,6 +37,7 @@ XIV Vault is trusted with configuration people spent years building. Never break
 - `dotnet format --verify-no-changes` is the CI style check. Run `dotnet format` before committing.
 - `dotnet run --project src/XivVault.Cli -- <command>` runs the CLI; `dotnet run --project src/XivVault.Desktop` runs the app.
 - `dotnet run scripts/make-icons.cs` rebuilds `docs/brand/xiv-vault.ico` from `docs/brand/app-icon.svg`.
+- `dotnet tool restore` installs `vpk`, which `release.yml` uses to build Setup and the update packages. `XIV_VAULT_UPDATE_SOURCE` points an installed copy at a local release folder to try an update.
 
 ## Working style
 

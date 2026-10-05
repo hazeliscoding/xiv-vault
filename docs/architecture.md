@@ -25,7 +25,7 @@ Both front ends call `services.AddXivVaultCore()` and resolve the same services 
 |---|---|
 | `src/XivVault.Core` | The engine. No UI code. |
 | `src/XivVault.Cli` | `xiv-vault.exe`: commands, output formatting, exit codes. |
-| `src/XivVault.Desktop` | `XivVault.exe`: views, view models, theme. Also the headless `--scheduled-backup` entry point. |
+| `src/XivVault.Desktop` | `XivVault.exe`: views, view models, theme. Also the headless `--scheduled-backup` entry point, Velopack's install and uninstall hooks, and updates. |
 | `tests/XivVault.Tests` | Core, CLI and view model tests. All run in temp folders. |
 | `tools/XivVault.Screenshots` | Renders every desktop screen to PNG with Avalonia's headless Skia renderer, against a fake XIVLauncher folder. |
 
@@ -78,8 +78,21 @@ Any failure deletes the `.tmp`, so nothing half-written looks like a backup.
 
 The desktop app follows MVVM with CommunityToolkit.Mvvm. View models take Core services and small UI interfaces (`IDialogService`, `IShellService`, `IClipboardService`, `IFilePicker`, `IUiThread`, `INavigator`), so they are tested without a window. `DesktopSession` holds state that outlives a screen: the latest status and a running backup.
 
-The theme in `Themes/` reproduces the approved mockup's tokens. `Motion.axaml` holds every animation and is only loaded when Windows animations are on. Icons are Lucide paths compiled into `LucideIcons.cs`; fonts are bundled IBM Plex TTFs. Nothing loads from the network.
+The theme in `Themes/` reproduces the approved mockup's tokens. `Motion.axaml` holds every animation and is only loaded when Windows animations are on. Icons are Lucide paths compiled into `LucideIcons.cs`; fonts are bundled IBM Plex TTFs. Nothing loads from the network; the update check is the app's only network call.
+
+## Installer and updates
+
+The desktop app is packaged with [Velopack](https://velopack.io). An installed copy lives in `%LOCALAPPDATA%\XivVault`: `Update.exe`, a launcher stub, and the app itself in `current\`. Updates replace the contents of `current\`, so `current\XivVault.exe`, which the scheduled task runs, keeps its path. Settings, state and logs stay in `%LOCALAPPDATA%\XIV Vault`.
+
+`Program.Main` runs `VelopackApp` before anything else. It handles Setup's and the uninstaller's hooks and exits:
+
+- The uninstall hook runs `UninstallCleanup`, which removes the scheduled task if it starts this installed copy.
+- Downloaded updates are never applied at startup (`SetAutoApplyOnStartup(false)`), so a scheduled run never replaces its own program.
+
+`IAppUpdater` / `VelopackUpdater` reads the feed (`releases.win.json` on the GitHub releases) and downloads and applies updates; portable copies report themselves as not installed. `UpdatesViewModel`, shared by Settings and the sidebar, runs the check when the app opens if `checkForUpdates` is on, and **Update and Restart**. Installing ends every process running from `current\`, so an update waits while `DesktopSession` is busy, another copy of the app runs (`IAppInstances`), or another process holds `OperationLock`. It checks before downloading and again just before restarting.
+
+To try an update without publishing a release, pack two versions into one folder with `dotnet vpk pack` (as `release.yml` does), install the older version's Setup, and start it with `XIV_VAULT_UPDATE_SOURCE` set to that folder.
 
 ## Releases
 
-`release.yml` runs on `v*` tags: tests, self-contained single-file publish for win-x64, the smoke test against the published CLI, zips plus `SHA256SUMS`, then a draft GitHub release from a separate job that holds the only write permission.
+`release.yml` runs on `v*` tags: tests, self-contained single-file publish for win-x64, the smoke test against the published CLI, Setup and the update packages from `vpk` (pinned in `dotnet-tools.json`, with a delta from the previous published release), zips plus `SHA256SUMS`, then a draft GitHub release from a separate job that holds the only write permission. Installed copies only see published releases, so a draft never reaches them.

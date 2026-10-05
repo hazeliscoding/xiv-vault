@@ -52,6 +52,13 @@ Every file the restore had changed was put back, so your configuration is as it 
 
 XIV Vault restores plugin settings, not plugins. Open XIVLauncher and start the game: Dalamud downloads your installed plugins again, and they pick up their restored settings. Plugins from custom repositories need those repositories, which are part of the restored Dalamud settings.
 
+## Updates
+
+- **"Not checked" in Settings → Updates:** XIV Vault couldn't reach GitHub. You may be offline, a firewall may block it, or GitHub's limit of 60 checks an hour per network was reached. Select **Check Now** later, or download the release yourself.
+- **Update and Restart says something is still running:** an update closes every running copy of XIV Vault, so it waits for a backup or restore to finish, and for a scheduled backup or another XIV Vault window to close. Try again when it has finished.
+- **"This copy runs from a zip file":** portable copies don't update. Install XIV Vault with `xiv-vault-setup-win-x64.exe` to get updates. Your settings carry over. If the portable copy set up automatic backups, turn them off and on again in the installed app, so the task starts the installed copy.
+- Setup and the updater write their own log to `%LOCALAPPDATA%\velopack\velopack_XivVault.log`.
+
 ## Logs
 
 `%LOCALAPPDATA%\XIV Vault\logs\xiv-vault-YYYYMMDD.log`, kept for 14 days. Add `--verbose` to a CLI command to see the same lines in the terminal.
@@ -63,5 +70,6 @@ XIV Vault restores plugin settings, not plugins. Open XIVLauncher and start the 
 | `%LOCALAPPDATA%\XIV Vault\config.json` | Settings |
 | `%LOCALAPPDATA%\XIV Vault\state.json` | Verification cache and the last scheduled result; safe to delete |
 | `%LOCALAPPDATA%\XIV Vault\logs\` | Logs |
+| `%LOCALAPPDATA%\XivVault\` | The app, when installed with Setup. Uninstalling removes this folder only. |
 
-Set `XIV_VAULT_DATA_DIR` to use a different folder for all three, for example to test without touching your real settings.
+Set `XIV_VAULT_DATA_DIR` to use a different folder for config, state and logs, for example to test without touching your real settings.

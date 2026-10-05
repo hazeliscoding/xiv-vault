@@ -10,10 +10,11 @@ XIV Vault is a Windows desktop app and a command-line tool built on one engine. 
 
 Download the latest release from [Releases](https://github.com/hazeliscoding/xiv-vault/releases):
 
-- `xiv-vault-desktop-win-x64.zip`: the app. Unzip it anywhere, for example `%LOCALAPPDATA%\Programs\XIV Vault`, and run `XivVault.exe`.
+- `xiv-vault-setup-win-x64.exe`: installs the app for your Windows user, with no administrator prompt, adds it to the Start menu and keeps it up to date. Uninstall it from Windows Settings → Apps; your settings and backups stay.
+- `xiv-vault-desktop-win-x64.zip`: the same app as a portable copy. Unzip it anywhere and run `XivVault.exe`. A portable copy doesn't update itself.
 - `xiv-vault-cli-win-x64.zip`: the command line. Unzip `xiv-vault.exe` into a folder on your `PATH`.
 
-Both are self-contained: no .NET install is needed. Check downloads against `SHA256SUMS` on the release page. The builds are not code-signed yet, so Windows SmartScreen may ask you to confirm the first run.
+All three are self-contained: no .NET install is needed. Check downloads against `SHA256SUMS` on the release page. The builds are not code-signed yet, so Windows SmartScreen may ask you to confirm the first run. The `.nupkg` and `releases.win.json` files on each release are what installed copies download to update.
 
 ## Using the app
 
@@ -34,7 +35,7 @@ Both are self-contained: no .NET install is needed. Check downloads against `SHA
 
 1. On the new PC, install XIVLauncher and start it once.
 2. Make your backups available: let OneDrive or Dropbox finish syncing, or plug in the drive.
-3. Install XIV Vault and open it. If the backups are in `OneDrive\XIV Vault`, XIV Vault finds them on its own. Otherwise choose the folder in **Settings**, or pick a backup file in the restore wizard.
+3. Install XIV Vault with Setup and open it. If the backups are in `OneDrive\XIV Vault`, XIV Vault finds them on its own. Otherwise choose the folder in **Settings**, or pick a backup file in the restore wizard.
 4. Open **Restore**, choose the newest backup, review it, and let the safety checks run. XIVLauncher and FFXIV must be closed.
 5. Select **Restore Configuration**, then open XIVLauncher. Dalamud downloads your plugins again and they pick up their restored settings.
 
@@ -76,9 +77,17 @@ Exit codes are stable, so scripts can rely on them:
 
 Turning on automatic backups creates one Windows scheduled task, **XIV Vault Scheduled Backup**, that runs as you with normal permissions. XIV Vault doesn't need to stay open, and there is no background service. If the PC was off at the scheduled time, the backup runs when it next starts. If FFXIV is running, the backup waits for the game to close (up to 6 hours) instead of copying files the game has open.
 
-The task runs the program that set it up: `XivVault.exe --scheduled-backup` (no window) or `xiv-vault backup --scheduled`. If you move XIV Vault to another folder, set the schedule again; **Diagnostics** warns when the task points to a missing program.
+The task runs the program that set it up: `XivVault.exe --scheduled-backup` (no window) or `xiv-vault backup --scheduled`. Updates keep the installed app in the same place, so the task keeps working, and uninstalling XIV Vault removes it. If you move a portable copy to another folder, set the schedule again; **Diagnostics** warns when the task points to a missing program.
 
 ![Schedule](docs/screenshots/schedule.png)
+
+## Updates
+
+An installed copy asks GitHub for the latest release each time it opens. When a newer version exists, the sidebar says so, and **Settings → Updates → Update and Restart** downloads it, closes XIV Vault, installs it and opens it again. Nothing installs until you choose it, and your settings and backups are not touched.
+
+An update waits while a backup or restore runs, or while a scheduled backup or another XIV Vault window is open, because installing closes every running copy. To update by hand instead, turn off **Check for updates when XIV Vault opens** in **Settings**.
+
+![Update available](docs/screenshots/settings-update.png)
 
 ## Where to keep backups
 
@@ -117,7 +126,7 @@ Inside `pluginConfigs\`, temporary files and `logs`/`cache` folders are skipped,
 - **Hostile archives are refused:** paths with `..`, absolute or drive paths, files outside the allowlist, files the manifest doesn't list, manifests that misdescribe their files, and checksum mismatches.
 - **No links.** Backups don't follow links (junctions or symlinks) inside the XIVLauncher folder, and restores refuse to write through them.
 - **One operation at a time.** A scheduled backup and the app never write to the backup folder at the same time.
-- **Nothing is executed** from a backup, and **nothing leaves your PC**: no accounts, no telemetry, no network calls.
+- **Nothing is executed** from a backup, and **nothing about you leaves your PC**: no accounts, no telemetry. The only network call is the installed app's update check, which reads the public release list from GitHub, sends nothing about you or your backups, and can be turned off in **Settings**.
 - **Logs and diagnostic reports** hold paths, counts and results, never configuration contents.
 
 The archive format is documented in [docs/backup-format.md](docs/backup-format.md). Backups open in any ZIP tool.
