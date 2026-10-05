@@ -22,8 +22,6 @@ public sealed partial class NavItemViewModel(AppPage page, string label, string 
 
 public sealed partial class MainWindowViewModel : ObservableObject
 {
-    public const string RepositoryUrl = "https://github.com/hazeliscoding/xiv-vault";
-
     private readonly Dictionary<AppPage, PageViewModel> _pages;
     private readonly DesktopSession _session;
     private readonly IShellService _shell;
@@ -34,6 +32,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         Navigator navigator,
         DesktopSession session,
         OverlayDialogService dialogs,
+        UpdatesViewModel updates,
         IShellService shell,
         PathDisplay paths)
     {
@@ -42,6 +41,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _shell = shell;
         _paths = paths;
         Dialogs = dialogs;
+        Updates = updates;
         NavItems =
         [
             new(AppPage.Overview, "Overview", "LayoutDashboard"),
@@ -61,6 +61,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public OverlayDialogService Dialogs { get; }
 
+    public UpdatesViewModel Updates { get; }
+
     [ObservableProperty]
     public partial PageViewModel CurrentPage { get; private set; }
 
@@ -72,13 +74,20 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     public string VersionLabel { get; } = "XIV Vault " + XivVaultInfo.Version;
 
-    public Task InitializeAsync() => ShowAsync(AppPage.Overview, null);
+    public async Task InitializeAsync()
+    {
+        await ShowAsync(AppPage.Overview, null);
+        await Updates.CheckOnStartupAsync();
+    }
 
     [RelayCommand]
     private Task NavigateAsync(AppPage page) => ShowAsync(page, null);
 
     [RelayCommand]
-    private void OpenGitHub() => _shell.OpenUrl(RepositoryUrl);
+    private Task OpenUpdatesAsync() => ShowAsync(AppPage.Settings, null);
+
+    [RelayCommand]
+    private void OpenGitHub() => _shell.OpenUrl(XivVaultInfo.RepositoryUrl);
 
     public async Task ShowAsync(AppPage page, string? backup)
     {

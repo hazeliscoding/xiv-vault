@@ -64,6 +64,10 @@ internal static class Program
         Shot(window, "settings");
         services.GetRequiredService<SettingsViewModel>().ToggleOverrideCommand.Execute(null);
         Shot(window, "settings-override");
+        services.GetRequiredService<SettingsViewModel>().ToggleOverrideCommand.Execute(null);
+        world.Updater.Latest = "0.2.0";
+        Run(services.GetRequiredService<UpdatesViewModel>().CheckNowCommand.ExecuteAsync(null));
+        Shot(window, "settings-update");
         window.Close();
 
         var freshWindow = Open(fresh);

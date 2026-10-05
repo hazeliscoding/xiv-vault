@@ -4,6 +4,8 @@ namespace XivVault.Core;
 
 public static class XivVaultInfo
 {
+    public const string RepositoryUrl = "https://github.com/hazeliscoding/xiv-vault";
+
     public static string Version { get; } = ReadVersion();
 
     private static string ReadVersion()

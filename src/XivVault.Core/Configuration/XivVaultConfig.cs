@@ -23,6 +23,9 @@ public sealed record XivVaultConfig
     public string? XivLauncherPathOverride { get; set; }
 
     public ScheduleSettings Schedule { get; set; } = new();
+
+    /// <summary>Whether the installed desktop app asks GitHub for a newer version when it opens.</summary>
+    public bool CheckForUpdates { get; set; } = true;
 }
 
 public enum CompressionPreset

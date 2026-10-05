@@ -31,6 +31,8 @@ public sealed class DesktopTestHost : IDisposable
         services.AddSingleton<IFilePicker>(Picker);
         services.AddSingleton<IMotionSettings, NoMotion>();
         services.AddSingleton<ISchedulerTarget, FakeSchedulerTarget>();
+        services.AddSingleton<IAppUpdater>(Updater);
+        services.AddSingleton<IAppInstances>(Instances);
         _provider = services.BuildServiceProvider();
     }
 
@@ -49,6 +51,10 @@ public sealed class DesktopTestHost : IDisposable
     public FakeClipboard Clipboard { get; } = new();
 
     public FakePicker Picker { get; } = new();
+
+    public FakeUpdater Updater { get; } = new();
+
+    public FakeInstances Instances { get; } = new();
 
     public T Get<T>()
         where T : notnull => _provider.GetRequiredService<T>();
@@ -104,6 +110,8 @@ public sealed class FakeShell : IShellService
 {
     public List<string> Revealed { get; } = [];
 
+    public List<string> Opened { get; } = [];
+
     public List<string> Launched { get; } = [];
 
     public void RevealInExplorer(string path) => Revealed.Add(path);
@@ -114,9 +122,7 @@ public sealed class FakeShell : IShellService
         return true;
     }
 
-    public void OpenUrl(string url)
-    {
-    }
+    public void OpenUrl(string url) => Opened.Add(url);
 }
 
 public sealed class FakeClipboard : IClipboardService
@@ -139,4 +145,57 @@ public sealed class FakePicker : IFilePicker
     public Task<string?> PickFolderAsync(string title, string? startFolder) => Task.FromResult(Folder);
 
     public Task<string?> PickBackupFileAsync(string? startFolder) => Task.FromResult(File);
+}
+
+/// <summary>An installed copy by default, with no newer version until <see cref="Latest"/> is set.</summary>
+public sealed class FakeUpdater : IAppUpdater
+{
+    public bool IsInstalled { get; set; } = true;
+
+    public string? Latest { get; set; }
+
+    public Exception? CheckError { get; set; }
+
+    public Exception? DownloadError { get; set; }
+
+    /// <summary>Runs while the download is in progress.</summary>
+    public Action? DuringDownload { get; set; }
+
+    public int Checks { get; private set; }
+
+    public List<string> Downloaded { get; } = [];
+
+    public string? RestartedInto { get; private set; }
+
+    public Task<AvailableUpdate?> CheckAsync(CancellationToken cancellationToken = default)
+    {
+        Checks++;
+        if (CheckError is { } error)
+        {
+            return Task.FromException<AvailableUpdate?>(error);
+        }
+
+        return Task.FromResult(Latest is null ? null : new AvailableUpdate(Latest));
+    }
+
+    public Task DownloadAsync(AvailableUpdate update, Action<int> progress, CancellationToken cancellationToken = default)
+    {
+        progress(50);
+        DuringDownload?.Invoke();
+        if (DownloadError is { } error)
+        {
+            return Task.FromException(error);
+        }
+
+        progress(100);
+        Downloaded.Add(update.Version);
+        return Task.CompletedTask;
+    }
+
+    public void RestartToApply(AvailableUpdate update) => RestartedInto = update.Version;
+}
+
+public sealed class FakeInstances : IAppInstances
+{
+    public bool OthersRunning { get; set; }
 }

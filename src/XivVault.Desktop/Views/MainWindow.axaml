@@ -48,6 +48,14 @@
                              Text="XIV Vault protects portable Dalamud configuration. Plugin binaries are reinstalled by Dalamud rather than copied between machines." />
                 </StackPanel>
               </Border>
+              <Button Theme="{StaticResource LinkButton}" Foreground="{StaticResource AccentText}" Margin="10,0,4,8"
+                      Command="{Binding OpenUpdatesCommand}" IsVisible="{Binding Updates.HasUpdate}"
+                      AutomationProperties.Name="{Binding Updates.NavLabel}" ToolTip.Tip="Open Settings to install it">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <c:StatusDot Tone="Accent" Diameter="5" VerticalAlignment="Center" />
+                  <TextBlock Classes="compact" Text="{Binding Updates.NavLabel}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="10,0,4,0">
                 <TextBlock Classes="data t3" FontSize="11" Text="{Binding VersionLabel}" VerticalAlignment="Center" />
                 <Button Grid.Column="1" Theme="{StaticResource LinkButton}" Foreground="{StaticResource Text3}"

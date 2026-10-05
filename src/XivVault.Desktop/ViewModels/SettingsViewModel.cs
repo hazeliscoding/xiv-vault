@@ -20,17 +20,26 @@ public sealed partial class SettingsViewModel : PageViewModel
     // Saving is off until the stored settings are loaded, so constructor defaults never overwrite them.
     private bool _loading = true;
 
-    public SettingsViewModel(IConfigStore configStore, IXivLauncherLocator locator, IFilePicker picker, DesktopSession session, PathDisplay paths)
+    public SettingsViewModel(
+        IConfigStore configStore,
+        IXivLauncherLocator locator,
+        IFilePicker picker,
+        DesktopSession session,
+        UpdatesViewModel updates,
+        PathDisplay paths)
     {
         _configStore = configStore;
         _locator = locator;
         _picker = picker;
         _session = session;
         _paths = paths;
+        Updates = updates;
         Compression = CompressionOptions[1];
     }
 
     public override AppPage Page => AppPage.Settings;
+
+    public UpdatesViewModel Updates { get; }
 
     public IReadOnlyList<Option<CompressionPreset>> CompressionOptions { get; } =
     [
@@ -50,6 +59,9 @@ public sealed partial class SettingsViewModel : PageViewModel
 
     [ObservableProperty]
     public partial Option<CompressionPreset> Compression { get; set; }
+
+    [ObservableProperty]
+    public partial bool CheckForUpdates { get; set; } = true;
 
     [ObservableProperty]
     public partial string DetectedPath { get; private set; } = "";
@@ -93,6 +105,8 @@ public sealed partial class SettingsViewModel : PageViewModel
 
     partial void OnIncludeUiChanged(bool value) => Save(config => config with { IncludeDalamudUi = value });
 
+    partial void OnCheckForUpdatesChanged(bool value) => Save(config => config with { CheckForUpdates = value });
+
     partial void OnCompressionChanged(Option<CompressionPreset> value)
     {
         OnPropertyChanged(nameof(CompressionHint));
@@ -115,6 +129,7 @@ public sealed partial class SettingsViewModel : PageViewModel
             Retention = config.RetentionCount;
             IncludeUi = config.IncludeDalamudUi;
             Compression = CompressionOptions.First(option => option.Value == config.Compression);
+            CheckForUpdates = config.CheckForUpdates;
             HasOverride = config.XivLauncherPathOverride is not null;
             ErrorMessage = null;
 

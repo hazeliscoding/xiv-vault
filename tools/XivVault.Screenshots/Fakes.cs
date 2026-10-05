@@ -83,6 +83,23 @@ internal sealed class StillMotion : IMotionSettings
     public bool ReduceMotion => true;
 }
 
+/// <summary>An installed copy that talks to no server; set <see cref="Latest"/> to offer an update.</summary>
+internal sealed class FakeUpdater : IAppUpdater
+{
+    public bool IsInstalled => true;
+
+    public string? Latest { get; set; }
+
+    public Task<AvailableUpdate?> CheckAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(Latest is null ? null : new AvailableUpdate(Latest));
+
+    public Task DownloadAsync(AvailableUpdate update, Action<int> progress, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    public void RestartToApply(AvailableUpdate update)
+    {
+    }
+}
+
 internal sealed class NoShell : IShellService
 {
     public void RevealInExplorer(string path)

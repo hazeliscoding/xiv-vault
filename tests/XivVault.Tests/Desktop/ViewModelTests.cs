@@ -318,7 +318,7 @@ public class SettingsViewModelTests
         Assert.Equal(11, saved.RetentionCount);
         Assert.Equal(Path.Combine(host.Environment.Root, "NAS"), saved.BackupDestination);
 
-        var reopened = new SettingsViewModel(host.Get<IConfigStore>(), host.Get<XivVault.Core.Discovery.IXivLauncherLocator>(), host.Picker, host.Session, host.Get<XivVault.Core.Platform.PathDisplay>());
+        var reopened = new SettingsViewModel(host.Get<IConfigStore>(), host.Get<XivVault.Core.Discovery.IXivLauncherLocator>(), host.Picker, host.Session, host.Get<UpdatesViewModel>(), host.Get<XivVault.Core.Platform.PathDisplay>());
         reopened.Load();
         Assert.True(reopened.IncludeUi);
         Assert.Equal(11, reopened.Retention);

@@ -43,6 +43,7 @@ internal sealed class World : IDisposable
         // The desktop registers its own UI services, so these replace them afterwards.
         collection.AddSingleton<IMotionSettings, StillMotion>();
         collection.AddSingleton<IShellService, NoShell>();
+        collection.AddSingleton<IAppUpdater>(Updater);
         _services = collection.BuildServiceProvider();
         CreateLauncher(withHistory ? 40 : 43);
         if (withHistory)
@@ -58,6 +59,8 @@ internal sealed class World : IDisposable
     public FakeEnvironment Environment { get; }
 
     public FakeClock Clock { get; }
+
+    public FakeUpdater Updater { get; } = new();
 
     public IServiceProvider Services => _services;
 

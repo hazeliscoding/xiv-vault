@@ -28,8 +28,12 @@ public static class DesktopServices
         services.AddSingleton<IUiThread, AvaloniaUiThread>();
         services.AddSingleton<IMotionSettings, WindowsMotionSettings>();
         services.AddSingleton<ISchedulerTarget, DesktopSchedulerTarget>();
+        services.AddSingleton<IAppUpdater, VelopackUpdater>();
+        services.AddSingleton<IAppInstances, ProcessAppInstances>();
+        services.AddSingleton<UninstallCleanup>();
 
         services.AddSingleton<DesktopSession>();
+        services.AddSingleton<UpdatesViewModel>();
         services.AddSingleton<OverviewViewModel>();
         services.AddSingleton<BackupsViewModel>();
         services.AddSingleton<RestoreViewModel>();

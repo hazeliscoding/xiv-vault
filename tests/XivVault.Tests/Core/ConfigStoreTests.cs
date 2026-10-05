@@ -74,6 +74,22 @@ public class ConfigStoreTests
     }
 
     [Fact]
+    public void Update_checks_are_on_unless_turned_off()
+    {
+        using var env = new TestEnvironment();
+        var store = new ConfigStore(env);
+        Directory.CreateDirectory(env.DataDirectory);
+
+        // Settings saved before the option existed have no key for it.
+        File.WriteAllText(store.ConfigPath, "{ \"retentionCount\": 5 }");
+        Assert.True(store.Load().CheckForUpdates);
+
+        store.Save(store.Load() with { CheckForUpdates = false });
+        Assert.Contains("\"checkForUpdates\": false", File.ReadAllText(store.ConfigPath));
+        Assert.False(store.Load().CheckForUpdates);
+    }
+
+    [Fact]
     public void Malformed_json_is_an_invalid_configuration()
     {
         using var env = new TestEnvironment();
