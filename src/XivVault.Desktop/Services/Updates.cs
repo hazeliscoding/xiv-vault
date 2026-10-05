@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Velopack;
@@ -97,15 +98,17 @@ public sealed class ProcessAppInstances : IAppInstances
     {
         get
         {
-            if (Path.GetFileNameWithoutExtension(Environment.ProcessPath) is not { Length: > 0 } name)
+            if (Environment.ProcessPath is not { } self)
             {
                 return false;
             }
 
-            var processes = Process.GetProcessesByName(name);
+            // Matched by path, not name: Windows sees the CLI's xiv-vault.exe as the same name, and
+            // installing an update only ends copies of this program.
+            var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(self));
             try
             {
-                return processes.Any(process => process.Id != Environment.ProcessId);
+                return processes.Any(process => process.Id != Environment.ProcessId && RunsFrom(process, self));
             }
             finally
             {
@@ -114,6 +117,19 @@ public sealed class ProcessAppInstances : IAppInstances
                     process.Dispose();
                 }
             }
+        }
+    }
+
+    private static bool RunsFrom(Process process, string path)
+    {
+        try
+        {
+            return string.Equals(process.MainModule?.FileName, path, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        {
+            // A copy we can't inspect (another user's, or elevated) might be this program; wait for it.
+            return true;
         }
     }
 }
