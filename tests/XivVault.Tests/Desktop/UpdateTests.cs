@@ -40,6 +40,21 @@ public class UpdatesViewModelTests
     }
 
     [Fact]
+    public async Task The_startup_check_is_skipped_when_the_settings_are_unreadable()
+    {
+        using var host = new DesktopTestHost();
+        var store = host.Get<IConfigStore>();
+        Directory.CreateDirectory(host.Environment.DataDirectory);
+        File.WriteAllText(store.ConfigPath, "{ not json");
+        var updates = host.Get<UpdatesViewModel>();
+
+        await updates.CheckOnStartupAsync();
+
+        Assert.Equal(0, host.Updater.Checks);
+        Assert.Equal(UpdateState.NotChecked, updates.State);
+    }
+
+    [Fact]
     public async Task The_startup_check_finds_a_new_version_without_installing_it()
     {
         using var host = new DesktopTestHost();

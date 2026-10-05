@@ -132,9 +132,10 @@ public sealed partial class UpdatesViewModel : ObservableObject
                 return;
             }
         }
-        catch (XivVaultException)
+        catch (Exception ex) when (ex is XivVaultException or IOException or UnauthorizedAccessException)
         {
             // An unreadable settings file is reported by Settings; it isn't a reason to go online.
+            _logger.LogWarning(ex, "Skipped the update check because the settings could not be read");
             return;
         }
 
