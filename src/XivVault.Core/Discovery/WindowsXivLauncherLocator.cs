@@ -1,3 +1,5 @@
+using System.Xml;
+using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using XivVault.Core.Backup;
 using XivVault.Core.Configuration;
@@ -128,10 +130,20 @@ public sealed class WindowsXivLauncherLocator(
         LauncherFileMarkers.Any(name => File.Exists(Path.Combine(root, name)))
         || LauncherDirectoryMarkers.Any(name => Directory.Exists(Path.Combine(root, name)));
 
-    /// <summary>XIVLauncher installs (Squirrel) into %LOCALAPPDATA%\XIVLauncher with one app-x.y.z folder per version.</summary>
+    /// <summary>
+    /// XIVLauncher 7 installs with Velopack: the app in %LOCALAPPDATA%\XIVLauncher\current, its
+    /// version in current\sq.version. Older versions used Squirrel: a XIVLauncher.exe stub next to
+    /// one app-x.y.z folder per version.
+    /// </summary>
     private (string? Executable, string? Version) FindLauncherExecutable()
     {
         var installRoot = Path.Combine(environment.LocalAppData, "XIVLauncher");
+        var current = Path.Combine(installRoot, "current");
+        if (File.Exists(Path.Combine(current, "XIVLauncher.exe")))
+        {
+            return (Path.Combine(current, "XIVLauncher.exe"), ReadVelopackVersion(Path.Combine(current, "sq.version")));
+        }
+
         var stub = Path.Combine(installRoot, "XIVLauncher.exe");
         if (!File.Exists(stub))
         {
@@ -155,5 +167,19 @@ public sealed class WindowsXivLauncherLocator(
         }
 
         return (stub, version);
+    }
+
+    private static string? ReadVelopackVersion(string manifestPath)
+    {
+        try
+        {
+            var version = XDocument.Load(manifestPath).Descendants()
+                .FirstOrDefault(element => element.Name.LocalName == "version")?.Value.Trim();
+            return string.IsNullOrEmpty(version) ? null : version;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XmlException)
+        {
+            return null;
+        }
     }
 }

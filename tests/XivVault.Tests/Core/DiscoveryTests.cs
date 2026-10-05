@@ -126,4 +126,46 @@ public class DiscoveryTests
         Assert.Equal(Path.Combine(install, "XIVLauncher.exe"), installation.LauncherExecutable);
         Assert.Equal("1.1.2", installation.LauncherVersion);
     }
+
+    [Fact]
+    public void Finds_a_launcher_installed_with_Velopack()
+    {
+        // XIVLauncher 7 installs with Velopack: the app in current\, its version in sq.version.
+        using var host = new TestHost();
+        host.CreateLauncher();
+        var current = Path.Combine(host.Environment.LocalAppData, "XIVLauncher", "current");
+        Directory.CreateDirectory(current);
+        File.WriteAllText(Path.Combine(current, "XIVLauncher.exe"), "app");
+        File.WriteAllText(Path.Combine(current, "sq.version"), """
+            <?xml version="1.0" encoding="utf-8"?>
+            <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+            <metadata>
+            <id>XIVLauncher</id>
+            <version>7.0.20</version>
+            <mainExe>XIVLauncher.exe</mainExe>
+            </metadata>
+            </package>
+            """);
+
+        var installation = host.Locator.Locate().Installation!;
+
+        Assert.Equal(Path.Combine(current, "XIVLauncher.exe"), installation.LauncherExecutable);
+        Assert.Equal("7.0.20", installation.LauncherVersion);
+    }
+
+    [Fact]
+    public void A_Velopack_launcher_with_an_unreadable_manifest_has_no_version()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        var current = Path.Combine(host.Environment.LocalAppData, "XIVLauncher", "current");
+        Directory.CreateDirectory(current);
+        File.WriteAllText(Path.Combine(current, "XIVLauncher.exe"), "app");
+        File.WriteAllText(Path.Combine(current, "sq.version"), "<package");
+
+        var installation = host.Locator.Locate().Installation!;
+
+        Assert.Equal(Path.Combine(current, "XIVLauncher.exe"), installation.LauncherExecutable);
+        Assert.Null(installation.LauncherVersion);
+    }
 }
