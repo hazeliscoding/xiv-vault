@@ -1,0 +1,55 @@
+name: Bug report
+description: Something went wrong with a backup, a restore, scheduling or the app.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. If a restore went wrong, your configuration from just before it is in the newest **Pre-Restore** backup in **Backups**.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: settings-lost
+    attributes:
+      label: Did you lose any settings?
+      description: Plugin or Dalamud settings that are missing or wrong after a backup or restore.
+      options:
+        - "No"
+        - "Yes, and the Pre-Restore backup brought them back"
+        - "Yes, and I could not get them back"
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostic report
+      description: >-
+        In the app, open **Diagnostics** and select **Copy Diagnostic Report**. On the command line,
+        run `xiv-vault doctor --report`. The report holds paths, versions and results, never your
+        plugin settings, and your Windows user folder is shown as `%USERPROFILE%`.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run XIV Vault?
+      options:
+        - Installed with Setup
+        - Portable zip
+        - Command line (xiv-vault.exe)
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log lines
+      description: >-
+        Optional. From `%LOCALAPPDATA%\XIV Vault\logs`. Logs hold paths, counts and results, never
+        settings, but the paths include your Windows user name; remove it if you prefer.
+      render: text

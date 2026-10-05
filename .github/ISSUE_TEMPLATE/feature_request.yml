@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest something XIV Vault should do.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        [ROADMAP.md](https://github.com/hazeliscoding/xiv-vault/blob/main/ROADMAP.md) lists what is planned, and what is not, such as copying plugins or talking to cloud services directly.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation, and what gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+      description: Optional. How you picture it working.

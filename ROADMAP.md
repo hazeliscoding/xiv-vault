@@ -117,7 +117,7 @@ An independent review of the restore and validation code found failure modes; th
 
 - [ ] Back up and restore on the author's own setup with the published release; fix what turns up.
 - [ ] Release 0.1.1: the first update installed copies take from GitHub, and the first delta package.
-- [ ] Issue templates: a bug report that asks for the Diagnostics report, and a feature request.
+- [x] Issue templates: a bug report that asks for the Diagnostics report and whether settings were lost (label those `data-loss`), and a feature request.
 - [ ] Winget manifests for Setup and the CLI.
 
 **Done when:** a 0.1.0 install updates itself to 0.1.1 from GitHub, and `winget install` works for both.
