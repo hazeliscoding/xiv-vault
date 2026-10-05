@@ -11,8 +11,8 @@ XIV Vault is a Windows desktop app and a command-line tool built on one engine. 
 Download the latest release from [Releases](https://github.com/hazeliscoding/xiv-vault/releases):
 
 - `xiv-vault-setup-win-x64.exe`: installs the app for your Windows user, with no administrator prompt, adds it to the Start menu and keeps it up to date. Uninstall it from Windows Settings → Apps; your settings and backups stay.
-- `xiv-vault-desktop-win-x64.zip`: the same app as a portable copy. Unzip it anywhere and run `XivVault.exe`. A portable copy doesn't update itself.
-- `xiv-vault-cli-win-x64.zip`: the command line. Unzip `xiv-vault.exe` into a folder on your `PATH`.
+- `xiv-vault-desktop-win-x64.zip`: the same app as a portable copy. Unzip it anywhere and run `XIV-Vault.exe`. A portable copy doesn't update itself.
+- `xiv-vault-cli-win-x64.zip`: the command line. Unzip `xiv-vault.exe` into a folder on your `PATH`. Keep it out of the app's folder: Windows sees `xiv-vault.exe` and `XIV-Vault.exe` as the same name.
 
 All three are self-contained: no .NET install is needed. Check downloads against `SHA256SUMS` on the release page. The builds are not code-signed yet, so Windows SmartScreen may ask you to confirm the first run. The `.nupkg` and `releases.win.json` files on each release are what installed copies download to update.
 
@@ -77,7 +77,7 @@ Exit codes are stable, so scripts can rely on them:
 
 Turning on automatic backups creates one Windows scheduled task, **XIV Vault Scheduled Backup**, that runs as you with normal permissions. XIV Vault doesn't need to stay open, and there is no background service. If the PC was off at the scheduled time, the backup runs when it next starts. If FFXIV is running, the backup waits for the game to close (up to 6 hours) instead of copying files the game has open.
 
-The task runs the program that set it up: `XivVault.exe --scheduled-backup` (no window) or `xiv-vault backup --scheduled`. Updates keep the installed app in the same place, so the task keeps working, and uninstalling XIV Vault removes it. If you move a portable copy to another folder, set the schedule again; **Diagnostics** warns when the task points to a missing program.
+The task runs the program that set it up: `XIV-Vault.exe --scheduled-backup` (no window) or `xiv-vault backup --scheduled`. Updates keep the installed app in the same place, so the task keeps working, and uninstalling XIV Vault removes it. If you move a portable copy to another folder, set the schedule again; **Diagnostics** warns when the task points to a missing program.
 
 ![Schedule](docs/screenshots/schedule.png)
 

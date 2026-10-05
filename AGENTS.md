@@ -16,6 +16,7 @@ These are the working rules for agents in this repo. XIV Vault (Apache-2.0) back
 - Avalonia 12 ignores a `RenderTransform` set by a style unless the element already has one, so give it `RenderTransform="none"` (or set the transform inline).
 - Check UI changes with `dotnet run --project tools/XivVault.Screenshots -- <folder>`, which renders every screen to PNG without touching the real profile or Task Scheduler.
 - Desktop view models take interfaces only (`IDialogService`, `IShellService`, `IClipboardService`, `IFilePicker`, `IAppUpdater`). No Avalonia or Velopack types in view models and no logic in code-behind.
+- The desktop assembly is `XivVault`; publishing renames its exe to `XIV-Vault.exe` (see `XivVault.Desktop.csproj`). Don't rename the assembly: .NET compares assembly names without case, so it would clash with the CLI's `xiv-vault` in the tests.
 - Config and state records use `{ get; set; }` with defaults, not `init`: source-generated System.Text.Json sets an init property missing from the file to its type's default, so files from older versions would lose new defaults.
 
 ## The safety contract

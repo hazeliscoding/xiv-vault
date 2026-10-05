@@ -25,7 +25,7 @@ Both front ends call `services.AddXivVaultCore()` and resolve the same services 
 |---|---|
 | `src/XivVault.Core` | The engine. No UI code. |
 | `src/XivVault.Cli` | `xiv-vault.exe`: commands, output formatting, exit codes. |
-| `src/XivVault.Desktop` | `XivVault.exe`: views, view models, theme. Also the headless `--scheduled-backup` entry point, Velopack's install and uninstall hooks, and updates. |
+| `src/XivVault.Desktop` | `XIV-Vault.exe` (the `XivVault` assembly, renamed when published): views, view models, theme. Also the headless `--scheduled-backup` entry point, Velopack's install and uninstall hooks, and updates. |
 | `tests/XivVault.Tests` | Core, CLI and view model tests. All run in temp folders. |
 | `tools/XivVault.Screenshots` | Renders every desktop screen to PNG with Avalonia's headless Skia renderer, against a fake XIVLauncher folder. |
 
@@ -82,7 +82,7 @@ The theme in `Themes/` reproduces the approved mockup's tokens. `Motion.axaml` h
 
 ## Installer and updates
 
-The desktop app is packaged with [Velopack](https://velopack.io). An installed copy lives in `%LOCALAPPDATA%\XivVault`: `Update.exe`, a launcher stub, and the app itself in `current\`. Updates replace the contents of `current\`, so `current\XivVault.exe`, which the scheduled task runs, keeps its path. Settings, state and logs stay in `%LOCALAPPDATA%\XIV Vault`.
+The desktop app is packaged with [Velopack](https://velopack.io). An installed copy lives in `%LOCALAPPDATA%\XivVault`: `Update.exe`, a launcher stub, and the app itself in `current\`. Updates replace the contents of `current\`, so `current\XIV-Vault.exe`, which the scheduled task runs, keeps its path. Settings, state and logs stay in `%LOCALAPPDATA%\XIV Vault`.
 
 `Program.Main` runs `VelopackApp` before anything else. It handles Setup's and the uninstaller's hooks and exits:
 
