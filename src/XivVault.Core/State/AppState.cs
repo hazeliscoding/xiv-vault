@@ -11,7 +11,8 @@ public sealed record AppState
     public ScheduledRunRecord? LastScheduledRun { get; init; }
 
     /// <summary>Verification results keyed by archive path, invalidated when size or modified time change.</summary>
-    public Dictionary<string, VerificationRecord> Verifications { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <remarks>Settable, not init, so a state file without this key still gets an empty dictionary (see XivVaultConfig).</remarks>
+    public Dictionary<string, VerificationRecord> Verifications { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 public sealed record ScheduledRunRecord(DateTime AtUtc, ScheduledRunResult Result, string Message, string? BackupFile);

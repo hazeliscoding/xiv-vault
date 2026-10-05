@@ -3,24 +3,26 @@ using System.Text.Json.Serialization;
 
 namespace XivVault.Core.Configuration;
 
+// Properties are settable, not init: source-generated System.Text.Json gives a missing init
+// property its type's default, so a settings file from an older version would lose these defaults.
 public sealed record XivVaultConfig
 {
     public const int DefaultRetentionCount = 10;
     public const int MinRetentionCount = 1;
     public const int MaxRetentionCount = 50;
 
-    public string? BackupDestination { get; init; }
+    public string? BackupDestination { get; set; }
 
-    public int RetentionCount { get; init; } = DefaultRetentionCount;
+    public int RetentionCount { get; set; } = DefaultRetentionCount;
 
-    public bool IncludeDalamudUi { get; init; }
+    public bool IncludeDalamudUi { get; set; }
 
-    public CompressionPreset Compression { get; init; } = CompressionPreset.Balanced;
+    public CompressionPreset Compression { get; set; } = CompressionPreset.Balanced;
 
     /// <summary>Explicit XIVLauncher folder. Null means "detect it".</summary>
-    public string? XivLauncherPathOverride { get; init; }
+    public string? XivLauncherPathOverride { get; set; }
 
-    public ScheduleSettings Schedule { get; init; } = new();
+    public ScheduleSettings Schedule { get; set; } = new();
 }
 
 public enum CompressionPreset
@@ -45,16 +47,17 @@ public static class CompressionPresetExtensions
     };
 }
 
+// Settable for the same reason as XivVaultConfig.
 public sealed record ScheduleSettings
 {
-    public bool Enabled { get; init; }
+    public bool Enabled { get; set; }
 
-    public ScheduleFrequency Frequency { get; init; } = ScheduleFrequency.Weekly;
+    public ScheduleFrequency Frequency { get; set; } = ScheduleFrequency.Weekly;
 
-    public IReadOnlyList<DayOfWeek> Days { get; init; } = [DayOfWeek.Sunday];
+    public IReadOnlyList<DayOfWeek> Days { get; set; } = [DayOfWeek.Sunday];
 
     /// <summary>Local time of day, 24-hour "HH:mm".</summary>
-    public string Time { get; init; } = "12:00";
+    public string Time { get; set; } = "12:00";
 
     [JsonIgnore]
     public TimeOnly TimeOfDay => TimeOnly.TryParseExact(Time, "HH:mm", out var time) ? time : new TimeOnly(12, 0);

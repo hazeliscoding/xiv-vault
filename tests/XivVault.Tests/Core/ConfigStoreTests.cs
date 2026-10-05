@@ -55,6 +55,25 @@ public class ConfigStoreTests
     }
 
     [Fact]
+    public void Keys_missing_from_the_file_keep_their_defaults()
+    {
+        using var env = new TestEnvironment();
+        var store = new ConfigStore(env);
+        Directory.CreateDirectory(env.DataDirectory);
+        File.WriteAllText(store.ConfigPath, "{ \"includeDalamudUi\": true, \"schedule\": { \"enabled\": true } }");
+
+        var config = store.Load();
+
+        Assert.True(config.IncludeDalamudUi);
+        Assert.Equal(XivVaultConfig.DefaultRetentionCount, config.RetentionCount);
+        Assert.Equal(CompressionPreset.Balanced, config.Compression);
+        Assert.True(config.Schedule.Enabled);
+        Assert.Equal(ScheduleFrequency.Weekly, config.Schedule.Frequency);
+        Assert.Equal([DayOfWeek.Sunday], config.Schedule.Days);
+        Assert.Equal("12:00", config.Schedule.Time);
+    }
+
+    [Fact]
     public void Malformed_json_is_an_invalid_configuration()
     {
         using var env = new TestEnvironment();
