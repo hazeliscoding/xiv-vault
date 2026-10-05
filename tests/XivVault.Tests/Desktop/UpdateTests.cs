@@ -232,7 +232,7 @@ public class UninstallCleanupTests
         var store = host.Get<IConfigStore>();
         var settings = new ScheduleSettings { Enabled = true, Frequency = ScheduleFrequency.Daily, Time = "21:00" };
         store.Save(store.Load() with { Schedule = settings });
-        InstallTask(host, InstallFolder + @"\current\XivVault.exe");
+        InstallTask(host, InstallFolder + @"\current\XIV-Vault.exe");
 
         await host.Get<UninstallCleanup>().RunAsync(InstallFolder, TestContext.Current.CancellationToken);
 
@@ -245,7 +245,7 @@ public class UninstallCleanupTests
 
     [Theory]
     [InlineData(@"C:\Tools\xiv-vault.exe")]
-    [InlineData(@"C:\Users\roze\AppData\Local\XivVault Portable\XivVault.exe")]
+    [InlineData(@"C:\Users\roze\AppData\Local\XivVault Portable\XIV-Vault.exe")]
     public async Task Keeps_a_task_that_starts_another_copy(string executable)
     {
         using var host = new DesktopTestHost();

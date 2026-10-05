@@ -367,7 +367,7 @@ public class SettingsViewModelTests
 
 public class ScheduleViewModelTests
 {
-    private static readonly ScheduledCommand Existing = new(@"C:\Apps\XIV Vault\XivVault.exe", "--scheduled-backup");
+    private static readonly ScheduledCommand Existing = new(@"C:\Apps\XIV Vault\XIV-Vault.exe", "--scheduled-backup");
 
     [Fact]
     public async Task Opening_the_screen_leaves_an_existing_task_alone()

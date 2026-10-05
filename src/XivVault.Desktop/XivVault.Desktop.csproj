@@ -30,6 +30,15 @@
     <AvaloniaResource Include="..\..\docs\brand\xiv-vault.ico" Link="Assets\xiv-vault.ico" />
   </ItemGroup>
 
+  <!--
+    The published app is XIV-Vault.exe. The assembly stays XivVault because .NET compares assembly
+    names without case, and the tests load this app and the CLI (xiv-vault) together. A
+    single-file build carries the app inside the exe, so the file can be renamed.
+  -->
+  <Target Name="NamePublishedExe" AfterTargets="Publish" Condition="'$(PublishSingleFile)' == 'true'">
+    <Move SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFiles="$(PublishDir)XIV-Vault.exe" />
+  </Target>
+
   <ItemGroup>
     <InternalsVisibleTo Include="XivVault.Tests" />
     <InternalsVisibleTo Include="XivVault.Screenshots" />

@@ -45,7 +45,7 @@ jobs:
         run: |
           dotnet tool restore
           dotnet vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ github.token }} --outputDir artifacts/velopack
-          dotnet vpk pack --runtime win-x64 --packId XivVault --packVersion ${{ env.VERSION }} --packTitle "XIV Vault" --packAuthors "Hazel Granados" --packDir artifacts/publish/XivVault.Desktop --mainExe XivVault.exe --icon docs/brand/xiv-vault.ico --shortcuts StartMenuRoot --noPortable --outputDir artifacts/velopack
+          dotnet vpk pack --runtime win-x64 --packId XivVault --packVersion ${{ env.VERSION }} --packTitle "XIV Vault" --packAuthors "Hazel Granados" --packDir artifacts/publish/XivVault.Desktop --mainExe XIV-Vault.exe --icon docs/brand/xiv-vault.ico --shortcuts StartMenuRoot --noPortable --outputDir artifacts/velopack
 
       - name: Package
         shell: pwsh
@@ -59,7 +59,7 @@ jobs:
             Compress-Archive -Path "$stage/*" -DestinationPath "$out/$zip.zip" -Force
           }
           Pack artifacts/publish/XivVault.Cli/xiv-vault.exe 'xiv-vault-cli-win-x64'
-          Pack artifacts/publish/XivVault.Desktop/XivVault.exe 'xiv-vault-desktop-win-x64'
+          Pack artifacts/publish/XivVault.Desktop/XIV-Vault.exe 'xiv-vault-desktop-win-x64'
           # This version's update packages and the feed. The feed also lists older versions,
           # whose packages stay on their own releases.
           $velopack = Get-Content artifacts/velopack/assets.win.json | ConvertFrom-Json

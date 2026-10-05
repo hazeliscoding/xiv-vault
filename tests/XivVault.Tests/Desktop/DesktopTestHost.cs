@@ -89,7 +89,7 @@ public sealed class DesktopTestHost : IDisposable
 
     private sealed class FakeSchedulerTarget : ISchedulerTarget
     {
-        public ScheduledCommand Command { get; } = new(@"C:\Apps\XIV Vault\XivVault.exe", "--scheduled-backup");
+        public ScheduledCommand Command { get; } = new(@"C:\Apps\XIV Vault\XIV-Vault.exe", "--scheduled-backup");
     }
 }
 
