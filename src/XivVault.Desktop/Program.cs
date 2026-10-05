@@ -18,10 +18,13 @@ internal static class Program
         // Setup and the uninstaller start the app with their own arguments; Velopack handles those
         // and exits. A downloaded update is only installed when the user chooses it in Settings, so
         // a scheduled backup never starts by replacing the program it runs from.
-        VelopackApp.Build()
-            .SetAutoApplyOnStartup(false)
-            .OnBeforeUninstallFastCallback(_ => RemoveScheduleBeforeUninstall())
-            .Run();
+        if (VelopackUpdater.IsInstalledWithSetup())
+        {
+            VelopackApp.Build()
+                .SetAutoApplyOnStartup(false)
+                .OnBeforeUninstallFastCallback(_ => RemoveScheduleBeforeUninstall())
+                .Run();
+        }
 
         // The scheduled task runs the app with this argument: back up with no window, then exit.
         if (args.Contains(DesktopSchedulerTarget.ScheduledBackupArgument, StringComparer.OrdinalIgnoreCase))

@@ -35,6 +35,11 @@ public sealed class VelopackUpdater : IAppUpdater
 
     public VelopackUpdater(ILogger<VelopackUpdater> logger)
     {
+        if (!IsInstalledWithSetup())
+        {
+            return;
+        }
+
         try
         {
             var source = Environment.GetEnvironmentVariable(SourceVariable);
@@ -45,12 +50,21 @@ public sealed class VelopackUpdater : IAppUpdater
         }
         catch (Exception ex)
         {
-            // A build run from source or a portable zip has no install to update; that is not an error.
-            logger.LogDebug(ex, "Updates are unavailable for this copy");
+            logger.LogWarning(ex, "Updates are unavailable for this copy");
         }
     }
 
     public bool IsInstalled => _manager is not null;
+
+    /// <summary>
+    /// True for a copy installed with Setup: the app and its Velopack manifest in <c>current\</c>,
+    /// with Update.exe one folder up. Velopack is only started for these, because starting it
+    /// creates a log folder in %LOCALAPPDATA%, even for a portable copy or a build from source.
+    /// </summary>
+    public static bool IsInstalledWithSetup() =>
+        Path.GetDirectoryName(Environment.ProcessPath) is { } folder
+        && File.Exists(Path.Combine(folder, "sq.version"))
+        && File.Exists(Path.Combine(folder, "..", "Update.exe"));
 
     public async Task<AvailableUpdate?> CheckAsync(CancellationToken cancellationToken = default)
     {

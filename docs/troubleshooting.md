@@ -57,7 +57,7 @@ XIV Vault restores plugin settings, not plugins. Open XIVLauncher and start the 
 - **"Not checked" in Settings → Updates:** XIV Vault couldn't reach GitHub. You may be offline, a firewall may block it, or GitHub's limit of 60 checks an hour per network was reached. Select **Check Now** later, or download the release yourself.
 - **Update and Restart says something is still running:** an update closes every running copy of XIV Vault, so it waits for a backup or restore to finish, and for a scheduled backup or another XIV Vault window to close. Try again when it has finished.
 - **"This copy runs from a zip file":** portable copies don't update. Install XIV Vault with `xiv-vault-setup-win-x64.exe` to get updates. Your settings carry over. If the portable copy set up automatic backups, turn them off and on again in the installed app, so the task starts the installed copy.
-- Setup and the updater write their own log to `%LOCALAPPDATA%\velopack\velopack_XivVault.log`.
+- Setup logs to `%LOCALAPPDATA%\velopack\velopack.log`, and the installed app's updates to `velopack_XivVault.log` in the same folder. Uninstalling leaves both; delete them if you like.
 
 ## Logs
 
