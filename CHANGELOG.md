@@ -8,6 +8,7 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 - Diagnostics showed the XIVLauncher folder joined to the folder XIV Vault runs from, such as `%USERPROFILE%\AppData\Local\XivVault\current\%AppData%\XIVLauncher`, when that folder was inside the user profile, as it is for the installed app.
 - XIVLauncher 7, which installs with Velopack, was reported as "XIVLauncher app not found", so Open XIVLauncher was unavailable.
+- The restore review warned that plugins would "return to their earlier settings" when their files had only been saved again without changes, which plugins often do when the game closes. It now compares contents with the backup.
 
 ## [0.1.0] - 2026-10-05
 

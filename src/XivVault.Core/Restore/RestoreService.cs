@@ -171,19 +171,44 @@ public sealed class RestoreService : IRestoreService
             current.Has(PortableItem.DalamudUi),
             DalamudConfigReader.CountCustomRepositories(Path.Combine(target.DataPath, BackupAllowlist.DalamudConfigFile)));
 
-        // Only plugins the backup also holds get reverted; plugins it doesn't know are left alone.
+        // A file counts as changed when it was written after the backup and differs from the copy in
+        // it. The date alone isn't enough: plugins and Dalamud often save their settings unchanged.
+        // Files the backup doesn't hold are left alone by a restore, so they never count.
         var created = record.CreatedAtUtc;
-        var inBackup = new HashSet<string>(record.PluginNames, StringComparer.OrdinalIgnoreCase);
+        var backupHashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in manifest.Files)
+        {
+            backupHashes.TryAdd(file.Path, file.Sha256);
+        }
+
+        bool ChangedSinceBackup(PortableFile file) =>
+            file.LastWriteUtc > created
+            && backupHashes.TryGetValue(file.ArchivePath, out var hash)
+            && !string.Equals(HashOrNull(file.SourcePath), hash, StringComparison.OrdinalIgnoreCase);
+
         var changed = current.Files
-            .Where(file => file.Item == PortableItem.PluginConfig && file.LastWriteUtc > created)
+            .Where(file => file.Item == PortableItem.PluginConfig && ChangedSinceBackup(file))
             .Select(file => BackupAllowlist.PluginNames([file.ArchivePath])[0])
-            .Where(inBackup.Contains)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToList();
-        var configChanged = manifest.Contents.DalamudConfig && current.LastWriteUtc(PortableItem.DalamudConfig) > created;
+        var configChanged = current.Files.Any(file => file.Item == PortableItem.DalamudConfig && ChangedSinceBackup(file));
 
         return new RestorePreview(record, contents, target, null, currentConfig, changed, configChanged);
+    }
+
+    /// <summary>The file's SHA-256, or null when it can't be read; an unreadable file counts as changed.</summary>
+    private static string? HashOrNull(string path)
+    {
+        try
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            return Convert.ToHexStringLower(SHA256.HashData(stream));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     private IReadOnlyList<SafetyCheck> Check(string archivePath, string? source, CancellationToken cancellationToken)

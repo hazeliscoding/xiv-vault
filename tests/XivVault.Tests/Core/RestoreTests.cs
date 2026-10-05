@@ -295,6 +295,7 @@ public class RestoreTests
             File.SetLastWriteTimeUtc(file, backup.Record.CreatedAtUtc.AddHours(-2));
         }
 
+        launcher.WritePluginConfig("Splatoon", "{\"changed\":true}");
         File.SetLastWriteTimeUtc(Path.Combine(launcher.PluginConfigs, "Splatoon.json"), host.Clock.Now.UtcDateTime.AddHours(1));
         launcher.WritePluginConfig("NotInBackup", "{}");
         File.SetLastWriteTimeUtc(Path.Combine(launcher.PluginConfigs, "NotInBackup.json"), host.Clock.Now.UtcDateTime.AddHours(1));
@@ -307,6 +308,41 @@ public class RestoreTests
         Assert.Equal(FakeXivLauncher.DefaultPlugins.Length + 1, preview.Current!.PluginConfigCount);
         Assert.Equal(["Splatoon"], preview.PluginsChangedSinceBackup);
         Assert.True(preview.IsOlderThanCurrent);
+    }
+
+    [Fact]
+    public async Task Preview_ignores_settings_saved_again_without_changes()
+    {
+        // Plugins and Dalamud often rewrite their settings unchanged, for example when the game closes.
+        using var host = new TestHost();
+        var launcher = host.CreateLauncher();
+        var backup = await host.BackUpAsync();
+        var later = host.Clock.Now.UtcDateTime.AddHours(1);
+        foreach (var file in Directory.EnumerateFiles(launcher.DataPath, "*", SearchOption.AllDirectories))
+        {
+            File.SetLastWriteTimeUtc(file, later);
+        }
+
+        var preview = await host.Restores.PreviewAsync(backup.Record.FilePath, cancellationToken: Ct);
+
+        Assert.Empty(preview.PluginsChangedSinceBackup);
+        Assert.False(preview.DalamudConfigChangedSinceBackup);
+        Assert.False(preview.IsOlderThanCurrent);
+    }
+
+    [Fact]
+    public async Task Preview_reports_Dalamud_settings_changed_since_the_backup()
+    {
+        using var host = new TestHost();
+        var launcher = host.CreateLauncher();
+        var backup = await host.BackUpAsync();
+        launcher.Write(FakeXivLauncher.DalamudConfig(repos: 3), "dalamudConfig.json");
+        File.SetLastWriteTimeUtc(Path.Combine(launcher.DataPath, "dalamudConfig.json"), host.Clock.Now.UtcDateTime.AddHours(1));
+
+        var preview = await host.Restores.PreviewAsync(backup.Record.FilePath, cancellationToken: Ct);
+
+        Assert.Empty(preview.PluginsChangedSinceBackup);
+        Assert.True(preview.DalamudConfigChangedSinceBackup);
     }
 
     /// <summary>Every file except XIV Vault's own folders (backups, state), which a restore attempt may update.</summary>
