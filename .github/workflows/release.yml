@@ -39,6 +39,14 @@ jobs:
         shell: pwsh
         run: ./scripts/smoke-test.ps1 -Cli artifacts/publish/XivVault.Cli/xiv-vault.exe
 
+      # Setup.exe and the update packages installed copies download. The previous published
+      # release is fetched first so vpk can add a small delta update from it.
+      - name: Installer and updates
+        run: |
+          dotnet tool restore
+          dotnet vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ github.token }} --outputDir artifacts/velopack
+          dotnet vpk pack --runtime win-x64 --packId XivVault --packVersion ${{ env.VERSION }} --packTitle "XIV Vault" --packAuthors "Hazel Granados" --packDir artifacts/publish/XivVault.Desktop --mainExe XivVault.exe --icon docs/brand/xiv-vault.ico --shortcuts StartMenuRoot --noPortable --outputDir artifacts/velopack
+
       - name: Package
         shell: pwsh
         run: |
@@ -52,7 +60,13 @@ jobs:
           }
           Pack artifacts/publish/XivVault.Cli/xiv-vault.exe 'xiv-vault-cli-win-x64'
           Pack artifacts/publish/XivVault.Desktop/XivVault.exe 'xiv-vault-desktop-win-x64'
-          $sums = Get-ChildItem $out -Filter *.zip | ForEach-Object {
+          # This version's update packages and the feed. The feed also lists older versions,
+          # whose packages stay on their own releases.
+          $velopack = Get-Content artifacts/velopack/assets.win.json | ConvertFrom-Json
+          foreach ($asset in $velopack | Where-Object Type -ne 'Installer') { Copy-Item "artifacts/velopack/$($asset.RelativeFileName)" $out }
+          Copy-Item artifacts/velopack/releases.win.json $out
+          Copy-Item artifacts/velopack/XivVault-win-Setup.exe "$out/xiv-vault-setup-win-x64.exe"
+          $sums = Get-ChildItem "$out/*" -Include *.zip, *.exe | ForEach-Object {
             "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
           }
           # LF endings, so `sha256sum -c SHA256SUMS` works on any platform.
@@ -85,4 +99,4 @@ jobs:
             --repo "${{ github.repository }}" \
             --draft \
             --title "XIV Vault ${{ github.ref_name }}" \
-            --notes "Windows x64, self-contained: no .NET install needed. See CHANGELOG.md for what changed. Verify downloads against SHA256SUMS."
+            --notes "Windows x64, self-contained: no .NET install needed. Install the app with xiv-vault-setup-win-x64.exe, which keeps it up to date; the zips are portable copies. See CHANGELOG.md for what changed. Verify downloads against SHA256SUMS."
