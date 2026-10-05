@@ -39,6 +39,7 @@ XIV Vault is trusted with configuration people spent years building. Never break
 - `dotnet run --project src/XivVault.Cli -- <command>` runs the CLI; `dotnet run --project src/XivVault.Desktop` runs the app.
 - `dotnet run scripts/make-icons.cs` rebuilds `docs/brand/xiv-vault.ico` from `docs/brand/app-icon.svg`.
 - `dotnet tool restore` installs `vpk`, which `release.yml` uses to build Setup and the update packages. `XIV_VAULT_UPDATE_SOURCE` points an installed copy at a local release folder to try an update.
+- `./scripts/make-winget-manifests.ps1 -Version <x.y.z>` writes and validates the winget manifests for a published release into `artifacts/winget`.
 
 ## Working style
 
