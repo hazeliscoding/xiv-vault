@@ -78,9 +78,9 @@ internal sealed class FakeScheduler : ICommandRunner
     }
 }
 
-internal sealed class StillMotion : IMotionSettings
+internal sealed class FixedMotion(bool reduce) : IMotionSettings
 {
-    public bool ReduceMotion => true;
+    public bool ReduceMotion => reduce;
 }
 
 /// <summary>An installed copy that talks to no server; set <see cref="Latest"/> to offer an update.</summary>

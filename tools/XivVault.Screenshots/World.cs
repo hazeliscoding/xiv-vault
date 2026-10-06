@@ -28,7 +28,7 @@ internal sealed class World : IDisposable
 
     private readonly ServiceProvider _services;
 
-    private World(string root, bool withHistory)
+    private World(string root, bool withHistory, bool demo)
     {
         Root = root;
         Environment = new FakeEnvironment(root);
@@ -41,9 +41,15 @@ internal sealed class World : IDisposable
         collection.AddXivVaultDesktop();
 
         // The desktop registers its own UI services, so these replace them afterwards.
-        collection.AddSingleton<IMotionSettings, StillMotion>();
+        collection.AddSingleton<IMotionSettings>(new FixedMotion(reduce: !demo));
         collection.AddSingleton<IShellService, NoShell>();
         collection.AddSingleton<IAppUpdater>(Updater);
+        if (demo)
+        {
+            collection.AddSingleton<IBackupService>(provider => new PacedBackupService(provider.GetRequiredService<BackupService>(), TimeSpan.FromSeconds(2.5)));
+            collection.AddSingleton<IRestoreService>(provider => new PacedRestoreService(ActivatorUtilities.CreateInstance<RestoreService>(provider), TimeSpan.FromSeconds(1.5)));
+        }
+
         _services = collection.BuildServiceProvider();
         CreateLauncher(withHistory ? 40 : 43);
         if (withHistory)
@@ -66,7 +72,8 @@ internal sealed class World : IDisposable
 
     public string LauncherPath => Path.Combine(Environment.RoamingAppData, "XIVLauncher");
 
-    public static World Create(string root, bool withHistory) => new(root, withHistory);
+    /// <summary>A fake PC. A demo world has animations on and paces backups and restores for recording.</summary>
+    public static World Create(string root, bool withHistory, bool demo = false) => new(root, withHistory, demo);
 
     public void Dispose()
     {
@@ -90,8 +97,7 @@ internal sealed class World : IDisposable
         File.WriteAllText(Path.Combine(LauncherPath, "dalamudConfig.json"),
             """{ "ThirdRepoList": { "$values": [ { "Url": "https://repo.example.com/a.json" }, { "Url": "https://repo.example.com/b.json" } ] } }""");
 
-        // Random bytes don't compress, so archive sizes look like a real configuration's.
-        File.WriteAllBytes(Path.Combine(LauncherPath, "dalamudVfs.db"), RandomNumberGenerator.GetBytes(17_800_000));
+        File.WriteAllBytes(Path.Combine(LauncherPath, "dalamudVfs.db"), RandomNumberGenerator.GetBytes(900_000));
         File.WriteAllText(Path.Combine(LauncherPath, "dalamudUI.ini"), "[Window][Debug##Default]\nPos=60,60\n");
         Directory.CreateDirectory(Path.Combine(LauncherPath, "installedPlugins"));
         for (var i = 0; i < pluginCount; i++)
@@ -99,15 +105,23 @@ internal sealed class World : IDisposable
             AddPlugin(Plugins[i]);
         }
 
-        var install = Path.Combine(Environment.LocalAppData, "XIVLauncher");
-        Directory.CreateDirectory(Path.Combine(install, "app-1.1.2"));
-        File.WriteAllText(Path.Combine(install, "XIVLauncher.exe"), "stub");
+        // XIVLauncher 7 installs with Velopack: the app and its version in current\.
+        var current = Path.Combine(Environment.LocalAppData, "XIVLauncher", "current");
+        Directory.CreateDirectory(current);
+        File.WriteAllText(Path.Combine(current, "XIVLauncher.exe"), "stub");
+        File.WriteAllText(Path.Combine(current, "sq.version"), "<package><metadata><id>XIVLauncher</id><version>7.0.20</version></metadata></package>");
     }
 
     private void AddPlugin(string name)
     {
         var folder = Path.Combine(LauncherPath, "pluginConfigs");
         File.WriteAllText(Path.Combine(folder, name + ".json"), $$"""{ "Version": 3, "Plugin": "{{name}}" }""");
+
+        // Most of a real configuration's size is in plugin data, spread unevenly across plugins.
+        // Random bytes don't compress, so archive sizes and backup progress look like the real thing.
+        var size = 150_000 + (name.Sum(c => c) * 7919 % 500) * 1_000;
+        Directory.CreateDirectory(Path.Combine(folder, name));
+        File.WriteAllBytes(Path.Combine(folder, name, "profiles.dat"), RandomNumberGenerator.GetBytes(size));
     }
 
     private void CreateHistory()
