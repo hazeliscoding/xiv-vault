@@ -55,6 +55,14 @@ An independent review of the restore and validation code found failure modes; th
 - **Synced folders are the main case to harden.** Listing backups opens every archive, and verification reads each one in full, so on a new PC with OneDrive Files On-Demand, opening XIV Vault downloads every backup.
 - **Code signing waits until after 1.0**, once there is an established userbase. Until then SmartScreen asks users to confirm Setup and the zips, and the README says so.
 
+## Decisions (2026-10-06, game settings)
+
+- **Game settings are part of 1.0.** XIV Vault also backs up the game's own settings from `Documents\My Games\FINAL FANTASY XIV - A Realm Reborn`: HUD layout, hotbars, keybinds, macros and gear sets, which are what people lose on a new PC. The folder is found through Documents, so a Documents folder that OneDrive has moved is followed. They come before 1.0 because 1.0 writes the backup format down as stable.
+- **Game allowlist:** `MACROSYS.dat`, the `FFXIV_CHARA_*.dat` appearance saves, and the `.DAT` files directly inside each `FFXIV_CHR*` character folder, matched by extension so a file added by a game patch is not silently missed. `FFXIV.cfg` only when the user opts in, because it holds resolution, monitor and window mode that may not suit another PC. Never `log/` (chat logs), `screenshots/`, `cfgcopy/`, `*.old` or `FFXIV_BOOT.cfg`. The files are copied byte for byte and never parsed.
+- **Character folders are named by a content ID that identifies the character.** Logs, Diagnostics and the UI never show it; they count characters. A restore writes each character's files back to the folder with the same name, never to another character, and a character folder the backup doesn't contain stays.
+- **Backup format:** game files go under `payload/game/`, and the manifest moves to `schemaVersion: 2` with a `contents` flag for them. Version 1 backups still restore, and older XIV Vault versions refuse version 2 with their existing "made by a newer XIV Vault" message.
+- **The same guards as Dalamud settings.** The safety snapshot holds every game file a restore would replace, a restore refuses while the game runs (it rewrites these files on logout), and a failed restore puts back what it replaced in both folders.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
@@ -140,7 +148,18 @@ An independent review of the restore and validation code found failure modes; th
 
 **Done when:** restoring one plugin's settings leaves every other plugin and Dalamud's settings as they were.
 
-## M10: 1.0
+## M10: Game settings (0.4)
+
+- [ ] Back up the game allowlist under `payload/game/` with manifest version 2, and validate it by the same rules as the Dalamud payload.
+- [ ] Restore game settings: in the safety snapshot, by character folder, refused while the game runs, rolled back across both folders on failure.
+- [ ] A PC where the game has never started: check whether the game keeps files restored before its first start, then either create the folder or ask the user to start the game once.
+- [ ] Game settings in `status`, `doctor`, Overview and the backup list; a switch in Settings, with `FFXIV.cfg` as its own opt-in; their own choice in the restore review step and in `xiv-vault restore`.
+- [ ] Logs and the Diagnostics report count characters and never show a content ID.
+- [ ] README safety model, AGENTS.md safety contract and `docs/backup-format.md` cover game settings.
+
+**Done when:** tests back up a fake game folder beside a fake XIVLauncher folder and restore it, the chat log, running-game, content-ID and partial-failure cases fail safely, and on the author's setup a restore brings back the HUD layout, hotbars and macros in game.
+
+## M11: 1.0
 
 - [ ] Real 0.1.0 archives kept as test files, which every later version must validate and restore.
 - [ ] The stable parts written down: backup format, CLI commands and options, JSON output, exit codes, and what a major version may change.
@@ -157,7 +176,7 @@ An independent review of the restore and validation code found failure modes; th
 ## Not planned
 
 - Copying plugin binaries, or installing plugins.
-- Backing up the game itself.
+- Backing up the game install, screenshots or chat logs. Only its settings are backed up (M10).
 - Cloud APIs (Google Drive, Dropbox, OneDrive, S3). A folder synced by their own clients is enough.
 - Accounts, telemetry, a web dashboard.
 - A Windows service or tray daemon.
