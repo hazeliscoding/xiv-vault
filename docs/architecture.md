@@ -27,7 +27,7 @@ Both front ends call `services.AddXivVaultCore()` and resolve the same services 
 | `src/XivVault.Cli` | `xiv-vault.exe`: commands, output formatting, exit codes. |
 | `src/XivVault.Desktop` | `XIV-Vault.exe` (the `XivVault` assembly, renamed when published): views, view models, theme. Also the headless `--scheduled-backup` entry point, Velopack's install and uninstall hooks, and updates. |
 | `tests/XivVault.Tests` | Core, CLI and view model tests. All run in temp folders. |
-| `tools/XivVault.Screenshots` | Renders every desktop screen to PNG with Avalonia's headless Skia renderer, against a fake XIVLauncher folder. |
+| `tools/XivVault.Screenshots` | Renders every desktop screen to PNG with Avalonia's headless Skia renderer, against a fake XIVLauncher folder. With `--demo`, records the README's GIF: a real backup and restore of the fake profile, slowed so the progress shows, encoded with ffmpeg. |
 
 ## Core services
 

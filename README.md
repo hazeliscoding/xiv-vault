@@ -4,7 +4,7 @@
 
 XIV Vault is a Windows desktop app and a command-line tool built on one engine. Every backup is hash-verified, and every restore takes a safety backup first.
 
-![Overview](docs/screenshots/overview.png)
+![XIV Vault backing up a Dalamud setup, then restoring it with a safety backup first](docs/screenshots/demo.gif)
 
 ## Install
 
