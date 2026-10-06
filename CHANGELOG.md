@@ -4,6 +4,8 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-06
+
 ### Fixed
 
 - After a backup, the restore wizard still preselected the backup that was newest when the app opened. It now follows the newest backup until you choose one.
@@ -33,6 +35,7 @@ First release.
 - Installer: `xiv-vault-setup-win-x64.exe` installs the desktop app for the current user and keeps it up to date from GitHub releases. Updates install only when chosen in Settings, wait for running backups, restores and scheduled backups, and the check can be turned off. Uninstalling removes the scheduled backup task.
 - Self-contained Windows x64 builds: `xiv-vault-setup-win-x64.exe`, plus portable `xiv-vault-desktop-win-x64.zip` and `xiv-vault-cli-win-x64.zip`.
 
-[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/hazeliscoding/xiv-vault/releases/tag/v0.1.0
