@@ -218,6 +218,42 @@ public class RestoreViewModelTests
     }
 
     [Fact]
+    public async Task The_newest_backup_stays_selected_until_one_is_chosen()
+    {
+        // The wizard is built when the app opens; a backup made afterwards must become the default.
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        var restore = host.Get<RestoreViewModel>();
+        await host.Session.RefreshAsync();
+        var first = restore.Selected!.FilePath;
+
+        await host.BackUpAsync();
+        await host.Session.RefreshAsync();
+
+        Assert.NotEqual(first, restore.Selected!.FilePath);
+        Assert.Equal(restore.Choices[0].FilePath, restore.Selected.FilePath);
+    }
+
+    [Fact]
+    public async Task A_backup_the_user_chose_stays_selected_when_a_new_one_appears()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        await host.BackUpAsync();
+        var restore = host.Get<RestoreViewModel>();
+        await host.Session.RefreshAsync();
+        var older = restore.Choices[1].FilePath;
+        restore.Selected = restore.Choices[1];
+
+        await host.BackUpAsync();
+        await host.Session.RefreshAsync();
+
+        Assert.Equal(older, restore.Selected!.FilePath);
+    }
+
+    [Fact]
     public async Task Safety_checks_block_the_restore_while_the_game_runs()
     {
         using var host = new DesktopTestHost();

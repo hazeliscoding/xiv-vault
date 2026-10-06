@@ -55,6 +55,11 @@ public sealed partial class RestoreViewModel : PageViewModel
     private readonly List<string> _extraFiles = [];
     private string? _pendingSelection;
 
+    // Until the user picks a backup, the newest one is selected, including one made after the
+    // wizard was built. A backup the user picked stays selected as new ones appear.
+    private bool _userChose;
+    private bool _rebuilding;
+
     public RestoreViewModel(
         DesktopSession session,
         IBackupCatalog catalog,
@@ -187,6 +192,11 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     partial void OnSelectedChanged(BackupRowViewModel? value)
     {
+        if (!_rebuilding)
+        {
+            _userChose = true;
+        }
+
         OnPropertyChanged(nameof(SelectedTitle));
         OnPropertyChanged(nameof(RestoreSummary));
         ContinueCommand.NotifyCanExecuteChanged();
@@ -230,6 +240,7 @@ public sealed partial class RestoreViewModel : PageViewModel
         Step = 1;
         ErrorMessage = null;
         Result = null;
+        _userChose = false;
         _pendingSelection = backupPath;
         RebuildChoices();
     }
@@ -465,7 +476,8 @@ public sealed partial class RestoreViewModel : PageViewModel
         }
 
         var now = _session.Clock.GetLocalNow().DateTime;
-        var keep = _pendingSelection ?? Selected?.FilePath;
+        var keep = _pendingSelection ?? (_userChose ? Selected?.FilePath : null);
+        _userChose |= _pendingSelection is not null;
         var records = (_session.Status?.Backups ?? []).Where(record => record.HasManifest).ToList();
         foreach (var extra in _extraFiles)
         {
@@ -476,15 +488,24 @@ public sealed partial class RestoreViewModel : PageViewModel
         }
 
         Destination = _session.Status is { } status ? _paths.Friendly(status.Destination) : "";
-        Choices.Clear();
-        foreach (var record in records)
+        _rebuilding = true;
+        try
         {
-            Choices.Add(new BackupRowViewModel(record, now));
+            Choices.Clear();
+            foreach (var record in records)
+            {
+                Choices.Add(new BackupRowViewModel(record, now));
+            }
+
+            Selected = Choices.FirstOrDefault(choice => string.Equals(choice.FilePath, keep, StringComparison.OrdinalIgnoreCase))
+                ?? Choices.FirstOrDefault(choice => !choice.IsSafety && choice.CanRestore)
+                ?? Choices.FirstOrDefault();
+        }
+        finally
+        {
+            _rebuilding = false;
         }
 
-        Selected = Choices.FirstOrDefault(choice => string.Equals(choice.FilePath, keep, StringComparison.OrdinalIgnoreCase))
-            ?? Choices.FirstOrDefault(choice => !choice.IsSafety && choice.CanRestore)
-            ?? Choices.FirstOrDefault();
         _pendingSelection = null;
         OnPropertyChanged(nameof(HasChoices));
         OnPropertyChanged(nameof(Destination));

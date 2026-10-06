@@ -4,6 +4,10 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+### Fixed
+
+- After a backup, the restore wizard still preselected the backup that was newest when the app opened. It now follows the newest backup until you choose one.
+
 ## [0.1.1] - 2026-10-05
 
 ### Fixed
