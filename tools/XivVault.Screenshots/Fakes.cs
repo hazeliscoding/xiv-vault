@@ -5,6 +5,14 @@ using XivVault.Desktop.Services;
 
 namespace XivVault.Screenshots;
 
+/// <summary>Archives the screenshots show as stored in the cloud, as on a new PC with OneDrive Files On-Demand.</summary>
+internal sealed class CloudFiles : IFileAvailability
+{
+    public HashSet<string> OnlineOnly { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public bool IsOnlineOnly(string path) => OnlineOnly.Contains(Path.GetFullPath(path));
+}
+
 internal sealed class FakeEnvironment : IAppEnvironment
 {
     public FakeEnvironment(string root)

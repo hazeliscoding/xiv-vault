@@ -79,6 +79,21 @@ internal static class Program
         Shot(freshWindow, "overview-empty");
         freshWindow.Close();
 
+        // A new PC whose backup folder synced with Files On-Demand: every archive is still in the cloud.
+        using var newPc = World.Create(root + "-new-pc", withHistory: true);
+        newPc.MoveBackupsToCloud();
+        App.ServicesOverride = () => newPc.Services;
+        var cloudWindow = Open(newPc);
+        var cloudMain = (MainWindowViewModel)cloudWindow.DataContext!;
+        Shot(cloudWindow, "overview-cloud");
+        Go(cloudMain, AppPage.Backups);
+        Shot(cloudWindow, "backups-cloud");
+        Go(cloudMain, AppPage.Restore);
+        Shot(cloudWindow, "restore-1-cloud");
+        Run(newPc.Services.GetRequiredService<RestoreViewModel>().ContinueCommand.ExecuteAsync(null));
+        Shot(cloudWindow, "restore-2-cloud-review");
+        cloudWindow.Close();
+
         Console.WriteLine($"Screenshots written to {_output}");
         return 0;
     }

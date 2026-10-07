@@ -38,6 +38,7 @@ internal sealed class World : IDisposable
         collection.AddSingleton<TimeProvider>(Clock);
         collection.AddSingleton<IProcessInspector, NoProcesses>();
         collection.AddSingleton<ICommandRunner, FakeScheduler>();
+        collection.AddSingleton<IFileAvailability>(Cloud);
         collection.AddXivVaultDesktop();
 
         // The desktop registers its own UI services, so these replace them afterwards.
@@ -68,12 +69,26 @@ internal sealed class World : IDisposable
 
     public FakeUpdater Updater { get; } = new();
 
+    public CloudFiles Cloud { get; } = new();
+
     public IServiceProvider Services => _services;
 
     public string LauncherPath => Path.Combine(Environment.RoamingAppData, "XIVLauncher");
 
     /// <summary>A fake PC. A demo world has animations on and paces backups and restores for recording.</summary>
     public static World Create(string root, bool withHistory, bool demo = false) => new(root, withHistory, demo);
+
+    /// <summary>Leaves every archive in the cloud and forgets their verification, as on a new PC.</summary>
+    public void MoveBackupsToCloud()
+    {
+        var destination = _services.GetRequiredService<IConfigStore>().Load().BackupDestination!;
+        Cloud.OnlineOnly.UnionWith(Directory.EnumerateFiles(destination, "*.zip").Select(Path.GetFullPath));
+        _services.GetRequiredService<IStateStore>().Update(state =>
+        {
+            state.Verifications.Clear();
+            return state;
+        });
+    }
 
     public void Dispose()
     {
