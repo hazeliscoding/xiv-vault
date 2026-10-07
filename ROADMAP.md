@@ -63,6 +63,13 @@ An independent review of the restore and validation code found failure modes; th
 - **Backup format:** game files go under `payload/game/`, and the manifest moves to `schemaVersion: 2` with a `contents` flag for them. Version 1 backups still restore, and older XIV Vault versions refuse version 2 with their existing "made by a newer XIV Vault" message.
 - **The same guards as Dalamud settings.** The safety snapshot holds every game file a restore would replace, a restore refuses while the game runs (it rewrites these files on logout), and a failed restore puts back what it replaced in both folders.
 
+## Decisions (2026-10-07, fresh PC and synced folders)
+
+- **Cloud-only files are recognized by their Windows attributes,** which can be read without downloading the file. Listing shows their name, size and the date in their file name; manifests are read only from files already on this PC. The name is for display only: a restore still trusts nothing but the manifest, read after the download.
+- **Verification is on demand.** XIV Vault verifies the latest backup when it is on this PC and the backup being restored, not every archive in the folder. `xiv-vault list --verify` still checks them all.
+- **Retention never downloads.** It verifies archives on this PC as before. A cloud-only archive this PC hasn't verified doesn't count toward the limit, and once enough newer verified backups exist it is deleted without being opened. Archives known to be damaged are still left for the user to inspect.
+- **Layouts users report** are handled as they arrive, in patch releases, rather than as an M8 item.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
@@ -136,7 +143,6 @@ An independent review of the restore and validation code found failure modes; th
 - [ ] List backups without downloading them: names and sizes from the folder, manifests only for files already on this PC.
 - [ ] Verify only the latest backup and the one being restored, not every archive in the folder.
 - [ ] A restore whose backup is still in the cloud shows the download and its size before anything changes.
-- [ ] XIVLauncher layouts and folders that users report.
 
 **Done when:** on a new PC with OneDrive Files On-Demand, opening XIV Vault downloads nothing until a restore is chosen.
 
@@ -170,6 +176,7 @@ An independent review of the restore and validation code found failure modes; th
 
 ## Later
 
+- XIVLauncher layouts and folders that users report, fixed in patch releases as they come in.
 - Code signing, after 1.0 once there is an established userbase.
 - Light theme.
 
