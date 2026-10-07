@@ -23,7 +23,7 @@ internal sealed class ListCommand(
         public bool Json { get; init; }
 
         [CommandOption("--verify")]
-        [Description("Check every backup's hashes, not just the ones this PC hasn't seen.")]
+        [Description("Check every backup's hashes, not just the latest. Backups stored only in the cloud are downloaded.")]
         public bool Verify { get; init; }
     }
 
@@ -32,11 +32,9 @@ internal sealed class ListCommand(
         var config = configStore.Load();
         var destination = config.BackupDestination!;
         var records = await Task.Run(
-            () => catalog.List(destination)
-                .Select(record => record.HasManifest && (settings.Verify || record.Integrity == IntegrityState.Unverified)
-                    ? catalog.Verify(record, cancellationToken)
-                    : record)
-                .ToList(),
+            () => settings.Verify
+                ? catalog.List(destination).Select(record => record.IsRecognized ? catalog.Verify(record, cancellationToken) : record).ToList()
+                : catalog.ListVerifyingLatest(destination, cancellationToken),
             cancellationToken);
 
         if (settings.Json)
@@ -60,18 +58,19 @@ internal sealed class ListCommand(
         foreach (var record in records)
         {
             var local = record.CreatedAtUtc.ToLocalTime();
-            var integrity = record.Integrity switch
+            var color = record.Integrity switch
             {
-                IntegrityState.Verified => $"[{CliOutput.Healthy}]Verified[/]",
-                IntegrityState.Failed => $"[{CliOutput.Critical}]Failed[/]",
-                _ => $"[{CliOutput.Dim}]Unverified[/]",
+                IntegrityState.Verified => CliOutput.Healthy,
+                IntegrityState.Failed => CliOutput.Critical,
+                _ => CliOutput.Dim,
             };
+            var integrity = $"[{color}]{Markup.Escape(Formatting.IntegrityLabel(record))}[/]";
             table.AddRow(
                 Markup.Escape(Formatting.Day(local, now)),
                 Markup.Escape(Formatting.Time(local)),
                 Markup.Escape(Formatting.Bytes(record.SizeBytes)),
-                record.PluginConfigCount.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                Markup.Escape(Formatting.KindLabel(record.Kind)),
+                record.HasManifest ? record.PluginConfigCount.ToString(System.Globalization.CultureInfo.InvariantCulture) : $"[{CliOutput.Dim}]–[/]",
+                Markup.Escape(Formatting.KindLabel(record)),
                 integrity,
                 $"[{CliOutput.Dim}]{Markup.Escape(record.FileName)}[/]");
         }

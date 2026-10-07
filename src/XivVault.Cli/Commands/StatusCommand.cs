@@ -37,8 +37,8 @@ internal sealed class StatusCommand(
         var latest = status.LatestBackup;
         grid.AddRow($"[{CliOutput.Dim}]Last backup[/]", latest is null
             ? $"[{CliOutput.Dim}]none yet[/]"
-            : Markup.Escape($"{Formatting.DayAndTime(latest.CreatedAtUtc.ToLocalTime(), now)} · {Formatting.Bytes(latest.SizeBytes)} · {Formatting.IntegrityLabel(latest.Integrity).ToLowerInvariant()}"));
-        var pluginCount = latest?.PluginConfigCount ?? status.Portable?.PluginConfigCount;
+            : Markup.Escape($"{Formatting.DayAndTime(latest.CreatedAtUtc.ToLocalTime(), now)} · {Formatting.Bytes(latest.SizeBytes)} · {Formatting.IntegrityLabel(latest).ToLowerInvariant()}"));
+        var pluginCount = (latest is { HasManifest: true } ? latest.PluginConfigCount : (int?)null) ?? status.Portable?.PluginConfigCount;
         if (pluginCount is { } count)
         {
             grid.AddRow($"[{CliOutput.Dim}]Plugin configs[/]", count.ToString(System.Globalization.CultureInfo.InvariantCulture));

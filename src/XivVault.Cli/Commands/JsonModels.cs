@@ -17,8 +17,9 @@ internal static class JsonModels
         DateTime CreatedAtUtc,
         string Kind,
         long SizeBytes,
-        int PluginConfigCount,
+        int? PluginConfigCount,
         string Integrity,
+        bool OnlineOnly,
         string? Problem);
 
     public sealed record ScheduleJson(
@@ -59,8 +60,9 @@ internal static class JsonModels
         record.CreatedAtUtc,
         Kind(record.Kind),
         record.SizeBytes,
-        record.PluginConfigCount,
+        record.HasManifest ? record.PluginConfigCount : null,
         Formatting.IntegrityLabel(record.Integrity).ToLowerInvariant(),
+        record.IsOnlineOnly,
         record.Problem);
 
     public static ScheduleJson From(ScheduleStatus status) => new(

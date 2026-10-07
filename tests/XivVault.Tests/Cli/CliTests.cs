@@ -2,6 +2,8 @@ using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Testing;
 using XivVault.Cli;
+using XivVault.Core;
+using XivVault.Core.Backup;
 using XivVault.Core.Configuration;
 using XivVault.Core.Platform;
 using XivVault.Tests.Support;
@@ -108,6 +110,70 @@ public class CliTests
     }
 
     [Fact]
+    public async Task List_shows_online_only_backups_without_downloading_them()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        host.AddCloudFile("xiv-vault-2026-10-03-080000.zip");
+
+        var (code, output) = await Run(host, "list");
+
+        Assert.Equal(0, code);
+        Assert.Contains("In the cloud", output);
+    }
+
+    [Fact]
+    public async Task List_verifies_only_the_latest_backup()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        await host.BackUpAsync();
+        host.State.Update(state =>
+        {
+            state.Verifications.Clear();
+            return state;
+        });
+
+        var (code, _) = await Run(host, "list");
+
+        Assert.Equal(0, code);
+        var records = host.Catalog.List(host.BackupFolder);
+        Assert.Equal(IntegrityState.Verified, records[0].Integrity);
+        Assert.Equal(IntegrityState.Unverified, records[1].Integrity);
+    }
+
+    [Fact]
+    public async Task List_verify_downloads_and_checks_every_backup()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        host.AddCloudFile("xiv-vault-2026-10-03-080000.zip");
+
+        var (code, output) = await Run(host, "list", "--verify");
+
+        Assert.Equal(4, code);
+        Assert.Contains("Failed", output);
+    }
+
+    [Fact]
+    public async Task List_json_marks_online_only_backups()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        host.AddCloudFile("xiv-vault-2026-10-03-080000.zip");
+
+        var (code, output) = await Run(host, "list", "--json");
+
+        Assert.Equal(0, code);
+        var item = Assert.Single(JsonDocument.Parse(output).RootElement.EnumerateArray());
+        Assert.True(item.GetProperty("onlineOnly").GetBoolean());
+        Assert.Equal("unverified", item.GetProperty("integrity").GetString());
+        Assert.Equal(JsonValueKind.Null, item.GetProperty("pluginConfigCount").ValueKind);
+    }
+
+    [Fact]
     public async Task Status_json_reports_protection()
     {
         using var host = new TestHost();
@@ -177,6 +243,36 @@ public class CliTests
         Assert.Contains("Restore complete", output);
         Assert.Equal(original, launcher.ReadPluginConfig("Splatoon"));
         Assert.Single(Directory.GetFiles(host.BackupFolder, "pre-restore-*.zip"));
+    }
+
+    [Fact]
+    public async Task Restore_downloads_an_online_only_backup_first_and_says_how_big_it_is()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        var backup = await host.BackUpAsync();
+        host.MoveToCloud(backup.Record.FilePath);
+        var size = Formatting.Bytes(new FileInfo(backup.Record.FilePath).Length);
+
+        var (code, output) = await Run(host, "restore", "latest", "--yes");
+
+        Assert.Equal(0, code);
+        Assert.Contains($"This backup is in the cloud, so it downloads first ({size}).", output);
+        Assert.Contains("Restore complete", output);
+    }
+
+    [Fact]
+    public async Task Status_in_plain_text_counts_plugins_on_this_pc_while_the_latest_backup_is_in_the_cloud()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        host.AddCloudFile("xiv-vault-2026-10-04-080000.zip");
+
+        var (code, output) = await Run(host, "status");
+
+        Assert.Equal(0, code);
+        Assert.Contains("in the cloud", output);
+        Assert.Matches(@"Plugin configs\s+5", output);
     }
 
     [Fact]

@@ -37,6 +37,16 @@ internal sealed class RestoreCommand(
     {
         var source = settings.Source is null ? null : Path.GetFullPath(settings.Source);
         var record = Choose(settings.Backup);
+        if (record.IsOnlineOnly)
+        {
+            var size = Formatting.Bytes(record.SizeBytes);
+            Output.Line($"This backup is in the cloud, so it downloads first ({size}). Your settings stay as they are until the restore starts.");
+            var chosen = record;
+            record = await Output.WithStatusAsync($"Downloading {size}", update => Task.Run(
+                () => catalog.Download(chosen, new InlineProgress<long>(read => update($"Downloading {Formatting.Bytes(read)} of {size}")), cancellationToken),
+                cancellationToken));
+        }
+
         var preview = await restores.PreviewAsync(record.FilePath, source, cancellationToken);
         var now = clock.GetLocalNow().DateTime;
         var created = preview.Backup.CreatedAtUtc.ToLocalTime();
@@ -108,7 +118,7 @@ internal sealed class RestoreCommand(
         var destination = configStore.Load().BackupDestination!;
         if (requested is null)
         {
-            var records = catalog.List(destination).Where(record => record.HasManifest).ToList();
+            var records = catalog.List(destination).Where(record => record.IsRecognized).ToList();
             if (records.Count == 0)
             {
                 throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, $"There are no backups in {destination}.");
@@ -125,13 +135,13 @@ internal sealed class RestoreCommand(
                 .PageSize(10)
                 .HighlightStyle(Style.Parse(CliOutput.Accent))
                 .UseConverter(record => Markup.Escape(
-                    $"{Formatting.DayAndTime(record.CreatedAtUtc.ToLocalTime(), now),-22} {Formatting.Count(record.PluginConfigCount, "plugin config"),-18} {Formatting.Bytes(record.SizeBytes),-9} {Formatting.KindLabel(record.Kind)}"))
+                    $"{Formatting.DayAndTime(record.CreatedAtUtc.ToLocalTime(), now),-22} {(record.HasManifest ? Formatting.Count(record.PluginConfigCount, "plugin config") : "in the cloud"),-18} {Formatting.Bytes(record.SizeBytes),-9} {Formatting.KindLabel(record)}"))
                 .AddChoices(records));
         }
 
         if (requested.Equals("latest", StringComparison.OrdinalIgnoreCase))
         {
-            return catalog.List(destination).FirstOrDefault(record => record.HasManifest && !record.IsSafetySnapshot)
+            return catalog.List(destination).FirstOrDefault(record => record.IsRegular)
                 ?? throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, $"There are no backups in {destination}.");
         }
 

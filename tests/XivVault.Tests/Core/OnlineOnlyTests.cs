@@ -41,7 +41,7 @@ public class OnlineOnlyTests
         host.CreateLauncher();
         var backup = await host.BackUpAsync();
         var size = new FileInfo(backup.Record.FilePath).Length;
-        MoveToCloud(host, backup.Record.FilePath);
+        host.MoveToCloud(backup.Record.FilePath);
 
         var record = Assert.Single(host.Catalog.List(host.BackupFolder));
 
@@ -59,7 +59,7 @@ public class OnlineOnlyTests
     public void An_online_only_safety_snapshot_is_known_by_its_name()
     {
         using var host = new TestHost();
-        AddCloudFile(host, "pre-restore-2026-10-01-080000-2.zip");
+        host.AddCloudFile("pre-restore-2026-10-01-080000-2.zip");
 
         var record = Assert.Single(host.Catalog.List(host.BackupFolder));
 
@@ -71,7 +71,7 @@ public class OnlineOnlyTests
     public void An_online_only_backup_without_a_date_in_its_name_is_dated_by_the_file()
     {
         using var host = new TestHost();
-        var path = AddCloudFile(host, "xiv-vault-before-reinstall.zip");
+        var path = host.AddCloudFile("xiv-vault-before-reinstall.zip");
         var modified = new DateTime(2026, 9, 20, 18, 30, 0, DateTimeKind.Utc);
         File.SetLastWriteTimeUtc(path, modified);
 
@@ -85,7 +85,7 @@ public class OnlineOnlyTests
     public void Online_only_zips_with_names_xiv_vault_does_not_use_are_not_listed()
     {
         using var host = new TestHost();
-        AddCloudFile(host, "photos.zip");
+        host.AddCloudFile("photos.zip");
 
         Assert.Empty(host.Catalog.List(host.BackupFolder));
     }
@@ -108,7 +108,7 @@ public class OnlineOnlyTests
     public void Reading_a_chosen_online_only_file_does_not_open_it_either()
     {
         using var host = new TestHost();
-        var path = AddCloudFile(host, "renamed backup.zip");
+        var path = host.AddCloudFile("renamed backup.zip");
 
         var record = host.Catalog.Read(path);
 
@@ -123,7 +123,7 @@ public class OnlineOnlyTests
         using var host = new TestHost();
         host.CreateLauncher();
         var backup = await host.BackUpAsync();
-        MoveToCloud(host, backup.Record.FilePath);
+        host.MoveToCloud(backup.Record.FilePath);
         var listed = Assert.Single(host.Catalog.List(host.BackupFolder));
         var progress = new Recorded<long>();
 
@@ -138,7 +138,7 @@ public class OnlineOnlyTests
     public void Downloading_a_file_that_is_not_a_backup_says_so()
     {
         using var host = new TestHost();
-        var record = host.Catalog.Read(AddCloudFile(host, "renamed backup.zip"))!;
+        var record = host.Catalog.Read(host.AddCloudFile("renamed backup.zip"))!;
 
         var error = Assert.Throws<XivVaultException>(() => host.Catalog.Download(record, null, Ct));
 
@@ -150,7 +150,7 @@ public class OnlineOnlyTests
     public void Downloading_a_damaged_backup_says_what_is_wrong()
     {
         using var host = new TestHost();
-        AddCloudFile(host, "xiv-vault-2026-10-01-080000.zip");
+        host.AddCloudFile("xiv-vault-2026-10-01-080000.zip");
         var listed = Assert.Single(host.Catalog.List(host.BackupFolder));
 
         var error = Assert.Throws<XivVaultException>(() => host.Catalog.Download(listed, null, Ct));
@@ -165,7 +165,7 @@ public class OnlineOnlyTests
         using var host = new TestHost();
         host.CreateLauncher();
         var backup = await host.BackUpAsync();
-        MoveToCloud(host, backup.Record.FilePath);
+        host.MoveToCloud(backup.Record.FilePath);
         var listed = Assert.Single(host.Catalog.List(host.BackupFolder));
         using var unreachable = new FileStream(backup.Record.FilePath, FileMode.Open, FileAccess.Read, FileShare.None);
 
@@ -181,7 +181,7 @@ public class OnlineOnlyTests
         using var host = new TestHost();
         host.CreateLauncher();
         var backup = await host.BackUpAsync();
-        MoveToCloud(host, backup.Record.FilePath);
+        host.MoveToCloud(backup.Record.FilePath);
         var listed = Assert.Single(host.Catalog.List(host.BackupFolder));
 
         var verified = host.Catalog.Verify(listed, Ct);
@@ -197,7 +197,7 @@ public class OnlineOnlyTests
         using var host = new TestHost();
         host.CreateLauncher();
         var backup = await host.BackUpAsync();
-        MoveToCloud(host, backup.Record.FilePath);
+        host.MoveToCloud(backup.Record.FilePath);
 
         var preview = await host.Restores.PreviewAsync(backup.Record.FilePath, cancellationToken: Ct);
 
@@ -213,9 +213,9 @@ public class OnlineOnlyTests
         host.UpdateConfig(config => config with { RetentionCount = 2 });
         string[] cloud =
         [
-            AddCloudFile(host, "xiv-vault-2026-10-01-080000.zip"),
-            AddCloudFile(host, "xiv-vault-2026-10-02-080000.zip"),
-            AddCloudFile(host, "xiv-vault-2026-10-03-080000.zip"),
+            host.AddCloudFile("xiv-vault-2026-10-01-080000.zip"),
+            host.AddCloudFile("xiv-vault-2026-10-02-080000.zip"),
+            host.AddCloudFile("xiv-vault-2026-10-03-080000.zip"),
         ];
 
         var result = await host.BackUpAsync();
@@ -233,8 +233,8 @@ public class OnlineOnlyTests
         using var host = new TestHost();
         host.CreateLauncher();
         host.UpdateConfig(config => config with { RetentionCount = 2 });
-        var older = AddCloudFile(host, "xiv-vault-2026-10-01-080000.zip");
-        var oldest = AddCloudFile(host, "xiv-vault-2026-09-30-080000.zip");
+        var older = host.AddCloudFile("xiv-vault-2026-10-01-080000.zip");
+        var oldest = host.AddCloudFile("xiv-vault-2026-09-30-080000.zip");
 
         var first = await host.BackUpAsync();
         var second = await host.BackUpAsync();
@@ -249,7 +249,7 @@ public class OnlineOnlyTests
     {
         using var host = new TestHost();
         host.CreateLauncher();
-        var path = AddCloudFile(host, "xiv-vault-2026-10-04-080000.zip");
+        var path = host.AddCloudFile("xiv-vault-2026-10-04-080000.zip");
 
         var status = await host.Get<IStatusService>().GetAsync(verifyLatest: true, Ct);
 
@@ -263,7 +263,7 @@ public class OnlineOnlyTests
     {
         using var host = new TestHost();
         host.CreateLauncher();
-        AddCloudFile(host, "xiv-vault-2026-10-04-080000.zip");
+        host.AddCloudFile("xiv-vault-2026-10-04-080000.zip");
 
         var report = await host.Get<IDiagnosticsService>().RunAsync(Ct);
 
@@ -271,27 +271,6 @@ public class OnlineOnlyTests
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
-
-    /// <summary>Makes a backup online only on a PC that has never verified it, as on a new PC.</summary>
-    private static void MoveToCloud(TestHost host, string path)
-    {
-        host.Files.OnlineOnly.Add(path);
-        host.State.Update(state =>
-        {
-            state.Verifications.Clear();
-            return state;
-        });
-    }
-
-    /// <summary>An online-only file whose bytes are junk, so reading it would show up as a damaged archive.</summary>
-    private static string AddCloudFile(TestHost host, string name)
-    {
-        Directory.CreateDirectory(host.BackupFolder);
-        var path = Path.Combine(host.BackupFolder, name);
-        File.WriteAllText(path, "not downloaded");
-        host.Files.OnlineOnly.Add(path);
-        return path;
-    }
 
     private sealed class Recorded<T> : IProgress<T>
     {
