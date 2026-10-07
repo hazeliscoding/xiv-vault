@@ -17,13 +17,26 @@ public sealed record BackupRecord(
     string? ArchiveSha256,
     string? Problem)
 {
+    /// <summary>
+    /// The file is in the cloud and not on this PC, so its manifest hasn't been read: opening it
+    /// would download it. Until then it is described by its file name.
+    /// </summary>
+    public bool IsOnlineOnly { get; init; }
+
+    /// <summary>The time in the file name. Shown only while the manifest hasn't been read.</summary>
+    public DateTime? NamedAtUtc { get; init; }
+
     public string FileName => Path.GetFileName(FilePath);
 
     public bool HasManifest => Manifest is not null;
 
-    public DateTime CreatedAtUtc => Manifest?.CreatedAtUtc ?? LastWriteUtc;
+    /// <summary>A XIV Vault backup: by its manifest, or by its name while it is online only.</summary>
+    public bool IsRecognized => HasManifest || IsOnlineOnly;
 
-    public BackupKind? Kind => Manifest?.BackupType;
+    public DateTime CreatedAtUtc => Manifest?.CreatedAtUtc ?? NamedAtUtc ?? LastWriteUtc;
+
+    public BackupKind? Kind => Manifest?.BackupType
+        ?? (IsOnlineOnly && FileName.StartsWith(BackupNaming.SafetyPrefix, StringComparison.OrdinalIgnoreCase) ? BackupKind.PreRestore : null);
 
     public bool IsSafetySnapshot => Kind == BackupKind.PreRestore;
 

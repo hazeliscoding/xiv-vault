@@ -1,16 +1,29 @@
 using System.IO.Compression;
 using Microsoft.Extensions.Logging;
+using XivVault.Core.Platform;
 using XivVault.Core.State;
 
 namespace XivVault.Core.Backup;
 
 public interface IBackupCatalog
 {
-    /// <summary>Archives in <paramref name="destination"/>, newest first. Reads manifests only.</summary>
+    /// <summary>
+    /// Archives in <paramref name="destination"/>, newest first. Reads manifests only, and only
+    /// from files on this PC; an online-only archive is listed by its name.
+    /// </summary>
     IReadOnlyList<BackupRecord> List(string destination);
 
-    /// <summary>Reads one archive, wherever it is. Null when the file is not a XIV Vault backup.</summary>
+    /// <summary>
+    /// Reads one archive, wherever it is. Null when the file is not a XIV Vault backup. An
+    /// online-only file is described without being opened, whatever its name.
+    /// </summary>
     BackupRecord? Read(string archivePath);
+
+    /// <summary>
+    /// Brings an online-only archive onto this PC by reading it through, then reads its manifest.
+    /// <paramref name="progress"/> gets the bytes read so far.
+    /// </summary>
+    BackupRecord Download(BackupRecord record, IProgress<long>? progress = null, CancellationToken cancellationToken = default);
 
     /// <summary>Fully verifies an archive (every hash) and remembers the result.</summary>
     BackupRecord Verify(BackupRecord record, CancellationToken cancellationToken = default);
@@ -19,8 +32,12 @@ public interface IBackupCatalog
     void Delete(BackupRecord record, string destination);
 }
 
-public sealed class BackupCatalog(ArchiveValidator validator, IStateStore stateStore, TimeProvider clock, ILogger<BackupCatalog> logger)
-    : IBackupCatalog
+public sealed class BackupCatalog(
+    ArchiveValidator validator,
+    IStateStore stateStore,
+    IFileAvailability availability,
+    TimeProvider clock,
+    ILogger<BackupCatalog> logger) : IBackupCatalog
 {
     public IReadOnlyList<BackupRecord> List(string destination)
     {
@@ -33,7 +50,9 @@ public sealed class BackupCatalog(ArchiveValidator validator, IStateStore stateS
         var records = new List<BackupRecord>();
         foreach (var path in Directory.EnumerateFiles(destination, "*" + BackupNaming.Extension))
         {
-            var record = ReadRecord(path, verifications);
+            var record = availability.IsOnlineOnly(path)
+                ? OnlineOnlyRecord(path, verifications, requireOurName: true)
+                : ReadRecord(path, verifications);
             if (record is not null)
             {
                 records.Add(record);
@@ -47,8 +66,54 @@ public sealed class BackupCatalog(ArchiveValidator validator, IStateStore stateS
             .ToList();
     }
 
-    public BackupRecord? Read(string archivePath) =>
-        File.Exists(archivePath) ? ReadRecord(Path.GetFullPath(archivePath), stateStore.Load().Verifications) : null;
+    public BackupRecord? Read(string archivePath)
+    {
+        if (!File.Exists(archivePath))
+        {
+            return null;
+        }
+
+        var path = Path.GetFullPath(archivePath);
+        var verifications = stateStore.Load().Verifications;
+        return availability.IsOnlineOnly(path)
+            ? OnlineOnlyRecord(path, verifications, requireOurName: false)
+            : ReadRecord(path, verifications);
+    }
+
+    public BackupRecord Download(BackupRecord record, IProgress<long>? progress = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Reading the file is what makes the sync app download it. Windows has no portable way
+            // to ask for that up front, and reading through reports progress as the bytes arrive.
+            using var stream = new FileStream(record.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 1, FileOptions.SequentialScan);
+            var buffer = new byte[1024 * 1024];
+            long total = 0;
+            int read;
+            while ((read = stream.Read(buffer)) > 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                total += read;
+                progress?.Report(total);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not download {File}", record.FileName);
+            throw new XivVaultException(
+                XivVaultErrorKind.DestinationUnavailable,
+                "The backup couldn't be downloaded. Check that this PC is online and that OneDrive, or the app that syncs the backup folder, is running.",
+                ex);
+        }
+
+        logger.LogInformation("Downloaded {File}", record.FileName);
+        return ReadRecord(record.FilePath, stateStore.Load().Verifications) switch
+        {
+            { HasManifest: true } downloaded => downloaded,
+            null => throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, $"{record.FileName} is not a XIV Vault backup."),
+            var damaged => throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, damaged.Problem ?? "The backup has no readable manifest."),
+        };
+    }
 
     public BackupRecord Verify(BackupRecord record, CancellationToken cancellationToken = default)
     {
@@ -66,6 +131,7 @@ public sealed class BackupCatalog(ArchiveValidator validator, IStateStore stateS
             SizeBytes = info.Length,
             LastWriteUtc = info.LastWriteTimeUtc,
             Manifest = validation.Manifest ?? record.Manifest,
+            IsOnlineOnly = false,
             Integrity = validation.IsValid ? IntegrityState.Verified : IntegrityState.Failed,
             ArchiveSha256 = validation.ArchiveSha256,
             Problem = validation.IsValid ? null : validation.Summary,
@@ -154,17 +220,39 @@ public sealed class BackupCatalog(ArchiveValidator validator, IStateStore stateS
             return new BackupRecord(info.FullName, info.Length, info.LastWriteTimeUtc, null, IntegrityState.Failed, null, problem);
         }
 
-        var integrity = IntegrityState.Unverified;
-        string? sha = null;
-        if (verifications.TryGetValue(info.FullName, out var cached)
-            && cached.Size == info.Length
-            && cached.LastWriteUtc == info.LastWriteTimeUtc)
+        var (integrity, sha, remembered) = Remembered(info, verifications);
+        return new BackupRecord(
+            info.FullName, info.Length, info.LastWriteTimeUtc, manifest, integrity, sha, integrity == IntegrityState.Unverified ? problem : remembered);
+    }
+
+    /// <summary>
+    /// Opening an online-only archive would download all of it, so it is described by its name
+    /// until a restore asks for it. In a listing only XIV Vault's own names count, as for any ZIP.
+    /// </summary>
+    private BackupRecord? OnlineOnlyRecord(string path, IReadOnlyDictionary<string, VerificationRecord> verifications, bool requireOurName)
+    {
+        var info = new FileInfo(path);
+        if (requireOurName && !BackupNaming.LooksLikeOurs(info.Name))
         {
-            integrity = cached.Valid ? IntegrityState.Verified : IntegrityState.Failed;
-            sha = cached.ArchiveSha256;
-            problem = cached.Problem;
+            return null;
         }
 
-        return new BackupRecord(info.FullName, info.Length, info.LastWriteTimeUtc, manifest, integrity, sha, problem);
+        var (integrity, sha, problem) = Remembered(info, verifications);
+        var named = BackupNaming.LocalTimeFromName(info.Name) is { } local
+            ? TimeZoneInfo.ConvertTimeToUtc(local, clock.LocalTimeZone)
+            : (DateTime?)null;
+        return new BackupRecord(info.FullName, info.Length, info.LastWriteTimeUtc, null, integrity, sha, problem)
+        {
+            IsOnlineOnly = true,
+            NamedAtUtc = named,
+        };
     }
+
+    private static (IntegrityState Integrity, string? Sha, string? Problem) Remembered(
+        FileInfo info, IReadOnlyDictionary<string, VerificationRecord> verifications) =>
+        verifications.TryGetValue(info.FullName, out var cached)
+        && cached.Size == info.Length
+        && cached.LastWriteUtc == info.LastWriteTimeUtc
+            ? (cached.Valid ? IntegrityState.Verified : IntegrityState.Failed, cached.ArchiveSha256, cached.Problem)
+            : (IntegrityState.Unverified, null, null);
 }

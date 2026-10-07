@@ -118,7 +118,7 @@ public sealed class RestoreService : IRestoreService
             {
                 try
                 {
-                    return Preview(archivePath, source);
+                    return Preview(archivePath, source, cancellationToken);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
                 {
@@ -133,10 +133,17 @@ public sealed class RestoreService : IRestoreService
     public Task<RestoreResult> RestoreAsync(RestoreRequest request, IProgress<RestoreProgress>? progress = null, CancellationToken cancellationToken = default) =>
         Task.Run(() => Restore(request, progress, cancellationToken), cancellationToken);
 
-    private RestorePreview Preview(string archivePath, string? source)
+    private RestorePreview Preview(string archivePath, string? source, CancellationToken cancellationToken)
     {
         var record = _catalog.Read(archivePath)
             ?? throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, $"{Path.GetFileName(archivePath)} is not a XIV Vault backup.");
+        if (record.IsOnlineOnly)
+        {
+            // The front ends download first, showing the size and progress. This only makes sure a
+            // preview never mistakes an archive that hasn't been read for one without a manifest.
+            record = _catalog.Download(record, null, cancellationToken);
+        }
+
         var manifest = record.Manifest
             ?? throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, record.Problem ?? "The backup has no readable manifest.");
 
