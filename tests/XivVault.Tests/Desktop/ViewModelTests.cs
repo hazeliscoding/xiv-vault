@@ -298,6 +298,80 @@ public class RestoreViewModelTests
     }
 
     [Fact]
+    public async Task A_backup_that_appears_during_a_download_does_not_replace_the_one_being_downloaded()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        var inCloud = Directory.GetFiles(host.BackupFolder).Single();
+        host.MoveToCloud(inCloud);
+        var restore = host.Get<RestoreViewModel>();
+        await host.Session.RefreshAsync();
+        restore.Begin(null);
+        host.Catalog.HoldDownloads();
+
+        var continuing = restore.ContinueCommand.ExecuteAsync(null);
+        await host.Catalog.DownloadStarted.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        await host.BackUpAsync();
+        await host.Session.RefreshAsync();
+        host.Catalog.ReleaseDownloads();
+        await continuing.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        Assert.True(restore.IsStep2);
+        Assert.Equal(inCloud, restore.Selected!.FilePath);
+        Assert.Equal(inCloud, restore.Preview!.Backup.FilePath);
+    }
+
+    [Fact]
+    public async Task Cancel_stops_a_download_and_stays_on_the_first_step()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        host.MoveToCloud(Directory.GetFiles(host.BackupFolder).Single());
+        var restore = host.Get<RestoreViewModel>();
+        await host.Session.RefreshAsync();
+        restore.Begin(null);
+        host.Catalog.HoldDownloads();
+
+        var continuing = restore.ContinueCommand.ExecuteAsync(null);
+        await host.Catalog.DownloadStarted.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        Assert.True(restore.IsDownloading);
+        restore.CancelDownloadCommand.Execute(null);
+        await continuing.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        Assert.True(restore.IsStep1);
+        Assert.Null(restore.ErrorMessage);
+        Assert.False(restore.IsDownloading);
+        Assert.True(restore.ShowCloudNote);
+    }
+
+    [Fact]
+    public async Task Choosing_another_backup_from_Backups_stops_a_download()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        var inCloud = Directory.GetFiles(host.BackupFolder).Single();
+        host.MoveToCloud(inCloud);
+        await host.BackUpAsync();
+        var local = Directory.GetFiles(host.BackupFolder).Single(path => path != inCloud);
+        var restore = host.Get<RestoreViewModel>();
+        await host.Session.RefreshAsync();
+        restore.Begin(inCloud);
+        host.Catalog.HoldDownloads();
+
+        var continuing = restore.ContinueCommand.ExecuteAsync(null);
+        await host.Catalog.DownloadStarted.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        restore.Begin(local);
+        await continuing.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        Assert.True(restore.IsStep1);
+        Assert.Null(restore.ErrorMessage);
+        Assert.Equal(local, restore.Selected!.FilePath);
+    }
+
+    [Fact]
     public async Task The_newest_backup_stays_selected_until_one_is_chosen()
     {
         // The wizard is built when the app opens; a backup made afterwards must become the default.

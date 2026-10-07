@@ -51,7 +51,7 @@
       <!-- Step 1: choose -->
       <StackPanel Spacing="16" IsVisible="{Binding IsStep1}">
         <ListBox ItemsSource="{Binding Choices}" SelectedItem="{Binding Selected}" Background="Transparent"
-                 ItemContainerTheme="{StaticResource ChoiceItem}" IsVisible="{Binding HasChoices}"
+                 ItemContainerTheme="{StaticResource ChoiceItem}" IsVisible="{Binding HasChoices}" IsEnabled="{Binding !IsLoading}"
                  AutomationProperties.Name="Backups you can restore">
           <ListBox.Template>
             <ControlTemplate>
@@ -103,7 +103,8 @@
 
         <Grid ColumnDefinitions="*,Auto">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <c:XvButton Classes="ghost" Icon="FolderOpen" Content="Choose a backup file…" Command="{Binding ChooseFileCommand}" />
+            <c:XvButton Classes="ghost" Icon="FolderOpen" Content="Choose a backup file…" Command="{Binding ChooseFileCommand}"
+                        IsEnabled="{Binding !IsLoading}" />
             <c:XvButton Classes="ghost" Icon="Settings" Content="Change backup folder" Command="{Binding OpenSettingsCommand}"
                         IsVisible="{Binding !HasChoices}" />
           </StackPanel>

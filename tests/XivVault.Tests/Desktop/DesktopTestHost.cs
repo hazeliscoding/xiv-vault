@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using XivVault.Core.Backup;
 using XivVault.Core.Platform;
 using XivVault.Core.Scheduling;
 using XivVault.Desktop;
@@ -34,7 +35,9 @@ public sealed class DesktopTestHost : IDisposable
         services.AddSingleton<ISchedulerTarget, FakeSchedulerTarget>();
         services.AddSingleton<IAppUpdater>(Updater);
         services.AddSingleton<IAppInstances>(Instances);
+        services.AddSingleton<IBackupCatalog>(provider => Catalog ??= new GatedCatalog(provider.GetRequiredService<BackupCatalog>()));
         _provider = services.BuildServiceProvider();
+        Get<IBackupCatalog>();
     }
 
     public TestEnvironment Environment { get; }
@@ -58,6 +61,8 @@ public sealed class DesktopTestHost : IDisposable
     public FakeUpdater Updater { get; } = new();
 
     public FakeInstances Instances { get; } = new();
+
+    public GatedCatalog Catalog { get; private set; } = null!;
 
     public T Get<T>()
         where T : notnull => _provider.GetRequiredService<T>();
@@ -115,6 +120,41 @@ public sealed class DesktopTestHost : IDisposable
     {
         public ScheduledCommand Command { get; } = new(@"C:\Apps\XIV Vault\XIV-Vault.exe", "--scheduled-backup");
     }
+}
+
+/// <summary>The real catalog, except that a test can hold downloads until it lets them finish.</summary>
+public sealed class GatedCatalog(BackupCatalog inner) : IBackupCatalog
+{
+    private TaskCompletionSource? _gate;
+
+    /// <summary>Completes once a held download has started.</summary>
+    public TaskCompletionSource DownloadStarted { get; private set; } = new();
+
+    public void HoldDownloads()
+    {
+        _gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        DownloadStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    public void ReleaseDownloads() => _gate?.TrySetResult();
+
+    public BackupRecord Download(BackupRecord record, IProgress<long>? progress = null, CancellationToken cancellationToken = default)
+    {
+        DownloadStarted.TrySetResult();
+        _gate?.Task.Wait(cancellationToken);
+        return inner.Download(record, progress, cancellationToken);
+    }
+
+    public IReadOnlyList<BackupRecord> List(string destination) => inner.List(destination);
+
+    public IReadOnlyList<BackupRecord> ListVerifyingLatest(string destination, CancellationToken cancellationToken = default) =>
+        inner.ListVerifyingLatest(destination, cancellationToken);
+
+    public BackupRecord? Read(string archivePath) => inner.Read(archivePath);
+
+    public BackupRecord Verify(BackupRecord record, CancellationToken cancellationToken = default) => inner.Verify(record, cancellationToken);
+
+    public void Delete(BackupRecord record, string destination) => inner.Delete(record, destination);
 }
 
 public sealed class FakeDialogs : IDialogService

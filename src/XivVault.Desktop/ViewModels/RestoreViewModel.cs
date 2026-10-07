@@ -257,6 +257,8 @@ public sealed partial class RestoreViewModel : PageViewModel
             return;
         }
 
+        // A download for the backup chosen before stops; the new choice is applied when it has.
+        _download?.Cancel();
         Step = 1;
         ErrorMessage = null;
         Result = null;
@@ -309,6 +311,10 @@ public sealed partial class RestoreViewModel : PageViewModel
             finally
             {
                 IsLoading = false;
+                if (Step == 1)
+                {
+                    RebuildChoices();
+                }
             }
         }
         else if (Step == 2)
@@ -539,7 +545,9 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     private void RebuildChoices()
     {
-        if (IsRestoring || Step != 1)
+        // While a backup downloads or loads, a refresh must not swap the selection under it: the
+        // review would describe one backup and the restore use another.
+        if (IsRestoring || IsLoading || Step != 1)
         {
             return;
         }
