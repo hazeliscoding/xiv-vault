@@ -140,9 +140,9 @@ An independent review of the restore and validation code found failure modes; th
 
 ## M8: Fresh PC and synced folders (0.2)
 
-- [ ] List backups without downloading them: names and sizes from the folder, manifests only for files already on this PC.
-- [ ] Verify only the latest backup and the one being restored, not every archive in the folder.
-- [ ] A restore whose backup is still in the cloud shows the download and its size before anything changes.
+- [x] List backups without downloading them: names and sizes from the folder, manifests only for files already on this PC.
+- [x] Verify only the latest backup and the one being restored, not every archive in the folder.
+- [x] A restore whose backup is still in the cloud shows the download and its size before anything changes.
 
 **Done when:** on a new PC with OneDrive Files On-Demand, opening XIV Vault downloads nothing until a restore is chosen.
 
