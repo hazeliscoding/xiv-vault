@@ -278,6 +278,40 @@ public class OnlineOnlyTests
     }
 
     [Fact]
+    public async Task Retention_counts_an_online_only_backup_this_pc_has_verified()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        host.UpdateConfig(config => config with { RetentionCount = 2 });
+        var oldest = await host.BackUpAsync();
+        var freedUp = await host.BackUpAsync();
+        host.Files.OnlineOnly.Add(freedUp.Record.FilePath);
+
+        var newest = await host.BackUpAsync();
+
+        Assert.Equal([oldest.Record.FilePath], newest.RemovedByRetention);
+        Assert.True(File.Exists(freedUp.Record.FilePath));
+    }
+
+    [Fact]
+    public async Task Retention_keeps_an_online_only_backup_known_to_be_damaged()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        host.UpdateConfig(config => config with { RetentionCount = 1 });
+        var damaged = await host.BackUpAsync();
+        RetentionTests.Corrupt(damaged.Record.FilePath);
+        host.Catalog.Verify(host.Catalog.Read(damaged.Record.FilePath)!, Ct);
+        host.Files.OnlineOnly.Add(damaged.Record.FilePath);
+        var middle = await host.BackUpAsync();
+
+        var newest = await host.BackUpAsync();
+
+        Assert.Equal([middle.Record.FilePath], newest.RemovedByRetention);
+        Assert.True(File.Exists(damaged.Record.FilePath));
+    }
+
+    [Fact]
     public async Task Status_counts_an_online_only_backup_as_the_latest_without_verifying_it()
     {
         using var host = new TestHost();
