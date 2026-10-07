@@ -74,6 +74,27 @@ public sealed class DesktopTestHost : IDisposable
         Clock.Advance(TimeSpan.FromMinutes(1));
     }
 
+    /// <summary>Makes a backup online only on a PC that has never verified it, as on a new PC.</summary>
+    public void MoveToCloud(string path)
+    {
+        Files.OnlineOnly.Add(path);
+        Get<XivVault.Core.State.IStateStore>().Update(state =>
+        {
+            state.Verifications.Clear();
+            return state;
+        });
+    }
+
+    /// <summary>An online-only file whose bytes are junk, so reading it would show up as a damaged archive.</summary>
+    public string AddCloudFile(string name)
+    {
+        Directory.CreateDirectory(BackupFolder);
+        var path = Path.Combine(BackupFolder, name);
+        File.WriteAllText(path, "not downloaded");
+        Files.OnlineOnly.Add(path);
+        return path;
+    }
+
     public void Dispose()
     {
         _provider.Dispose();

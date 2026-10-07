@@ -233,15 +233,10 @@ public sealed partial class OverviewViewModel : PageViewModel
         if (latest is not null)
         {
             LastBackupLabel = _session.JustBackedUp ? "Just now" : Formatting.DayAndTime(latest.CreatedAtUtc.ToLocalTime(), now);
-            PluginCount = latest.PluginConfigCount.ToString(CultureInfo.InvariantCulture);
+            PluginCount = latest.HasManifest ? latest.PluginConfigCount.ToString(CultureInfo.InvariantCulture) : "–";
             CompressedSize = Formatting.Bytes(latest.SizeBytes);
-            IntegrityLabel = Formatting.IntegrityLabel(latest.Integrity);
-            IntegrityTone = latest.Integrity switch
-            {
-                IntegrityState.Verified => Tone.Healthy,
-                IntegrityState.Failed => Tone.Critical,
-                _ => Tone.Unknown,
-            };
+            IntegrityLabel = Formatting.IntegrityLabel(latest);
+            IntegrityTone = BackupRowViewModel.IntegrityToneOf(latest);
         }
 
         FailedDescription = null;
@@ -271,7 +266,7 @@ public sealed partial class OverviewViewModel : PageViewModel
                 BadgeLabel = "Needs attention";
                 if (latest is { Integrity: IntegrityState.Failed })
                 {
-                    var previous = status.Backups.FirstOrDefault(record => record.HasManifest && !record.IsSafetySnapshot
+                    var previous = status.Backups.FirstOrDefault(record => record.IsRegular
                         && record.Integrity == IntegrityState.Verified && record.FilePath != latest.FilePath);
                     FailedDescription = (latest.Problem ?? "A file in the archive does not match its recorded hash.")
                         + (previous is null
@@ -323,7 +318,7 @@ public sealed partial class OverviewViewModel : PageViewModel
     private void BuildRecent(XivVaultStatus status, DateTime now)
     {
         Recent.Clear();
-        foreach (var record in status.Backups.Where(record => record.HasManifest && !record.IsSafetySnapshot).Take(3))
+        foreach (var record in status.Backups.Where(record => record.IsRegular).Take(3))
         {
             Recent.Add(new BackupRowViewModel(record, now));
         }

@@ -10,6 +10,7 @@ namespace XivVault.Desktop.ViewModels;
 public sealed partial class BackupRowViewModel : ObservableObject
 {
     private const int ChipCount = 8;
+    private const string NotDownloaded = "Not downloaded";
 
     public BackupRowViewModel(BackupRecord record, DateTime nowLocal) => Update(record, nowLocal);
 
@@ -19,9 +20,6 @@ public sealed partial class BackupRowViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool IsExpanded { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsVerifying { get; set; }
 
     public string Day { get; private set; } = "";
 
@@ -35,22 +33,19 @@ public sealed partial class BackupRowViewModel : ObservableObject
 
     public int PluginCount { get; private set; }
 
-    public string PluginConfigsLabel => Formatting.Count(PluginCount, "plugin config");
+    public string PluginConfigsLabel => Record.HasManifest ? Formatting.Count(PluginCount, "plugin config") : NotDownloaded;
 
-    public string PluginSummary => $"{Formatting.Count(PluginCount, "plugin configuration")} · {Size}";
+    public string PluginSummary => $"{(Record.HasManifest ? Formatting.Count(PluginCount, "plugin configuration") : NotDownloaded)} · {Size}";
+
+    public string PluginCountText => Record.HasManifest ? PluginCount.ToString(CultureInfo.InvariantCulture) : "–";
 
     public string TypeLabel { get; private set; } = "";
 
     public Tone TypeTone { get; private set; }
 
-    public string IntegrityLabel => IsVerifying ? "Verifying" : Formatting.IntegrityLabel(Record.Integrity);
+    public string IntegrityLabel => Formatting.IntegrityLabel(Record);
 
-    public Tone IntegrityTone => IsVerifying ? Tone.Info : Record.Integrity switch
-    {
-        IntegrityState.Verified => Tone.Healthy,
-        IntegrityState.Failed => Tone.Critical,
-        _ => Tone.Unknown,
-    };
+    public Tone IntegrityTone => IntegrityToneOf(Record);
 
     public string FileName => Record.FileName;
 
@@ -67,18 +62,12 @@ public sealed partial class BackupRowViewModel : ObservableObject
 
     public bool IsSafety => Record.IsSafetySnapshot;
 
-    public bool CanRestore => Record.HasManifest && Record.Integrity != IntegrityState.Failed;
+    public bool CanRestore => Record.IsRecognized && Record.Integrity != IntegrityState.Failed;
 
     /// <summary>List items are announced by their ToString, so it reads like the row looks.</summary>
     public override string ToString() => AccessibleName;
 
     public string AccessibleName => $"{Day} {Time}, {TypeLabel}, {Size}, {PluginConfigsLabel}, {IntegrityLabel}";
-
-    partial void OnIsVerifyingChanged(bool value)
-    {
-        OnPropertyChanged(nameof(IntegrityLabel));
-        OnPropertyChanged(nameof(IntegrityTone));
-    }
 
     public void Update(BackupRecord record, DateTime nowLocal)
     {
@@ -90,7 +79,7 @@ public sealed partial class BackupRowViewModel : ObservableObject
         Age = Formatting.Age(local, nowLocal);
         Size = Formatting.Bytes(record.SizeBytes);
         PluginCount = record.PluginConfigCount;
-        TypeLabel = Formatting.KindLabel(record.Kind, longForm: true);
+        TypeLabel = Formatting.KindLabel(record, longForm: true);
         TypeTone = record.Kind switch
         {
             BackupKind.Manual => Tone.Accent,
@@ -126,7 +115,17 @@ public sealed partial class BackupRowViewModel : ObservableObject
             }
         }
 
-        ContentsLine = contents.Count > 0 ? string.Join(" · ", contents) : "no Dalamud settings";
+        ContentsLine = !record.HasManifest && record.IsOnlineOnly ? "in the cloud · contents show once it is downloaded"
+            : contents.Count > 0 ? string.Join(" · ", contents)
+            : "no Dalamud settings";
         OnPropertyChanged(string.Empty);
     }
+
+    public static Tone IntegrityToneOf(BackupRecord record) => record switch
+    {
+        { Integrity: IntegrityState.Verified } => Tone.Healthy,
+        { Integrity: IntegrityState.Failed } => Tone.Critical,
+        { IsOnlineOnly: true } => Tone.Info,
+        _ => Tone.Unknown,
+    };
 }

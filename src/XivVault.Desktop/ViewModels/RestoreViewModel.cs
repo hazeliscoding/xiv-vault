@@ -54,6 +54,7 @@ public sealed partial class RestoreViewModel : PageViewModel
     private readonly IMotionSettings _motion;
     private readonly List<string> _extraFiles = [];
     private string? _pendingSelection;
+    private CancellationTokenSource? _download;
 
     // Until the user picks a backup, the newest one is selected, including one made after the
     // wizard was built. A backup the user picked stays selected as new ones appear.
@@ -100,6 +101,12 @@ public sealed partial class RestoreViewModel : PageViewModel
     public partial bool IsLoading { get; private set; }
 
     [ObservableProperty]
+    public partial bool IsDownloading { get; private set; }
+
+    [ObservableProperty]
+    public partial string DownloadText { get; private set; } = "";
+
+    [ObservableProperty]
     public partial bool ChecksPassed { get; private set; }
 
     [ObservableProperty]
@@ -136,6 +143,16 @@ public sealed partial class RestoreViewModel : PageViewModel
     public string Destination { get; private set; } = "";
 
     public string SelectedTitle => Selected?.FullDate ?? "";
+
+    public bool SelectedIsInCloud => Selected is { Record.IsOnlineOnly: true };
+
+    public bool ShowCloudNote => SelectedIsInCloud && !IsDownloading;
+
+    public string CloudNoteText => Selected is { } row
+        ? $"It downloads first ({row.Size}) so XIV Vault can show what it holds. Your settings stay as they are until the last step."
+        : "";
+
+    public string ContinueLabel => SelectedIsInCloud ? "Download and continue" : "Continue";
 
     public bool ShowOlderWarning => Preview is { IsOlderThanCurrent: true };
 
@@ -199,8 +216,11 @@ public sealed partial class RestoreViewModel : PageViewModel
 
         OnPropertyChanged(nameof(SelectedTitle));
         OnPropertyChanged(nameof(RestoreSummary));
+        NotifyCloudChanged();
         ContinueCommand.NotifyCanExecuteChanged();
     }
+
+    partial void OnIsDownloadingChanged(bool value) => OnPropertyChanged(nameof(ShowCloudNote));
 
     partial void OnPreviewChanged(RestorePreview? value)
     {
@@ -269,9 +289,18 @@ public sealed partial class RestoreViewModel : PageViewModel
             IsLoading = true;
             try
             {
+                if (row.Record.IsOnlineOnly)
+                {
+                    await DownloadAsync(row);
+                }
+
                 Preview = await _restores.PreviewAsync(row.FilePath);
                 BuildReview(Preview);
                 Step = 2;
+            }
+            catch (OperationCanceledException)
+            {
+                // The user stopped the download. Nothing else happened, so there is nothing to report.
             }
             catch (Exception ex) when (ex is XivVaultException or IOException or UnauthorizedAccessException)
             {
@@ -288,6 +317,9 @@ public sealed partial class RestoreViewModel : PageViewModel
             await RunChecksAsync();
         }
     }
+
+    [RelayCommand]
+    private void CancelDownload() => _download?.Cancel();
 
     [RelayCommand(CanExecute = nameof(CanGoBack))]
     private void Back()
@@ -397,7 +429,7 @@ public sealed partial class RestoreViewModel : PageViewModel
         }
 
         var record = _catalog.Read(file);
-        if (record is not { HasManifest: true })
+        if (record is not { IsRecognized: true })
         {
             ErrorMessage = $"{Path.GetFileName(file)} is not a XIV Vault backup.";
             return;
@@ -426,6 +458,43 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     [RelayCommand]
     private void OpenSettings() => _navigator.Navigate(AppPage.Settings);
+
+    private async Task DownloadAsync(BackupRowViewModel row)
+    {
+        using var download = new CancellationTokenSource();
+        _download = download;
+        var size = row.Size;
+        DownloadText = $"0 B of {size}";
+        IsDownloading = true;
+        try
+        {
+            var progress = new UiProgress<long>(_uiThread, read => DownloadText = $"{Formatting.Bytes(read)} of {size}");
+            var record = await Task.Run(() => _catalog.Download(row.Record, progress, download.Token), download.Token);
+
+            // The list may have been rebuilt while the file downloaded, so update every row showing it.
+            var now = _session.Clock.GetLocalNow().DateTime;
+            foreach (var choice in Choices.Append(row).Where(choice => string.Equals(choice.FilePath, record.FilePath, StringComparison.OrdinalIgnoreCase)))
+            {
+                choice.Update(record, now);
+            }
+
+            NotifyCloudChanged();
+            OnPropertyChanged(nameof(RestoreSummary));
+        }
+        finally
+        {
+            _download = null;
+            IsDownloading = false;
+        }
+    }
+
+    private void NotifyCloudChanged()
+    {
+        OnPropertyChanged(nameof(SelectedIsInCloud));
+        OnPropertyChanged(nameof(ShowCloudNote));
+        OnPropertyChanged(nameof(CloudNoteText));
+        OnPropertyChanged(nameof(ContinueLabel));
+    }
 
     private void RefreshRestoreState()
     {
@@ -478,7 +547,7 @@ public sealed partial class RestoreViewModel : PageViewModel
         var now = _session.Clock.GetLocalNow().DateTime;
         var keep = _pendingSelection ?? (_userChose ? Selected?.FilePath : null);
         _userChose |= _pendingSelection is not null;
-        var records = (_session.Status?.Backups ?? []).Where(record => record.HasManifest).ToList();
+        var records = (_session.Status?.Backups ?? []).Where(record => record.IsRecognized).ToList();
         foreach (var extra in _extraFiles)
         {
             if (!records.Any(record => string.Equals(record.FilePath, extra, StringComparison.OrdinalIgnoreCase)) && _catalog.Read(extra) is { } record)

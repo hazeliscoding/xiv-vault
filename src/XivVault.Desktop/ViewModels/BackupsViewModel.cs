@@ -27,7 +27,6 @@ public sealed partial class BackupsViewModel : PageViewModel
     private readonly PathDisplay _paths;
     private readonly ILogger<BackupsViewModel> _logger;
     private List<BackupRowViewModel> _all = [];
-    private bool _verifying;
 
     public BackupsViewModel(
         DesktopSession session,
@@ -83,36 +82,7 @@ public sealed partial class BackupsViewModel : PageViewModel
 
     partial void OnFilterChanged(Option<BackupFilter> value) => ApplyFilter();
 
-    public override async Task ActivateAsync()
-    {
-        await _session.RefreshAsync(verifyLatest: false);
-        await VerifyPendingAsync();
-    }
-
-    /// <summary>Checks archives this PC has never verified, one at a time, updating each row.</summary>
-    public async Task VerifyPendingAsync()
-    {
-        if (_verifying)
-        {
-            return;
-        }
-
-        _verifying = true;
-        try
-        {
-            foreach (var row in _all.Where(row => row.Record.HasManifest && row.Record.Integrity == IntegrityState.Unverified).ToList())
-            {
-                row.IsVerifying = true;
-                var verified = await Task.Run(() => _catalog.Verify(row.Record));
-                row.IsVerifying = false;
-                row.Update(verified, _session.Clock.GetLocalNow().DateTime);
-            }
-        }
-        finally
-        {
-            _verifying = false;
-        }
-    }
+    public override Task ActivateAsync() => _session.RefreshAsync(verifyLatest: true);
 
     [RelayCommand]
     private void Restore(BackupRowViewModel row) => _navigator.StartRestore(row.FilePath);

@@ -82,6 +82,15 @@
           </ListBox.ItemTemplate>
         </ListBox>
 
+        <c:Banner Tone="Info" Icon="Cloud" Title="This backup is in the cloud" Description="{Binding CloudNoteText}"
+                  IsVisible="{Binding ShowCloudNote}" />
+        <c:Banner Tone="Info" Icon="Cloud" Title="Downloading the backup" Description="{Binding DownloadText}"
+                  IsVisible="{Binding IsDownloading}">
+          <c:Banner.Actions>
+            <c:XvButton Classes="ghost sm" Content="Cancel" Command="{Binding CancelDownloadCommand}" />
+          </c:Banner.Actions>
+        </c:Banner>
+
         <Panel IsVisible="{Binding !HasChoices}">
           <Rectangle Classes="dashed-card" />
           <StackPanel Margin="20,22" Spacing="6">
@@ -98,7 +107,7 @@
             <c:XvButton Classes="ghost" Icon="Settings" Content="Change backup folder" Command="{Binding OpenSettingsCommand}"
                         IsVisible="{Binding !HasChoices}" />
           </StackPanel>
-          <c:XvButton Grid.Column="1" Classes="primary" IconRight="ChevronRight" Content="Continue"
+          <c:XvButton Grid.Column="1" Classes="primary" IconRight="ChevronRight" Content="{Binding ContinueLabel}"
                       Command="{Binding ContinueCommand}" IsLoading="{Binding IsLoading}" />
         </Grid>
       </StackPanel>

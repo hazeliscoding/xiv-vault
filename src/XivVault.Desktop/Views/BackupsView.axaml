@@ -65,7 +65,7 @@
                   <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
                     <StackPanel Spacing="6">
                       <TextBlock Classes="micro t3">
-                        <Run Text="PLUGIN CONFIGURATIONS · " /><Run Text="{Binding PluginCount}" />
+                        <Run Text="PLUGIN CONFIGURATIONS · " /><Run Text="{Binding PluginCountText}" />
                       </TextBlock>
                       <ItemsControl ItemsSource="{Binding ChipItems}">
                         <ItemsControl.ItemsPanel>

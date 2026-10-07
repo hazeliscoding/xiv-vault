@@ -158,6 +158,42 @@ public class BackupsViewModelTests
     }
 
     [Fact]
+    public async Task Opening_the_page_verifies_only_the_latest_backup()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        await host.BackUpAsync();
+        host.Get<XivVault.Core.State.IStateStore>().Update(state =>
+        {
+            state.Verifications.Clear();
+            return state;
+        });
+        var backups = host.Get<BackupsViewModel>();
+
+        await backups.ActivateAsync();
+
+        Assert.Equal(["Verified", "Unverified"], backups.Rows.Select(row => row.IntegrityLabel));
+    }
+
+    [Fact]
+    public async Task An_online_only_backup_is_shown_as_in_the_cloud_without_being_opened()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        host.AddCloudFile("xiv-vault-2026-10-03-080000.zip");
+        var backups = host.Get<BackupsViewModel>();
+
+        await backups.ActivateAsync();
+
+        var row = Assert.Single(backups.Rows);
+        Assert.Equal("In the cloud", row.IntegrityLabel);
+        Assert.Equal("Not downloaded", row.PluginConfigsLabel);
+        Assert.Equal("Backup", row.TypeLabel);
+        Assert.True(row.CanRestore);
+    }
+
+    [Fact]
     public async Task Inspect_reveal_and_restore_act_on_the_row()
     {
         using var host = new DesktopTestHost();
@@ -215,6 +251,50 @@ public class RestoreViewModelTests
         Assert.All(restore.Stages, stage => Assert.Equal(StepState.Done, stage.State));
         Assert.NotEqual("changed", launcher.ReadPluginConfig("Splatoon"));
         Assert.False(host.Session.IsRestoring);
+    }
+
+    [Fact]
+    public async Task A_backup_in_the_cloud_is_downloaded_before_the_review_step()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        var path = Directory.GetFiles(host.BackupFolder).Single();
+        host.MoveToCloud(path);
+        var restore = host.Get<RestoreViewModel>();
+        await host.Session.RefreshAsync();
+        restore.Begin(path);
+
+        Assert.True(restore.ShowCloudNote);
+        Assert.Contains(XivVault.Core.Formatting.Bytes(new FileInfo(path).Length), restore.CloudNoteText);
+        Assert.Equal("Download and continue", restore.ContinueLabel);
+
+        await restore.ContinueCommand.ExecuteAsync(null);
+
+        Assert.True(restore.IsStep2);
+        Assert.Equal("5 plugin configurations", restore.Contents[0].Label);
+        Assert.Equal(5, restore.Selected!.PluginCount);
+        Assert.False(restore.IsDownloading);
+    }
+
+    [Fact]
+    public async Task A_download_that_fails_stays_on_the_first_step_and_says_why()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        var path = Directory.GetFiles(host.BackupFolder).Single();
+        host.MoveToCloud(path);
+        var restore = host.Get<RestoreViewModel>();
+        await host.Session.RefreshAsync();
+        restore.Begin(path);
+        using var unreachable = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+
+        await restore.ContinueCommand.ExecuteAsync(null);
+
+        Assert.True(restore.IsStep1);
+        Assert.Contains("online", restore.ErrorMessage);
+        Assert.False(restore.IsDownloading);
     }
 
     [Fact]
