@@ -82,6 +82,21 @@ public class OnlineOnlyTests
     }
 
     [Fact]
+    public void A_time_in_the_name_that_this_pc_skips_for_daylight_saving_is_dated_by_the_file()
+    {
+        // Another PC's zone can name a backup with an hour that doesn't exist here.
+        using var host = new TestHost();
+        host.Clock.Zone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+        var path = host.AddCloudFile("xiv-vault-2026-03-08-023000.zip");
+        var modified = new DateTime(2026, 3, 8, 7, 30, 0, DateTimeKind.Utc);
+        File.SetLastWriteTimeUtc(path, modified);
+
+        var record = Assert.Single(host.Catalog.List(host.BackupFolder));
+
+        Assert.Equal(modified, record.CreatedAtUtc);
+    }
+
+    [Fact]
     public void Online_only_zips_with_names_xiv_vault_does_not_use_are_not_listed()
     {
         using var host = new TestHost();

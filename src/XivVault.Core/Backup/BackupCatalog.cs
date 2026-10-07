@@ -256,8 +256,10 @@ public sealed class BackupCatalog(
         }
 
         var (integrity, sha, problem) = Remembered(info, verifications);
-        var named = BackupNaming.LocalTimeFromName(info.Name) is { } local
-            ? TimeZoneInfo.ConvertTimeToUtc(local, clock.LocalTimeZone)
+        // A name written in another zone can hold an hour this PC skips for daylight saving.
+        var zone = clock.LocalTimeZone;
+        var named = BackupNaming.LocalTimeFromName(info.Name) is { } local && !zone.IsInvalidTime(local)
+            ? TimeZoneInfo.ConvertTimeToUtc(local, zone)
             : (DateTime?)null;
         return new BackupRecord(info.FullName, info.Length, info.LastWriteTimeUtc, null, integrity, sha, problem)
         {

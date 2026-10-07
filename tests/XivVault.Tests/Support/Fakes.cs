@@ -10,14 +10,16 @@ public sealed class FakeProcessInspector : IProcessInspector
         processNames.Where(Running.Contains).ToList();
 }
 
-/// <summary>A clock tests can move. Local time is UTC so file names are predictable.</summary>
+/// <summary>A clock tests can move. Local time is UTC so file names are predictable, unless a test picks a zone.</summary>
 public sealed class TestClock(DateTimeOffset start) : TimeProvider
 {
     public DateTimeOffset Now { get; set; } = start;
 
+    public TimeZoneInfo Zone { get; set; } = TimeZoneInfo.Utc;
+
     public override DateTimeOffset GetUtcNow() => Now;
 
-    public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
+    public override TimeZoneInfo LocalTimeZone => Zone;
 
     public void Advance(TimeSpan by) => Now += by;
 }
