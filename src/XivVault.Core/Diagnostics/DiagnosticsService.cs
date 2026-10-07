@@ -158,6 +158,7 @@ public sealed class DiagnosticsService(
                 _ when clock.GetUtcNow().UtcDateTime - latest.CreatedAtUtc > StaleBackup =>
                     new("Latest backup is " + Formatting.Age(latest.CreatedAtUtc, clock.GetUtcNow().UtcDateTime), DiagnosticStatus.Warning, when),
                 IntegrityState.Verified => new("Latest backup verified", DiagnosticStatus.Healthy, when),
+                _ when latest.IsOnlineOnly => new("Latest backup is in the cloud", DiagnosticStatus.Healthy, when),
                 _ => new("Latest backup not verified yet", DiagnosticStatus.Warning, when),
             });
         }

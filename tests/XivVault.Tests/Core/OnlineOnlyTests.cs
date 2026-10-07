@@ -1,6 +1,8 @@
 using XivVault.Core;
 using XivVault.Core.Backup;
+using XivVault.Core.Diagnostics;
 using XivVault.Core.Platform;
+using XivVault.Core.Status;
 using XivVault.Tests.Support;
 
 namespace XivVault.Tests.Core;
@@ -240,6 +242,32 @@ public class OnlineOnlyTests
         Assert.Equal([older, oldest], second.RemovedByRetention);
         Assert.True(File.Exists(first.Record.FilePath));
         Assert.True(File.Exists(second.Record.FilePath));
+    }
+
+    [Fact]
+    public async Task Status_counts_an_online_only_backup_as_the_latest_without_verifying_it()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        var path = AddCloudFile(host, "xiv-vault-2026-10-04-080000.zip");
+
+        var status = await host.Get<IStatusService>().GetAsync(verifyLatest: true, Ct);
+
+        Assert.Equal(path, status.LatestBackup?.FilePath);
+        Assert.Equal(IntegrityState.Unverified, status.LatestBackup!.Integrity);
+        Assert.Equal(ProtectionState.Protected, status.State);
+    }
+
+    [Fact]
+    public async Task Diagnostics_report_an_online_only_latest_backup_as_in_the_cloud()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        AddCloudFile(host, "xiv-vault-2026-10-04-080000.zip");
+
+        var report = await host.Get<IDiagnosticsService>().RunAsync(Ct);
+
+        Assert.Contains(report.Groups[2].Checks, check => check.Label == "Latest backup is in the cloud" && check.Status == DiagnosticStatus.Healthy);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;

@@ -35,7 +35,7 @@ public sealed record XivVaultStatus(
     public string Destination => Config.BackupDestination!;
 
     /// <summary>The newest regular backup. Pre-restore snapshots don't count as protection.</summary>
-    public BackupRecord? LatestBackup => Backups.FirstOrDefault(record => record.HasManifest && !record.IsSafetySnapshot);
+    public BackupRecord? LatestBackup => Backups.FirstOrDefault(record => record.IsRecognized && !record.IsSafetySnapshot);
 
     public long TotalBytes => Backups.Sum(record => record.SizeBytes);
 
@@ -71,8 +71,8 @@ public sealed class StatusService(
                 var available = Directory.Exists(destination);
                 var backups = available ? catalog.List(destination).ToList() : [];
 
-                var latestIndex = backups.FindIndex(record => record.HasManifest && !record.IsSafetySnapshot);
-                if (verifyLatest && latestIndex >= 0 && backups[latestIndex].Integrity == IntegrityState.Unverified)
+                var latestIndex = backups.FindIndex(record => record.IsRecognized && !record.IsSafetySnapshot);
+                if (verifyLatest && latestIndex >= 0 && backups[latestIndex] is { Integrity: IntegrityState.Unverified, IsOnlineOnly: false })
                 {
                     backups[latestIndex] = catalog.Verify(backups[latestIndex], cancellationToken);
                 }
