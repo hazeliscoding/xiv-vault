@@ -4,6 +4,16 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-07
+
+### Changed
+
+- Backups kept online only, as OneDrive Files On-Demand does, are listed by name, date and size without being downloaded, so opening XIV Vault on a new PC no longer fetches every backup. Google Drive for desktop doesn't mark such files, so there XIV Vault still reads each backup's manifest.
+- XIV Vault verifies the latest backup and the one being restored, not every backup this PC hasn't checked, which read each one in full. `xiv-vault list --verify` still checks them all.
+- Restoring a backup that is still in the cloud shows its size and downloads it first, with progress and Cancel in the app. `xiv-vault restore` says the same before it downloads.
+- Retention never downloads a backup to decide whether to keep it. An online-only backup this PC hasn't verified doesn't count toward the number kept, and is deleted unopened once enough newer verified backups exist.
+- `xiv-vault list --json` has a new `onlineOnly` field, and `pluginConfigCount` is `null` when the backup's manifest hasn't been read.
+
 ## [0.1.2] - 2026-10-06
 
 ### Fixed
@@ -35,7 +45,8 @@ First release.
 - Installer: `xiv-vault-setup-win-x64.exe` installs the desktop app for the current user and keeps it up to date from GitHub releases. Updates install only when chosen in Settings, wait for running backups, restores and scheduled backups, and the check can be turned off. Uninstalling removes the scheduled backup task.
 - Self-contained Windows x64 builds: `xiv-vault-setup-win-x64.exe`, plus portable `xiv-vault-desktop-win-x64.zip` and `xiv-vault-cli-win-x64.zip`.
 
-[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/hazeliscoding/xiv-vault/releases/tag/v0.1.0
