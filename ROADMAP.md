@@ -142,7 +142,7 @@ An independent review of the restore and validation code found failure modes; th
 
 - [x] List backups without downloading them: names and sizes from the folder, manifests only for files already on this PC.
 - [x] Verify only the latest backup and the one being restored, not every archive in the folder.
-- [x] A restore whose backup is still in the cloud shows the download and its size before anything changes.
+- [x] A restore whose backup is still in the cloud shows the download and its size before anything changes. (Checked on a real OneDrive folder: `status`, `list` and `doctor` left three freed-up backups in the cloud, and `restore latest` showed the size and downloaded only the backup it restored.)
 
 **Done when:** on a new PC with OneDrive Files On-Demand, opening XIV Vault downloads nothing until a restore is chosen.
 
