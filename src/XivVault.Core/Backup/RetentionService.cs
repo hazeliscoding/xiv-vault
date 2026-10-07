@@ -19,33 +19,36 @@ public sealed class RetentionService(IBackupCatalog catalog, ILogger<RetentionSe
         var safety = createdKind == BackupKind.PreRestore;
         var keep = safety ? SafetySnapshotsToKeep : retentionCount;
         var candidates = catalog.List(destination)
-            .Where(record => record.HasManifest && record.IsSafetySnapshot == safety)
+            .Where(record => record.IsRecognized && record.IsSafetySnapshot == safety)
             .ToList();
         if (candidates.Count(record => record.Integrity != IntegrityState.Failed) <= keep)
         {
             return [];
         }
 
-        // Something is about to be deleted. First check every archive this PC hasn't verified, so
-        // one that was damaged after it was written can't take the place of a good backup.
-        candidates = candidates
-            .Select(record => record.Integrity == IntegrityState.Unverified ? catalog.Verify(record) : record)
-            .ToList();
-
         var kept = 0;
         var deleted = new List<string>();
-        foreach (var record in candidates)
+        foreach (var listed in candidates)
         {
-            // Damaged archives neither count toward the limit nor get deleted: keeping N backups
-            // must mean N good ones, and a damaged file is left for the user to inspect.
-            if (record.Integrity != IntegrityState.Verified)
+            // Something is about to be deleted. First check each archive this PC hasn't verified, so
+            // one that was damaged after it was written can't take the place of a good backup. An
+            // online-only archive is never downloaded for this: among the newest it is skipped,
+            // and past the limit it is deleted unopened, since enough verified backups are newer.
+            var record = listed is { Integrity: IntegrityState.Unverified, IsOnlineOnly: false } ? catalog.Verify(listed) : listed;
+            if (kept < keep)
             {
+                if (record.Integrity == IntegrityState.Verified)
+                {
+                    kept++;
+                }
+
                 continue;
             }
 
-            if (kept < keep)
+            // Damaged archives neither count toward the limit nor get deleted: keeping N backups
+            // must mean N good ones, and a damaged file is left for the user to inspect.
+            if (record.Integrity == IntegrityState.Failed)
             {
-                kept++;
                 continue;
             }
 

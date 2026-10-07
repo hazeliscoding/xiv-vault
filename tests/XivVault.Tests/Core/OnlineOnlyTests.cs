@@ -203,6 +203,45 @@ public class OnlineOnlyTests
         Assert.Equal(5, preview.Contents.PluginConfigCount);
     }
 
+    [Fact]
+    public async Task Retention_skips_online_only_backups_among_the_newest_instead_of_downloading_them()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        host.UpdateConfig(config => config with { RetentionCount = 2 });
+        string[] cloud =
+        [
+            AddCloudFile(host, "xiv-vault-2026-10-01-080000.zip"),
+            AddCloudFile(host, "xiv-vault-2026-10-02-080000.zip"),
+            AddCloudFile(host, "xiv-vault-2026-10-03-080000.zip"),
+        ];
+
+        var result = await host.BackUpAsync();
+
+        Assert.Empty(result.RemovedByRetention);
+        Assert.All(cloud, path => Assert.True(File.Exists(path)));
+        Assert.All(
+            host.Catalog.List(host.BackupFolder).Where(record => record.IsOnlineOnly),
+            record => Assert.Equal(IntegrityState.Unverified, record.Integrity));
+    }
+
+    [Fact]
+    public async Task Retention_deletes_online_only_backups_past_the_limit_without_opening_them()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        host.UpdateConfig(config => config with { RetentionCount = 2 });
+        var older = AddCloudFile(host, "xiv-vault-2026-10-01-080000.zip");
+        var oldest = AddCloudFile(host, "xiv-vault-2026-09-30-080000.zip");
+
+        var first = await host.BackUpAsync();
+        var second = await host.BackUpAsync();
+
+        Assert.Equal([older, oldest], second.RemovedByRetention);
+        Assert.True(File.Exists(first.Record.FilePath));
+        Assert.True(File.Exists(second.Record.FilePath));
+    }
+
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     /// <summary>Makes a backup online only on a PC that has never verified it, as on a new PC.</summary>
