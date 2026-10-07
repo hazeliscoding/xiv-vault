@@ -69,6 +69,7 @@ An independent review of the restore and validation code found failure modes; th
 - **Verification is on demand.** XIV Vault verifies the latest backup when it is on this PC and the backup being restored, not every archive in the folder. `xiv-vault list --verify` still checks them all.
 - **Retention never downloads.** It verifies archives on this PC as before. A cloud-only archive this PC hasn't verified doesn't count toward the limit, and once enough newer verified backups exist it is deleted without being opened. Archives known to be damaged are still left for the user to inspect.
 - **Layouts users report** are handled as they arrive, in patch releases, rather than as an M8 item.
+- **Google Drive for desktop doesn't mark online-only files.** Every file in `G:\My Drive` reads as a normal file whether it is on this PC or not, so XIV Vault treats backups there as local: on a new PC it reads each manifest and verifies the latest in full. That is still far less than 0.1.2, which read every backup, and it is accepted for 0.2. Found on the author's setup.
 
 ## M0: Bootstrap
 
