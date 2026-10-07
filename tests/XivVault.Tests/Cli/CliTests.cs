@@ -158,6 +158,26 @@ public class CliTests
     }
 
     [Fact]
+    public async Task List_verify_reports_a_backup_it_could_not_download_without_marking_it_damaged()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        var backup = await host.BackUpAsync();
+        host.MoveToCloud(backup.Record.FilePath);
+
+        int code;
+        string output;
+        using (new FileStream(backup.Record.FilePath, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            (code, output) = await Run(host, "list", "--verify");
+        }
+
+        Assert.Equal(7, code);
+        Assert.Contains("couldn't be downloaded", output);
+        Assert.Equal(IntegrityState.Unverified, Assert.Single(host.Catalog.List(host.BackupFolder)).Integrity);
+    }
+
+    [Fact]
     public async Task List_json_marks_online_only_backups()
     {
         using var host = new TestHost();

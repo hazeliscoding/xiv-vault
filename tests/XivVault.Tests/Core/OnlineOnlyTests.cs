@@ -207,6 +207,24 @@ public class OnlineOnlyTests
     }
 
     [Fact]
+    public async Task Verifying_a_backup_that_cannot_be_downloaded_does_not_mark_it_damaged()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        var backup = await host.BackUpAsync();
+        host.MoveToCloud(backup.Record.FilePath);
+        var listed = Assert.Single(host.Catalog.List(host.BackupFolder));
+
+        using (new FileStream(backup.Record.FilePath, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            var error = Assert.Throws<XivVaultException>(() => host.Catalog.Verify(listed, Ct));
+            Assert.Equal(XivVaultErrorKind.DestinationUnavailable, error.Kind);
+        }
+
+        Assert.Equal(IntegrityState.Unverified, Assert.Single(host.Catalog.List(host.BackupFolder)).Integrity);
+    }
+
+    [Fact]
     public async Task Previewing_an_online_only_backup_downloads_it_first()
     {
         using var host = new TestHost();

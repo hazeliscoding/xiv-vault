@@ -31,7 +31,10 @@ public interface IBackupCatalog
     /// </summary>
     BackupRecord Download(BackupRecord record, IProgress<long>? progress = null, CancellationToken cancellationToken = default);
 
-    /// <summary>Fully verifies an archive (every hash) and remembers the result.</summary>
+    /// <summary>
+    /// Fully verifies an archive (every hash) and remembers the result. An online-only archive is
+    /// downloaded first; if that fails, nothing is remembered and the error is thrown.
+    /// </summary>
     BackupRecord Verify(BackupRecord record, CancellationToken cancellationToken = default);
 
     /// <summary>Deletes an archive. Only XIV Vault archives in the given folder can be deleted.</summary>
@@ -100,10 +103,51 @@ public sealed class BackupCatalog(
 
     public BackupRecord Download(BackupRecord record, IProgress<long>? progress = null, CancellationToken cancellationToken = default)
     {
+        Fetch(record, progress, cancellationToken);
+        return ReadRecord(record.FilePath, stateStore.Load().Verifications) switch
+        {
+            { HasManifest: true } downloaded => downloaded,
+            null => throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, $"{record.FileName} is not a XIV Vault backup."),
+            var damaged => throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, damaged.Problem ?? "The backup has no readable manifest."),
+        };
+    }
+
+    public BackupRecord Verify(BackupRecord record, CancellationToken cancellationToken = default)
+    {
+        if (record.IsOnlineOnly)
+        {
+            // A file the sync app can't fetch right now isn't damaged, so that must never be remembered as a failure.
+            Fetch(record, null, cancellationToken);
+        }
+
+        var info = new FileInfo(record.FilePath);
+        if (!info.Exists)
+        {
+            return record with { Integrity = IntegrityState.Failed, Problem = "The archive no longer exists." };
+        }
+
+        var validation = validator.Validate(record.FilePath, verifyContents: true, cancellationToken);
+        Remember(info, validation.IsValid, validation.ArchiveSha256, validation.IsValid ? null : validation.Summary);
+        logger.LogInformation("Verified {File}: {Result}", info.Name, validation.IsValid ? "valid" : "failed");
+        return record with
+        {
+            SizeBytes = info.Length,
+            LastWriteUtc = info.LastWriteTimeUtc,
+            Manifest = validation.Manifest ?? record.Manifest,
+            IsOnlineOnly = false,
+            Integrity = validation.IsValid ? IntegrityState.Verified : IntegrityState.Failed,
+            ArchiveSha256 = validation.ArchiveSha256,
+            Problem = validation.IsValid ? null : validation.Summary,
+        };
+    }
+
+    /// <summary>Reads an online-only file through, which is what makes the sync app download it.</summary>
+    private void Fetch(BackupRecord record, IProgress<long>? progress, CancellationToken cancellationToken)
+    {
         try
         {
-            // Reading the file is what makes the sync app download it. Windows has no portable way
-            // to ask for that up front, and reading through reports progress as the bytes arrive.
+            // Windows has no portable way to ask for a download up front, and reading through
+            // reports progress as the bytes arrive.
             using var stream = new FileStream(record.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 1, FileOptions.SequentialScan);
             var buffer = new byte[1024 * 1024];
             long total = 0;
@@ -125,35 +169,6 @@ public sealed class BackupCatalog(
         }
 
         logger.LogInformation("Downloaded {File}", record.FileName);
-        return ReadRecord(record.FilePath, stateStore.Load().Verifications) switch
-        {
-            { HasManifest: true } downloaded => downloaded,
-            null => throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, $"{record.FileName} is not a XIV Vault backup."),
-            var damaged => throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, damaged.Problem ?? "The backup has no readable manifest."),
-        };
-    }
-
-    public BackupRecord Verify(BackupRecord record, CancellationToken cancellationToken = default)
-    {
-        var info = new FileInfo(record.FilePath);
-        if (!info.Exists)
-        {
-            return record with { Integrity = IntegrityState.Failed, Problem = "The archive no longer exists." };
-        }
-
-        var validation = validator.Validate(record.FilePath, verifyContents: true, cancellationToken);
-        Remember(info, validation.IsValid, validation.ArchiveSha256, validation.IsValid ? null : validation.Summary);
-        logger.LogInformation("Verified {File}: {Result}", info.Name, validation.IsValid ? "valid" : "failed");
-        return record with
-        {
-            SizeBytes = info.Length,
-            LastWriteUtc = info.LastWriteTimeUtc,
-            Manifest = validation.Manifest ?? record.Manifest,
-            IsOnlineOnly = false,
-            Integrity = validation.IsValid ? IntegrityState.Verified : IntegrityState.Failed,
-            ArchiveSha256 = validation.ArchiveSha256,
-            Problem = validation.IsValid ? null : validation.Summary,
-        };
     }
 
     public void Delete(BackupRecord record, string destination)

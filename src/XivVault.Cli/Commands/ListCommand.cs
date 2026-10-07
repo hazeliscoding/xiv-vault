@@ -31,11 +31,30 @@ internal sealed class ListCommand(
     {
         var config = configStore.Load();
         var destination = config.BackupDestination!;
+        string? unavailable = null;
         var records = await Task.Run(
             () => settings.Verify
-                ? catalog.List(destination).Select(record => record.IsRecognized ? catalog.Verify(record, cancellationToken) : record).ToList()
+                ? catalog.List(destination).Select(VerifyOrKeep).ToList()
                 : catalog.ListVerifyingLatest(destination, cancellationToken),
             cancellationToken);
+
+        BackupRecord VerifyOrKeep(BackupRecord record)
+        {
+            if (!record.IsRecognized)
+            {
+                return record;
+            }
+
+            try
+            {
+                return catalog.Verify(record, cancellationToken);
+            }
+            catch (XivVaultException ex) when (ex.Kind == XivVaultErrorKind.DestinationUnavailable)
+            {
+                unavailable = ex.Message;
+                return record with { Problem = ex.Message };
+            }
+        }
 
         if (settings.Json)
         {
@@ -77,6 +96,13 @@ internal sealed class ListCommand(
 
         Output.Write(table);
         Output.Detail($"{Formatting.Count(records.Count, "backup")} · {Formatting.Bytes(records.Sum(record => record.SizeBytes))} total · keeping latest {config.RetentionCount} · {paths.Friendly(destination)}");
-        return records.Any(record => record.Integrity == IntegrityState.Failed) ? (int)XivVaultErrorKind.BackupValidationFailed : 0;
+        if (unavailable is not null)
+        {
+            Output.Warning(unavailable);
+        }
+
+        return records.Any(record => record.Integrity == IntegrityState.Failed) ? (int)XivVaultErrorKind.BackupValidationFailed
+            : unavailable is not null ? (int)XivVaultErrorKind.DestinationUnavailable
+            : 0;
     }
 }
