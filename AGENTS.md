@@ -12,7 +12,8 @@ These are the working rules for agents in this repo. XIV Vault (Apache-2.0) back
 ## Architecture (hard rules)
 
 - All behavior lives in `src/XivVault.Core`. `XivVault.Cli` and `XivVault.Desktop` only present it. Never duplicate backup, restore, discovery, validation or scheduling logic in a front end.
-- File system, process, clock and environment access goes through the small services in Core (`IAppEnvironment`, `IProcessInspector`, `TimeProvider`, `ICommandRunner`), so tests can run in temp directories.
+- File system, process, clock and environment access goes through the small services in Core (`IAppEnvironment`, `IProcessInspector`, `TimeProvider`, `ICommandRunner`, `IFileAvailability`), so tests can run in temp directories.
+- Never open an archive that is online only (`BackupRecord.IsOnlineOnly`) unless the user chose it: reading it downloads it. Listing, status and retention must work from its name and size.
 - Avalonia 12 ignores a `RenderTransform` set by a style unless the element already has one, so give it `RenderTransform="none"` (or set the transform inline).
 - Check UI changes with `dotnet run --project tools/XivVault.Screenshots -- <folder>`, which renders every screen to PNG without touching the real profile or Task Scheduler. `-- --demo docs/screenshots/demo.gif C:\Demo` records the README's GIF with animations on (needs ffmpeg on PATH).
 - Desktop view models take interfaces only (`IDialogService`, `IShellService`, `IClipboardService`, `IFilePicker`, `IAppUpdater`). No Avalonia or Velopack types in view models and no logic in code-behind.

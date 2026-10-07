@@ -24,7 +24,11 @@ Restores need both closed, because Dalamud rewrites its files while the game run
 
 ## "The latest backup did not pass verification"
 
-A file in the archive doesn't match its recorded hash: the file was damaged after it was written, often by an incomplete sync. XIV Vault keeps damaged archives for you to inspect and never counts them toward the number of backups it keeps. Back up again, and if it keeps happening, check the drive or the sync client. `xiv-vault list --verify` re-checks every archive.
+A file in the archive doesn't match its recorded hash: the file was damaged after it was written, often by an incomplete sync. XIV Vault keeps damaged archives for you to inspect and never counts them toward the number of backups it keeps. Back up again, and if it keeps happening, check the drive or the sync client. `xiv-vault list --verify` re-checks every archive, downloading any that are only in the cloud.
+
+## "The backup couldn't be downloaded"
+
+The backup is stored online only, and Windows couldn't fetch it. Check that the PC is online and that OneDrive, or the app that syncs the backup folder, is running and signed in. You can also make the folder available offline in File Explorer (right-click, **Always keep on this device**), then try again. Nothing changed on this PC.
 
 ## A restore is blocked by the integrity check
 

@@ -34,9 +34,9 @@ All three are self-contained: no .NET install is needed. Check downloads against
 ## Moving to a new PC
 
 1. On the new PC, install XIVLauncher and start it once.
-2. Make your backups available: let OneDrive or Dropbox finish syncing, or plug in the drive.
+2. Make your backups available: sign in to OneDrive or Dropbox, or plug in the drive. Backups that stay in the cloud are fine: XIV Vault lists them without downloading them.
 3. Install XIV Vault with Setup and open it. If the backups are in `OneDrive\XIV Vault`, XIV Vault finds them on its own. Otherwise choose the folder in **Settings**, or pick a backup file in the restore wizard.
-4. Open **Restore**, choose the newest backup, review it, and let the safety checks run. XIVLauncher and FFXIV must be closed.
+4. Open **Restore**, choose the newest backup, review it, and let the safety checks run. XIVLauncher and FFXIV must be closed. A backup that is still in the cloud downloads first, and XIV Vault shows its size before it starts.
 5. Select **Restore Configuration**, then open XIVLauncher. Dalamud downloads your plugins again and they pick up their restored settings.
 
 ## Command line
@@ -45,7 +45,7 @@ All three are self-contained: no .NET install is needed. Check downloads against
 xiv-vault backup                        # back up now
 xiv-vault backup --quiet                # print nothing unless it fails
 xiv-vault backup --destination D:\Backups
-xiv-vault list                          # backups in the backup folder
+xiv-vault list                          # backups in the backup folder; --verify checks every one
 xiv-vault status                        # is the setup protected?
 xiv-vault status --json
 xiv-vault doctor                        # health checks; --report for a shareable copy
@@ -93,7 +93,7 @@ An update waits while a backup or restore runs, or while a scheduled backup or a
 
 A backup is only as safe as the place it lives. Good choices:
 
-- A folder synced by **OneDrive**, **Dropbox** or Google Drive. XIV Vault uses `%OneDrive%\XIV Vault` by default when OneDrive is set up.
+- A folder synced by **OneDrive**, **Dropbox** or Google Drive. XIV Vault uses `%OneDrive%\XIV Vault` by default when OneDrive is set up. When backups are kept online only (OneDrive Files On-Demand), XIV Vault lists them without downloading them and downloads only the one you restore.
 - A **NAS** or network share.
 - An **external drive**, if you remember to plug it in.
 
@@ -121,7 +121,7 @@ Inside `pluginConfigs\`, temporary files and `logs`/`cache` folders are skipped,
 ## Safety model
 
 - **Allowlist.** XIV Vault reads and writes only the items above. It never archives the whole XIVLauncher folder.
-- **Verified backups.** Each archive is written as `*.zip.tmp`, read back, and checked against the SHA-256 of every file before it is renamed. A failed backup never looks like a finished one, and old backups are only removed after a new one is verified.
+- **Verified backups.** Each archive is written as `*.zip.tmp`, read back, and checked against the SHA-256 of every file before it is renamed. A failed backup never looks like a finished one, and old backups are only removed after a new one is verified. XIV Vault also checks the latest backup when it opens, and the backup being restored; `xiv-vault list --verify` checks them all.
 - **Guarded restores.** Before anything changes, XIV Vault checks the manifest and every hash, refuses while XIVLauncher or FFXIV runs, and takes a **pre-restore safety backup** (the newest 3 are kept). The archive is unpacked into a temporary folder and checked again, never extracted over XIVLauncher. Files the backup doesn't contain are never deleted. If a restore fails part-way, every file it changed is put back.
 - **Hostile archives are refused:** paths with `..`, absolute or drive paths, files outside the allowlist, files the manifest doesn't list, manifests that misdescribe their files, and checksum mismatches.
 - **No links.** Backups don't follow links (junctions or symlinks) inside the XIVLauncher folder, and restores refuse to write through them.

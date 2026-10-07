@@ -40,8 +40,8 @@ Both front ends call `services.AddXivVaultCore()` and resolve the same services 
 | `BackupAllowlist`, `ArchivePaths` | The allowlist, and the rules for safe archive paths. |
 | `BackupService` | Writes `*.zip.tmp`, verifies it, renames it, applies retention. |
 | `ArchiveValidator` | Decides whether an archive can be trusted: manifest, schema, paths, allowlist, every hash. |
-| `BackupCatalog` | Lists archives in a folder from their manifests, verifies them and caches the result, deletes them. |
-| `RetentionService` | Keeps the newest N regular backups and the newest 3 pre-restore snapshots, separately. Damaged archives are neither counted nor deleted. |
+| `BackupCatalog` | Lists archives in a folder from their manifests, or by name while they are online only; verifies the latest one, or any one on request, and caches the result; downloads and deletes them. |
+| `RetentionService` | Keeps the newest N regular backups and the newest 3 pre-restore snapshots, separately. Damaged archives are neither counted nor deleted. Online-only archives are never downloaded: they don't count, and are deleted unopened once N verified backups are newer. |
 | `RestoreService` | Preview, safety checks and the restore itself. |
 | `GameProcessGuard` | Detects XIVLauncher and FFXIV processes. |
 | `WindowsTaskScheduler`, `ScheduleService` | The `XIV Vault Scheduled Backup` task through `schtasks /xml`, kept in step with the saved preferences. |
@@ -51,7 +51,7 @@ Both front ends call `services.AddXivVaultCore()` and resolve the same services 
 
 `OperationLock` is a named mutex per data folder. Backups, restores and retention take it, so the scheduled task and the app never work on the backup folder at the same time.
 
-Platform access goes through small interfaces so tests can replace it: `IAppEnvironment` (folders and user), `IProcessInspector`, `ICommandRunner` (schtasks) and `TimeProvider`. `XIV_VAULT_DATA_DIR` redirects config, state and logs, which the smoke test uses.
+Platform access goes through small interfaces so tests can replace it: `IAppEnvironment` (folders and user), `IProcessInspector`, `ICommandRunner` (schtasks), `IFileAvailability` (whether a file is online only) and `TimeProvider`. `XIV_VAULT_DATA_DIR` redirects config, state and logs, which the smoke test uses.
 
 ## Backup flow
 
