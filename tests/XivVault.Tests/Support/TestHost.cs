@@ -22,6 +22,7 @@ public sealed class TestHost : IDisposable
         services.AddSingleton<IProcessInspector>(Processes);
         services.AddSingleton<ICommandRunner>(Commands);
         services.AddSingleton<TimeProvider>(Clock);
+        services.AddSingleton<IFileAvailability>(Files);
         configure?.Invoke(services);
         services.AddXivVaultCore();
         _provider = services.BuildServiceProvider();
@@ -32,6 +33,8 @@ public sealed class TestHost : IDisposable
     public FakeProcessInspector Processes { get; } = new();
 
     public FakeCommandRunner Commands { get; } = new();
+
+    public FakeFileAvailability Files { get; } = new();
 
     public TestClock Clock { get; } = new(new DateTimeOffset(2026, 10, 4, 13, 19, 0, TimeSpan.Zero));
 

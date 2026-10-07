@@ -22,6 +22,7 @@ public class CliTests
                 services.AddSingleton<IProcessInspector>(host.Processes);
                 services.AddSingleton<ICommandRunner>(host.Commands);
                 services.AddSingleton<TimeProvider>(host.Clock);
+                services.AddSingleton<IFileAvailability>(host.Files);
             },
             console,
             TestContext.Current.CancellationToken);

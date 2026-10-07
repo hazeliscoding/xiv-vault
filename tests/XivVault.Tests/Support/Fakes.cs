@@ -36,3 +36,14 @@ public sealed class FakeCommandRunner : ICommandRunner
         return Task.FromResult(Handler(fileName, arguments));
     }
 }
+
+/// <summary>
+/// Files tests mark as online only. Nothing downloads them, so a test can fill one with junk:
+/// any code that reads it finds no valid archive.
+/// </summary>
+public sealed class FakeFileAvailability : IFileAvailability
+{
+    public HashSet<string> OnlineOnly { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public bool IsOnlineOnly(string path) => OnlineOnly.Contains(Path.GetFullPath(path));
+}
