@@ -35,7 +35,7 @@ public sealed record XivVaultStatus(
     public string Destination => Config.BackupDestination!;
 
     /// <summary>The newest regular backup. Pre-restore snapshots don't count as protection.</summary>
-    public BackupRecord? LatestBackup => Backups.FirstOrDefault(record => record.IsRecognized && !record.IsSafetySnapshot);
+    public BackupRecord? LatestBackup => Backups.FirstOrDefault(record => record.IsRegular);
 
     public long TotalBytes => Backups.Sum(record => record.SizeBytes);
 
@@ -69,15 +69,11 @@ public sealed class StatusService(
                     : null;
                 var destination = config.BackupDestination!;
                 var available = Directory.Exists(destination);
-                var backups = available ? catalog.List(destination).ToList() : [];
+                IReadOnlyList<BackupRecord> backups = !available ? []
+                    : verifyLatest ? catalog.ListVerifyingLatest(destination, cancellationToken)
+                    : catalog.List(destination);
 
-                var latestIndex = backups.FindIndex(record => record.IsRecognized && !record.IsSafetySnapshot);
-                if (verifyLatest && latestIndex >= 0 && backups[latestIndex] is { Integrity: IntegrityState.Unverified, IsOnlineOnly: false })
-                {
-                    backups[latestIndex] = catalog.Verify(backups[latestIndex], cancellationToken);
-                }
-
-                var (state, reason) = Evaluate(config, launcher, available, latestIndex >= 0 ? backups[latestIndex] : null, schedule);
+                var (state, reason) = Evaluate(config, launcher, available, backups.FirstOrDefault(record => record.IsRegular), schedule);
                 return new XivVaultStatus(config, launcher, portable, available, backups, schedule, guard.Check(), state, reason);
             },
             cancellationToken).ConfigureAwait(false);

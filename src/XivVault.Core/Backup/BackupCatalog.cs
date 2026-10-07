@@ -14,6 +14,12 @@ public interface IBackupCatalog
     IReadOnlyList<BackupRecord> List(string destination);
 
     /// <summary>
+    /// <see cref="List"/>, with the latest backup verified if this PC hasn't checked it and it is on
+    /// this PC. Older archives are verified when they are restored, or when asked.
+    /// </summary>
+    IReadOnlyList<BackupRecord> ListVerifyingLatest(string destination, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Reads one archive, wherever it is. Null when the file is not a XIV Vault backup. An
     /// online-only file is described without being opened, whatever its name.
     /// </summary>
@@ -64,6 +70,18 @@ public sealed class BackupCatalog(
             .ThenByDescending(record => record.LastWriteUtc)
             .ThenByDescending(record => record.FileName, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    public IReadOnlyList<BackupRecord> ListVerifyingLatest(string destination, CancellationToken cancellationToken = default)
+    {
+        var records = List(destination).ToList();
+        var latest = records.FindIndex(record => record.IsRegular);
+        if (latest >= 0 && records[latest] is { Integrity: IntegrityState.Unverified, IsOnlineOnly: false })
+        {
+            records[latest] = Verify(records[latest], cancellationToken);
+        }
+
+        return records;
     }
 
     public BackupRecord? Read(string archivePath)

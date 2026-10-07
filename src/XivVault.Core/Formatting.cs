@@ -75,12 +75,20 @@ public static class Formatting
         _ => "Unknown",
     };
 
+    /// <summary>The kind, or "Backup" for an online-only backup whose manifest hasn't been read.</summary>
+    public static string KindLabel(BackupRecord record, bool longForm = false) =>
+        record is { Kind: null, IsOnlineOnly: true } ? "Backup" : KindLabel(record.Kind, longForm);
+
     public static string IntegrityLabel(IntegrityState integrity) => integrity switch
     {
         IntegrityState.Verified => "Verified",
         IntegrityState.Failed => "Failed",
         _ => "Unverified",
     };
+
+    /// <summary>The integrity, or "In the cloud" for an online-only backup this PC hasn't verified.</summary>
+    public static string IntegrityLabel(BackupRecord record) =>
+        record is { IsOnlineOnly: true, Integrity: IntegrityState.Unverified } ? "In the cloud" : IntegrityLabel(record.Integrity);
 
     /// <summary>"Weekly on Sunday and Wednesday at 12:00 PM", "Daily at 6:00 AM", "At Windows login".</summary>
     public static string Schedule(ScheduleSettings settings)

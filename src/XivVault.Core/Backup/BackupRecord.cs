@@ -33,6 +33,9 @@ public sealed record BackupRecord(
     /// <summary>A XIV Vault backup: by its manifest, or by its name while it is online only.</summary>
     public bool IsRecognized => HasManifest || IsOnlineOnly;
 
+    /// <summary>A recognized backup that isn't a safety snapshot. The newest one is "the latest backup".</summary>
+    public bool IsRegular => IsRecognized && !IsSafetySnapshot;
+
     public DateTime CreatedAtUtc => Manifest?.CreatedAtUtc ?? NamedAtUtc ?? LastWriteUtc;
 
     public BackupKind? Kind => Manifest?.BackupType
