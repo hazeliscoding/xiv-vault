@@ -296,6 +296,60 @@ public class CliTests
     }
 
     [Fact]
+    public async Task Restore_with_plugin_restores_only_that_plugin()
+    {
+        using var host = new TestHost();
+        var launcher = host.CreateLauncher();
+        await host.BackUpAsync();
+        var original = launcher.ReadPluginConfig("Artisan");
+        launcher.WritePluginConfig("Artisan", "changed");
+        launcher.WritePluginConfig("Splatoon", "changed");
+        launcher.Write("changed", "dalamudConfig.json");
+
+        var (code, output) = await Run(host, "restore", "latest", "--yes", "--plugin", "artisan");
+
+        Assert.Equal(0, code);
+        Assert.Contains("1 of 5 plugin configurations", output);
+        Assert.Equal(original, launcher.ReadPluginConfig("Artisan"));
+        Assert.Equal("changed", launcher.ReadPluginConfig("Splatoon"));
+        Assert.Equal("changed", launcher.Read("dalamudConfig.json"));
+    }
+
+    [Fact]
+    public async Task Restore_with_only_Dalamud_settings_leaves_plugins_alone()
+    {
+        using var host = new TestHost();
+        var launcher = host.CreateLauncher();
+        await host.BackUpAsync();
+        var original = launcher.Read("dalamudConfig.json");
+        launcher.WritePluginConfig("Artisan", "changed");
+        launcher.Write("changed", "dalamudConfig.json");
+
+        var (code, _) = await Run(host, "restore", "latest", "--yes", "--dalamud-settings");
+
+        Assert.Equal(0, code);
+        Assert.Equal(original, launcher.Read("dalamudConfig.json"));
+        Assert.Equal("changed", launcher.ReadPluginConfig("Artisan"));
+    }
+
+    [Fact]
+    public async Task Restore_with_a_plugin_the_backup_does_not_hold_exits_with_2()
+    {
+        using var host = new TestHost();
+        var launcher = host.CreateLauncher();
+        await host.BackUpAsync();
+        launcher.WritePluginConfig("Artisan", "changed");
+
+        var (code, output) = await Run(host, "restore", "latest", "--yes", "--plugin", "Artisan", "--plugin", "Not Installed");
+
+        Assert.Equal(2, code);
+        Assert.Contains("no settings for Not Installed", output);
+        Assert.Contains("Splatoon", output);
+        Assert.Equal("changed", launcher.ReadPluginConfig("Artisan"));
+        Assert.Empty(Directory.GetFiles(host.BackupFolder, "pre-restore-*.zip"));
+    }
+
+    [Fact]
     public async Task Restore_by_file_name()
     {
         using var host = new TestHost();

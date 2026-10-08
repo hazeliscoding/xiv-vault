@@ -31,6 +31,14 @@ internal sealed class RestoreCommand(
         [CommandOption("-s|--source <PATH>")]
         [Description("Restore into this XIVLauncher folder instead of the detected one.")]
         public string? Source { get; init; }
+
+        [CommandOption("--plugin <NAME>")]
+        [Description("Restore only this plugin's settings. Repeat it to choose more plugins. Dalamud settings stay as they are unless --dalamud-settings is also given.")]
+        public string[] Plugins { get; init; } = [];
+
+        [CommandOption("--dalamud-settings")]
+        [Description("Restore Dalamud's own settings: the Dalamud config, the plugin collection database and the UI layout. On its own, no plugin settings are restored.")]
+        public bool DalamudSettings { get; init; }
     }
 
     protected override async Task<int> RunAsync(Settings settings, CancellationToken cancellationToken)
@@ -48,21 +56,52 @@ internal sealed class RestoreCommand(
         }
 
         var preview = await restores.PreviewAsync(record.FilePath, source, cancellationToken);
+        var selection = settings.Plugins.Length > 0 || settings.DalamudSettings
+            ? RestoreSelection.Only(settings.Plugins, settings.DalamudSettings)
+            : RestoreSelection.Everything;
+        var inBackup = preview.Backup.PluginNames;
+        var missing = selection.PluginsMissingFrom(inBackup);
+        if (missing.Count > 0)
+        {
+            Output.Detail($"Plugins in this backup: {Formatting.JoinWords(inBackup)}");
+            throw new XivVaultException(XivVaultErrorKind.InvalidConfiguration, $"This backup has no settings for {Formatting.JoinWords(missing)}.");
+        }
+
         var now = clock.GetLocalNow().DateTime;
         var created = preview.Backup.CreatedAtUtc.ToLocalTime();
 
         Output.Markup($"[bold]{Markup.Escape(Formatting.FullDate(created))}[/] [{CliOutput.Dim}]· {Markup.Escape(Formatting.KindLabel(preview.Backup.Kind))} · {Markup.Escape(Formatting.Age(created, now))}[/]");
         var contents = preview.Contents;
-        Item(true, Formatting.Count(contents.PluginConfigCount, "plugin configuration"));
-        Item(contents.DalamudConfig, "Dalamud settings");
-        Item(contents.DalamudVfs, "Plugin collection database");
-        Item(contents.DalamudConfig, contents.CustomRepositoryCount is { } repos and > 0
-            ? $"Custom repository settings · {Formatting.Count(repos, "repo")}"
-            : "Custom repository settings");
-        Item(contents.DalamudUi, contents.DalamudUi ? "UI layout" : "UI layout — not included");
-        if (preview.IsOlderThanCurrent)
+        var chosenPlugins = inBackup.Where(selection.IncludesPlugin).ToList();
+        if (selection.Plugins is null)
         {
-            var plugins = preview.PluginsChangedSinceBackup;
+            Item(true, Formatting.Count(contents.PluginConfigCount, "plugin configuration"));
+        }
+        else
+        {
+            Item(chosenPlugins.Count > 0, chosenPlugins.Count > 0
+                ? $"{chosenPlugins.Count} of {Formatting.Count(contents.PluginConfigCount, "plugin configuration")}: {Formatting.JoinWords(chosenPlugins)}"
+                : "Plugin configurations — not chosen");
+        }
+
+        if (selection.DalamudSettings)
+        {
+            Item(contents.DalamudConfig, "Dalamud settings");
+            Item(contents.DalamudVfs, "Plugin collection database");
+            Item(contents.DalamudConfig, contents.CustomRepositoryCount is { } repos and > 0
+                ? $"Custom repository settings · {Formatting.Count(repos, "repo")}"
+                : "Custom repository settings");
+            Item(contents.DalamudUi, contents.DalamudUi ? "UI layout" : "UI layout — not included");
+        }
+        else
+        {
+            Item(false, "Dalamud settings, plugin collection database and UI layout — not chosen");
+        }
+
+        var undone = preview.ChangesUndoneBy(selection);
+        if (undone.Any)
+        {
+            var plugins = undone.Plugins;
             Output.Warning(plugins.Count > 0
                 ? $"This backup is older than your current configuration. {Formatting.Count(plugins.Count, "plugin")} configured since ({Formatting.JoinWords(plugins.Take(5))}) will return to {(plugins.Count == 1 ? "its" : "their")} earlier settings."
                 : "This backup is older than your current Dalamud settings, which will return to their earlier values.");
@@ -102,7 +141,10 @@ internal sealed class RestoreCommand(
         }
 
         var result = await Output.WithStatusAsync("Verifying backup integrity", update =>
-            restores.RestoreAsync(new RestoreRequest(record.FilePath) { Source = source }, new InlineProgress<RestoreProgress>(progress => update(progress.Message)), cancellationToken));
+            restores.RestoreAsync(
+                new RestoreRequest(record.FilePath) { Source = source, Selection = selection },
+                new InlineProgress<RestoreProgress>(progress => update(progress.Message)),
+                cancellationToken));
 
         Output.Success("Restore complete");
         Output.Detail($"{Formatting.Count(result.PluginConfigCount, "plugin configuration")} restored{(result.DalamudConfigRestored ? " · Dalamud settings restored" : "")}");
