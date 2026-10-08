@@ -158,9 +158,9 @@ Released as 0.2.0 on 2026-10-08. A real 0.1.2 install updated itself to it from 
 
 ## M9: Restore only some plugins (0.3)
 
-- [ ] Choose plugins in the review step of the restore wizard; Dalamud settings are their own choice.
-- [ ] The same choice on the command line: `xiv-vault restore <backup> --plugin <name>`.
-- [ ] The safety backup still holds everything a full restore would replace.
+- [x] Choose plugins in the review step of the restore wizard; Dalamud settings are their own choice.
+- [x] The same choice on the command line: `xiv-vault restore <backup> --plugin <name>`.
+- [x] The safety backup still holds everything a full restore would replace.
 
 **Done when:** restoring one plugin's settings leaves every other plugin and Dalamud's settings as they were.
 
