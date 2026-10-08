@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using XivVault.Core;
 using XivVault.Desktop;
 using XivVault.Desktop.Services;
 using XivVault.Desktop.ViewModels;
@@ -82,7 +83,9 @@ internal static class Program
         services.GetRequiredService<SettingsViewModel>().ToggleOverrideCommand.Execute(null);
         Shot(window, "settings-override");
         services.GetRequiredService<SettingsViewModel>().ToggleOverrideCommand.Execute(null);
-        world.Updater.Latest = "0.2.0";
+        // Always one minor version ahead, so the offer never names a version older than the app.
+        var current = Version.Parse(XivVaultInfo.Version.Split('-')[0]);
+        world.Updater.Latest = $"{current.Major}.{current.Minor + 1}.0";
         Run(services.GetRequiredService<UpdatesViewModel>().CheckNowCommand.ExecuteAsync(null));
         Shot(window, "settings-update");
         window.Close();
