@@ -71,6 +71,13 @@ An independent review of the restore and validation code found failure modes; th
 - **Layouts users report** are handled as they arrive, in patch releases, rather than as an M8 item.
 - **Google Drive for desktop doesn't mark online-only files.** Every file in `G:\My Drive` reads as a normal file whether it is on this PC or not, so XIV Vault treats backups there as local: on a new PC it reads each manifest and verifies the latest in full. That is still far less than 0.1.2, which read every backup, and it is accepted for 0.2. Found on the author's setup.
 
+## Decisions (2026-10-08, restoring some plugins)
+
+- **A restore takes a selection:** the plugins to restore, and Dalamud settings as one separate choice (`dalamudConfig.json`, `dalamudVfs.db` and `dalamudUI.ini`). Only the chosen files are written. A plugin's settings are its `.json` file and its folder together. The whole archive is still validated, and the safety snapshot still holds everything a full restore would replace.
+- **Everything is chosen when the review step opens,** so a full restore stays one click.
+- **The checklist lives in the review step.** The plugin line in "In this backup" opens into a checklist with a filter and Select all / none. Continue is unavailable while nothing is chosen.
+- **On the command line,** `--plugin <name>` (repeatable) and `--dalamud-settings` choose what to restore. With either option only what they name is restored; with neither, everything is. A plugin the backup doesn't hold is an argument error (exit code 2).
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
