@@ -56,6 +56,18 @@ internal static class Program
         var restore = services.GetRequiredService<RestoreViewModel>();
         Run(restore.ContinueCommand.ExecuteAsync(null));
         Shot(window, "restore-2-review");
+        restore.TogglePluginListCommand.Execute(null);
+        restore.ChooseNoPluginsCommand.Execute(null);
+        foreach (var name in new[] { "Splatoon", "Pixel Perfect" })
+        {
+            restore.PluginChoices.Single(choice => choice.Name == name).IsChosen = true;
+        }
+
+        restore.DalamudSettingsChosen = false;
+        Shot(window, "restore-2-choose");
+        restore.ChooseAllPluginsCommand.Execute(null);
+        restore.DalamudSettingsChosen = true;
+        restore.TogglePluginListCommand.Execute(null);
         Run(restore.ContinueCommand.ExecuteAsync(null));
         Shot(window, "restore-3-checks");
         Run(restore.RestoreNowCommand.ExecuteAsync(null));
