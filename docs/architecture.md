@@ -42,7 +42,7 @@ Both front ends call `services.AddXivVaultCore()` and resolve the same services 
 | `ArchiveValidator` | Decides whether an archive can be trusted: manifest, schema, paths, allowlist, every hash. |
 | `BackupCatalog` | Lists archives in a folder from their manifests, or by name while they are online only; verifies the latest one, or any one on request, and caches the result; downloads and deletes them. |
 | `RetentionService` | Keeps the newest N regular backups and the newest 3 pre-restore snapshots, separately. Damaged archives are neither counted nor deleted. Online-only archives are never downloaded: they don't count, and are deleted unopened once N verified backups are newer. |
-| `RestoreService` | Preview, safety checks and the restore itself. |
+| `RestoreService` | Preview, safety checks and the restore itself, of everything or of a `RestoreSelection`: some plugins, and Dalamud settings as one choice. |
 | `GameProcessGuard` | Detects XIVLauncher and FFXIV processes. |
 | `WindowsTaskScheduler`, `ScheduleService` | The `XIV Vault Scheduled Backup` task through `schtasks /xml`, kept in step with the saved preferences. |
 | `ScheduledBackupRunner` | What the task runs: waits for FFXIV, backs up, records the result. |
@@ -69,8 +69,8 @@ Any failure deletes the `.tmp`, so nothing half-written looks like a backup.
 2. Locate the target. A folder where XIVLauncher has run but Dalamud hasn't is fine, which makes a fresh PC a valid target. Refuse if any folder or file the restore would write is a link, since backups don't follow links.
 3. Refuse while XIVLauncher or FFXIV runs (exit 6).
 4. Take a pre-restore snapshot into the backup folder, including the UI layout. No snapshot, no restore. The archive being restored stays open, read-shared only, until the end.
-5. Extract the manifest's files into a private temp folder and re-hash them.
-6. Check processes again, then replace files one by one: copy next to the target and rename over it. The original of each replaced file is kept aside.
+5. Extract the manifest's files into a private temp folder and re-hash them, all of them even when only some are chosen.
+6. Check processes again, then replace the chosen files one by one: copy next to the target and rename over it. The original of each replaced file is kept aside.
 7. On any failure, put every replaced file back and delete files the restore created. The snapshot is the second line of defense.
 8. Only then apply snapshot retention, which never removes the new snapshot or the archive that was restored.
 

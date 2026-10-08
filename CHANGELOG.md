@@ -4,6 +4,11 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+### Added
+
+- Restore only some plugins. The restore review lists the backup's plugins with a filter and Select all / Select none, and Dalamud settings are their own choice. Everything is chosen to start with, so a full restore is still one click. Plugins you leave out, and Dalamud settings if you leave them out, stay exactly as they are. However little is chosen, the whole backup is still verified and the safety backup still holds everything a full restore would replace.
+- `xiv-vault restore --plugin <name>` (repeatable) and `--dalamud-settings` choose what to restore from the command line. A plugin the backup doesn't hold stops the restore with exit code 2.
+
 ## [0.2.0] - 2026-10-07
 
 ### Changed

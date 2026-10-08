@@ -22,7 +22,7 @@ All three are self-contained: no .NET install is needed. Check downloads against
 |---|---|
 | **Overview** | Whether your setup is protected, the last backup, and **Back Up Now**. |
 | **Backups** | Every backup with its size, plugin count, type (Manual, Scheduled, Pre-Restore) and integrity. Inspect, restore, show in Explorer or delete. |
-| **Restore** | A four-step wizard: choose a backup, review what changes, run safety checks, restore. Nothing on disk changes before the last step. |
+| **Restore** | A four-step wizard: choose a backup, review what changes, run safety checks, restore. In the review you can restore just some plugins, or leave Dalamud settings as they are. Nothing on disk changes before the last step. |
 | **Schedule** | Automatic backups through Windows Task Scheduler: daily, weekly or at Windows login. |
 | **Diagnostics** | Checks for XIVLauncher, Dalamud, the backup folder and scheduling, plus a report you can paste into an issue. |
 | **Settings** | Backup folder, how many backups to keep, the UI layout option, compression, and the XIVLauncher folder. |
@@ -51,6 +51,7 @@ xiv-vault status --json
 xiv-vault doctor                        # health checks; --report for a shareable copy
 xiv-vault restore                       # choose from a list
 xiv-vault restore latest                # asks before it changes anything; --yes for scripts
+xiv-vault restore latest --plugin Artisan   # only that plugin; repeat --plugin, add --dalamud-settings
 xiv-vault schedule weekly --day Sunday --time 18:30
 xiv-vault schedule status
 xiv-vault schedule remove
@@ -122,7 +123,7 @@ Inside `pluginConfigs\`, temporary files and `logs`/`cache` folders are skipped,
 
 - **Allowlist.** XIV Vault reads and writes only the items above. It never archives the whole XIVLauncher folder.
 - **Verified backups.** Each archive is written as `*.zip.tmp`, read back, and checked against the SHA-256 of every file before it is renamed. A failed backup never looks like a finished one, and old backups are only removed after a new one is verified. XIV Vault also checks the latest backup when it opens, and the backup being restored; `xiv-vault list --verify` checks them all.
-- **Guarded restores.** Before anything changes, XIV Vault checks the manifest and every hash, refuses while XIVLauncher or FFXIV runs, and takes a **pre-restore safety backup** (the newest 3 are kept). The archive is unpacked into a temporary folder and checked again, never extracted over XIVLauncher. Files the backup doesn't contain are never deleted. If a restore fails part-way, every file it changed is put back.
+- **Guarded restores.** Before anything changes, XIV Vault checks the manifest and every hash, refuses while XIVLauncher or FFXIV runs, and takes a **pre-restore safety backup** (the newest 3 are kept). The safety backup holds everything a full restore would replace, even when you restore only some plugins. The archive is unpacked into a temporary folder and checked again, never extracted over XIVLauncher. Files the backup doesn't contain are never deleted. If a restore fails part-way, every file it changed is put back.
 - **Hostile archives are refused:** paths with `..`, absolute or drive paths, files outside the allowlist, files the manifest doesn't list, manifests that misdescribe their files, and checksum mismatches.
 - **No links.** Backups don't follow links (junctions or symlinks) inside the XIVLauncher folder, and restores refuse to write through them.
 - **One operation at a time.** A scheduled backup and the app never write to the backup folder at the same time.
