@@ -392,25 +392,19 @@ public sealed class RestoreService : IRestoreService
     /// Refuses a choice that names a plugin the backup doesn't hold, or that would write nothing,
     /// before anything changes. Returns how many plugins will be restored.
     /// </summary>
-    private static int CheckSelection(RestoreSelection selection, BackupManifest manifest)
+    private int CheckSelection(RestoreSelection selection, BackupManifest manifest)
     {
         var plugins = BackupAllowlist.PluginNames(manifest.Files.Select(file => file.Path));
-        var missing = selection.PluginsMissingFrom(plugins);
-        if (missing.Count > 0)
+        var contents = manifest.Contents;
+        if (selection.ProblemIn(plugins, contents.DalamudConfig || contents.DalamudVfs || contents.DalamudUi) is { } problem)
         {
-            throw new XivVaultException(
-                XivVaultErrorKind.InvalidConfiguration,
-                $"This backup has no settings for {Formatting.JoinWords(missing)}.");
+            throw new XivVaultException(XivVaultErrorKind.InvalidConfiguration, problem);
         }
 
-        var writesSomething = manifest.Files.Any(file =>
-            BackupAllowlist.TryClassify(file.Path, out var item, out var relative) && selection.Includes(item, relative));
-        if (!writesSomething)
-        {
-            throw new XivVaultException(XivVaultErrorKind.InvalidConfiguration, "Choose at least one plugin, or Dalamud settings, to restore.");
-        }
-
-        return plugins.Count(selection.IncludesPlugin);
+        var chosen = plugins.Count(selection.IncludesPlugin);
+        _logger.LogInformation(
+            "Restoring {Chosen} of {Total} plugin(s); Dalamud settings {Dalamud}", chosen, plugins.Count, selection.DalamudSettings ? "chosen" : "not chosen");
+        return chosen;
     }
 
     /// <summary>

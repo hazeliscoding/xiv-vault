@@ -355,7 +355,7 @@ public class RestoreTests
             .Order(StringComparer.Ordinal)
             .ToList();
 
-    private sealed class FailingWriter(int failOnCall) : IRestoreFileWriter
+    internal sealed class FailingWriter(int failOnCall) : IRestoreFileWriter
     {
         private readonly RenameRestoreFileWriter _inner = new();
 

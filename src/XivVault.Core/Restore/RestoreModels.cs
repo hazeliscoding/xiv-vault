@@ -35,7 +35,33 @@ public sealed class RestoreSelection
     public static RestoreSelection Only(IEnumerable<string> plugins, bool dalamudSettings) =>
         new(new HashSet<string>(plugins, StringComparer.OrdinalIgnoreCase), dalamudSettings);
 
+    public bool IsEverything => Plugins is null && DalamudSettings;
+
     public bool IncludesPlugin(string name) => Plugins is null || Plugins.Contains(name);
+
+    /// <summary>
+    /// Why this choice can't be restored from a backup holding <paramref name="backupPlugins"/>, or
+    /// null when it can. Core, the command line and the app all ask here, so they agree.
+    /// </summary>
+    public string? ProblemIn(IReadOnlyCollection<string> backupPlugins, bool backupHasDalamudSettings)
+    {
+        var missing = PluginsMissingFrom(backupPlugins);
+        if (missing.Count > 0)
+        {
+            return $"This backup has no settings for {Formatting.JoinWords(missing)}.";
+        }
+
+        // A full restore of a backup that holds nothing, such as the safety backup of a PC where
+        // Dalamud never ran, is allowed: it writes nothing.
+        if (IsEverything || backupPlugins.Any(IncludesPlugin) || (DalamudSettings && backupHasDalamudSettings))
+        {
+            return null;
+        }
+
+        return DalamudSettings && Plugins is { Count: 0 }
+            ? "This backup has no Dalamud settings."
+            : "Choose at least one plugin, or Dalamud settings, to restore.";
+    }
 
     /// <summary>Chosen plugin names that <paramref name="backupPlugins"/> doesn't hold, sorted.</summary>
     public IReadOnlyList<string> PluginsMissingFrom(IReadOnlyCollection<string> backupPlugins) =>
@@ -79,6 +105,10 @@ public sealed record RestorePreview(
 {
     /// <summary>True when restoring will roll back settings that changed after the backup was taken.</summary>
     public bool IsOlderThanCurrent => PluginsChangedSinceBackup.Count > 0 || DalamudConfigChangedSinceBackup;
+
+    /// <summary>Why <paramref name="selection"/> can't be restored from this backup, or null when it can.</summary>
+    public string? ProblemWith(RestoreSelection selection) =>
+        selection.ProblemIn(Backup.PluginNames, Contents.DalamudConfig || Contents.DalamudVfs || Contents.DalamudUi);
 
     /// <summary>The changes made since the backup that restoring <paramref name="selection"/> would roll back.</summary>
     public UndoneChanges ChangesUndoneBy(RestoreSelection selection) =>

@@ -60,11 +60,14 @@ internal sealed class RestoreCommand(
             ? RestoreSelection.Only(settings.Plugins, settings.DalamudSettings)
             : RestoreSelection.Everything;
         var inBackup = preview.Backup.PluginNames;
-        var missing = selection.PluginsMissingFrom(inBackup);
-        if (missing.Count > 0)
+        if (preview.ProblemWith(selection) is { } problem)
         {
-            Output.Detail($"Plugins in this backup: {Formatting.JoinWords(inBackup)}");
-            throw new XivVaultException(XivVaultErrorKind.InvalidConfiguration, $"This backup has no settings for {Formatting.JoinWords(missing)}.");
+            if (selection.PluginsMissingFrom(inBackup).Count > 0 && inBackup.Count > 0)
+            {
+                Output.Detail($"Plugins in this backup: {Formatting.JoinWords(inBackup)}");
+            }
+
+            throw new XivVaultException(XivVaultErrorKind.InvalidConfiguration, problem);
         }
 
         var now = clock.GetLocalNow().DateTime;
@@ -147,7 +150,10 @@ internal sealed class RestoreCommand(
                 cancellationToken));
 
         Output.Success("Restore complete");
-        Output.Detail($"{Formatting.Count(result.PluginConfigCount, "plugin configuration")} restored{(result.DalamudConfigRestored ? " · Dalamud settings restored" : "")}");
+        var restoredPlugins = result.PluginConfigCount > 0 || selection.Plugins is null
+            ? $"{Formatting.Count(result.PluginConfigCount, "plugin configuration")} restored"
+            : "Plugin configurations unchanged";
+        Output.Detail($"{restoredPlugins}{(result.DalamudConfigRestored ? " · Dalamud settings restored" : "")}");
         Output.Detail($"Safety snapshot: {result.SafetySnapshot.FileName} in {paths.Friendly(Path.GetDirectoryName(result.SafetySnapshot.FilePath)!)}");
         return 0;
     }

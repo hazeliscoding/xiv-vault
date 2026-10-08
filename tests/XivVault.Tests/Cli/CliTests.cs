@@ -333,6 +333,38 @@ public class CliTests
     }
 
     [Fact]
+    public async Task Restore_with_Dalamud_settings_from_a_backup_without_them_exits_with_2()
+    {
+        using var host = new TestHost();
+        var launcher = host.CreateLauncher();
+        foreach (var file in new[] { "dalamudConfig.json", "dalamudVfs.db", "dalamudUI.ini" })
+        {
+            File.Delete(Path.Combine(launcher.DataPath, file));
+        }
+
+        await host.BackUpAsync();
+
+        var (code, output) = await Run(host, "restore", "latest", "--yes", "--dalamud-settings");
+
+        Assert.Equal(2, code);
+        Assert.Contains("This backup has no Dalamud settings.", output);
+        Assert.Empty(Directory.GetFiles(host.BackupFolder, "pre-restore-*.zip"));
+    }
+
+    [Fact]
+    public async Task Restore_with_only_Dalamud_settings_says_plugins_are_unchanged()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+
+        var (code, output) = await Run(host, "restore", "latest", "--yes", "--dalamud-settings");
+
+        Assert.Equal(0, code);
+        Assert.Contains("Plugin configurations unchanged · Dalamud settings restored", output);
+    }
+
+    [Fact]
     public async Task Restore_with_a_plugin_the_backup_does_not_hold_exits_with_2()
     {
         using var host = new TestHost();
