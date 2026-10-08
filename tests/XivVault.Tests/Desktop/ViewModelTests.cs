@@ -234,8 +234,8 @@ public class RestoreViewModelTests
 
         await restore.ContinueCommand.ExecuteAsync(null);
         Assert.True(restore.IsStep2);
-        Assert.Equal("5 plugin configurations", restore.Contents[0].Label);
-        Assert.Contains(restore.Contents, item => item is { Included: false, Label: "UI layout — not included" });
+        Assert.Equal("5 plugin configurations", restore.PluginsLabel);
+        Assert.Contains(restore.DalamudDetails, item => item is { Included: false, Label: "UI layout — not included" });
         Assert.NotEmpty(restore.Current);
 
         await restore.ContinueCommand.ExecuteAsync(null);
@@ -272,7 +272,7 @@ public class RestoreViewModelTests
         await restore.ContinueCommand.ExecuteAsync(null);
 
         Assert.True(restore.IsStep2);
-        Assert.Equal("5 plugin configurations", restore.Contents[0].Label);
+        Assert.Equal("5 plugin configurations", restore.PluginsLabel);
         Assert.Equal(5, restore.Selected!.PluginCount);
         Assert.False(restore.IsDownloading);
     }
@@ -369,6 +369,110 @@ public class RestoreViewModelTests
         Assert.True(restore.IsStep1);
         Assert.Null(restore.ErrorMessage);
         Assert.Equal(local, restore.Selected!.FilePath);
+    }
+
+    [Fact]
+    public async Task The_review_starts_with_every_plugin_and_Dalamud_settings_chosen()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        var restore = await ReviewAsync(host);
+
+        Assert.All(restore.PluginChoices, choice => Assert.True(choice.IsChosen));
+        Assert.Equal(5, restore.PluginChoices.Count);
+        Assert.True(restore.DalamudSettingsChosen);
+        Assert.Equal("5 plugin configurations", restore.PluginsLabel);
+        Assert.Same(XivVault.Core.Restore.RestoreSelection.Everything, restore.Selection);
+    }
+
+    [Fact]
+    public async Task Choosing_one_plugin_restores_only_that_plugin()
+    {
+        using var host = new DesktopTestHost();
+        var launcher = host.CreateLauncher();
+        var original = launcher.ReadPluginConfig("Artisan");
+        await host.BackUpAsync();
+        launcher.WritePluginConfig("Artisan", "changed");
+        launcher.WritePluginConfig("Splatoon", "changed");
+        launcher.Write("changed", "dalamudConfig.json");
+        var restore = await ReviewAsync(host);
+
+        restore.ChooseNoPluginsCommand.Execute(null);
+        restore.PluginChoices.Single(choice => choice.Name == "Artisan").IsChosen = true;
+        restore.DalamudSettingsChosen = false;
+        Assert.Equal("1 of 5 plugin configurations", restore.PluginsLabel);
+        Assert.StartsWith("Restores 1 plugin configuration from", restore.RestoreSummary);
+
+        await restore.ContinueCommand.ExecuteAsync(null);
+        await restore.RestoreNowCommand.ExecuteAsync(null);
+
+        Assert.True(restore.IsStep4);
+        Assert.Equal(original, launcher.ReadPluginConfig("Artisan"));
+        Assert.Equal("changed", launcher.ReadPluginConfig("Splatoon"));
+        Assert.Equal("changed", launcher.Read("dalamudConfig.json"));
+        Assert.Equal("1 plugin configuration restored", restore.ResultPlugins);
+        Assert.Equal("Dalamud configuration unchanged (not chosen)", restore.ResultDalamud);
+    }
+
+    [Fact]
+    public async Task Continue_is_unavailable_while_nothing_is_chosen()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        var restore = await ReviewAsync(host);
+
+        restore.ChooseNoPluginsCommand.Execute(null);
+        restore.DalamudSettingsChosen = false;
+        Assert.False(restore.ContinueCommand.CanExecute(null));
+        Assert.Equal("No plugin configurations", restore.PluginsLabel);
+
+        restore.DalamudSettingsChosen = true;
+        Assert.True(restore.ContinueCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task The_older_backup_warning_counts_only_what_is_chosen()
+    {
+        using var host = new DesktopTestHost();
+        var launcher = host.CreateLauncher();
+        await host.BackUpAsync();
+        launcher.WritePluginConfig("Splatoon", "changed");
+        File.SetLastWriteTimeUtc(Path.Combine(launcher.PluginConfigs, "Splatoon.json"), host.Clock.Now.UtcDateTime.AddHours(1));
+        var restore = await ReviewAsync(host);
+        Assert.True(restore.ShowOlderWarning);
+        Assert.Contains("Splatoon", restore.OlderWarningText);
+
+        restore.PluginChoices.Single(choice => choice.Name == "Splatoon").IsChosen = false;
+
+        Assert.False(restore.ShowOlderWarning);
+    }
+
+    [Fact]
+    public async Task The_filter_narrows_the_plugin_list_without_changing_choices()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        var restore = await ReviewAsync(host);
+
+        restore.PluginFilter = "auto";
+
+        Assert.Equal(["AutoRetainer"], restore.VisiblePluginChoices.Select(choice => choice.Name));
+        Assert.All(restore.PluginChoices, choice => Assert.True(choice.IsChosen));
+        restore.PluginFilter = "";
+        Assert.Equal(5, restore.VisiblePluginChoices.Count);
+    }
+
+    private static async Task<RestoreViewModel> ReviewAsync(DesktopTestHost host)
+    {
+        var restore = host.Get<RestoreViewModel>();
+        await host.Session.RefreshAsync();
+        restore.Begin(null);
+        await restore.ContinueCommand.ExecuteAsync(null);
+        Assert.True(restore.IsStep2);
+        return restore;
     }
 
     [Fact]

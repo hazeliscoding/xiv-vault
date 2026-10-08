@@ -24,6 +24,15 @@ public sealed record StepItem(int Number, string Label, StepState State, bool Ha
 
 public sealed record ContentItem(bool Included, string Label);
 
+/// <summary>One plugin in the review step's checklist.</summary>
+public sealed partial class PluginChoice(string name) : ObservableObject
+{
+    public string Name { get; } = name;
+
+    [ObservableProperty]
+    public partial bool IsChosen { get; set; } = true;
+}
+
 public sealed record CurrentItem(string Label, string Meta);
 
 public sealed record CheckItem(Tone Tone, string Label, string Detail);
@@ -122,7 +131,21 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     public ObservableCollection<BackupRowViewModel> Choices { get; } = [];
 
-    public ObservableCollection<ContentItem> Contents { get; } = [];
+    /// <summary>What "Dalamud settings" covers in this backup, shown under its checkbox.</summary>
+    public ObservableCollection<ContentItem> DalamudDetails { get; } = [];
+
+    public ObservableCollection<PluginChoice> PluginChoices { get; } = [];
+
+    public ObservableCollection<PluginChoice> VisiblePluginChoices { get; } = [];
+
+    [ObservableProperty]
+    public partial string PluginFilter { get; set; } = "";
+
+    [ObservableProperty]
+    public partial bool IsPluginListOpen { get; private set; }
+
+    [ObservableProperty]
+    public partial bool DalamudSettingsChosen { get; set; }
 
     public ObservableCollection<CurrentItem> Current { get; } = [];
 
@@ -154,7 +177,35 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     public string ContinueLabel => SelectedIsInCloud ? "Download and continue" : "Continue";
 
-    public bool ShowOlderWarning => Preview is { IsOlderThanCurrent: true };
+    public bool HasDalamudSettings => Preview?.Contents is { } contents && (contents.DalamudConfig || contents.DalamudVfs || contents.DalamudUi);
+
+    public int ChosenPluginCount => PluginChoices.Count(choice => choice.IsChosen);
+
+    public bool AnyPluginChosen => ChosenPluginCount > 0;
+
+    public bool NoPluginMatches => PluginChoices.Count > 0 && VisiblePluginChoices.Count == 0;
+
+    public string PluginListButtonLabel => IsPluginListOpen ? "Done" : "Choose";
+
+    public string PluginsLabel
+    {
+        get
+        {
+            var chosen = ChosenPluginCount;
+            var total = PluginChoices.Count;
+            return chosen == total ? Formatting.Count(total, "plugin configuration")
+                : chosen == 0 ? "No plugin configurations"
+                : $"{chosen} of {Formatting.Count(total, "plugin configuration")}";
+        }
+    }
+
+    /// <summary>What the restore will write, from the review step's choices.</summary>
+    public RestoreSelection Selection =>
+        ChosenPluginCount == PluginChoices.Count && (DalamudSettingsChosen || !HasDalamudSettings)
+            ? RestoreSelection.Everything
+            : RestoreSelection.Only(PluginChoices.Where(choice => choice.IsChosen).Select(choice => choice.Name), DalamudSettingsChosen);
+
+    public bool ShowOlderWarning => Preview?.ChangesUndoneBy(Selection).Any == true;
 
     public string OlderWarningText
     {
@@ -165,7 +216,7 @@ public sealed partial class RestoreViewModel : PageViewModel
                 return "";
             }
 
-            var plugins = preview.PluginsChangedSinceBackup;
+            var plugins = preview.ChangesUndoneBy(Selection).Plugins;
             return plugins.Count > 0
                 ? $"{Formatting.Count(plugins.Count, "plugin")} configured after this backup ({Formatting.JoinWords(plugins.Take(4))}) will return to {(plugins.Count == 1 ? "its" : "their")} earlier settings. The safety backup keeps today's values recoverable."
                 : "Your Dalamud settings changed after this backup and will return to their earlier values. The safety backup keeps today's values recoverable.";
@@ -174,11 +225,25 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     public string? TargetProblem => Preview?.TargetProblem;
 
-    public bool CanContinueReview => Preview is { Target: not null };
+    public bool CanContinueReview => Preview is { Target: not null } && (AnyPluginChosen || (DalamudSettingsChosen && HasDalamudSettings));
 
-    public string RestoreSummary => Selected is { } row
-        ? $"Restores {Formatting.Count(row.PluginCount, "plugin configuration")} from {row.Day}, {row.Time}"
-        : "";
+    public string RestoreSummary
+    {
+        get
+        {
+            if (Selected is not { } row)
+            {
+                return "";
+            }
+
+            var plugins = Formatting.Count(PluginChoices.Count > 0 ? ChosenPluginCount : row.PluginCount, "plugin configuration");
+            var dalamud = DalamudSettingsChosen && HasDalamudSettings;
+            var what = PluginChoices.Count > 0 && !AnyPluginChosen ? "Dalamud settings"
+                : dalamud && Selection != RestoreSelection.Everything ? $"{plugins} and Dalamud settings"
+                : plugins;
+            return $"Restores {what} from {row.Day}, {row.Time}";
+        }
+    }
 
     public bool CanRestore => ChecksPassed && !IsRestoring && !_session.IsBackingUp;
 
@@ -186,7 +251,12 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     public string ResultPlugins => Result is { } result ? $"{Formatting.Count(result.PluginConfigCount, "plugin configuration")} restored" : "";
 
-    public string ResultDalamud => Result is { DalamudConfigRestored: true } ? "Dalamud configuration restored" : "Dalamud configuration unchanged (not in this backup)";
+    public string ResultDalamud => Result switch
+    {
+        { DalamudConfigRestored: true } => "Dalamud configuration restored",
+        _ when !DalamudSettingsChosen && HasDalamudSettings => "Dalamud configuration unchanged (not chosen)",
+        _ => "Dalamud configuration unchanged (not in this backup)",
+    };
 
     public string ResultSnapshot => Result is { } result
         ? $"Safety snapshot created · {Formatting.DayAndTime(result.SafetySnapshot.CreatedAtUtc.ToLocalTime(), _session.Clock.GetLocalNow().DateTime)}"
@@ -222,8 +292,19 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     partial void OnIsDownloadingChanged(bool value) => OnPropertyChanged(nameof(ShowCloudNote));
 
+    partial void OnPluginFilterChanged(string value) => FilterPlugins();
+
+    partial void OnIsPluginListOpenChanged(bool value) => OnPropertyChanged(nameof(PluginListButtonLabel));
+
+    partial void OnDalamudSettingsChosenChanged(bool value)
+    {
+        BuildDalamudDetails();
+        ChoicesChanged();
+    }
+
     partial void OnPreviewChanged(RestorePreview? value)
     {
+        OnPropertyChanged(nameof(HasDalamudSettings));
         OnPropertyChanged(nameof(ShowOlderWarning));
         OnPropertyChanged(nameof(OlderWarningText));
         OnPropertyChanged(nameof(TargetProblem));
@@ -327,6 +408,15 @@ public sealed partial class RestoreViewModel : PageViewModel
     [RelayCommand]
     private void CancelDownload() => _download?.Cancel();
 
+    [RelayCommand]
+    private void TogglePluginList() => IsPluginListOpen = !IsPluginListOpen;
+
+    [RelayCommand]
+    private void ChooseAllPlugins() => ChooseEveryPlugin(true);
+
+    [RelayCommand]
+    private void ChooseNoPlugins() => ChooseEveryPlugin(false);
+
     [RelayCommand(CanExecute = nameof(CanGoBack))]
     private void Back()
     {
@@ -396,12 +486,15 @@ public sealed partial class RestoreViewModel : PageViewModel
         ErrorMessage = null;
         IsRestoring = true;
         _session.IsRestoring = true;
-        SetStage(RestoreStage.VerifyingIntegrity, row.PluginCount);
+        var selection = Selection;
+        var dalamud = DalamudSettingsChosen && HasDalamudSettings;
+        var plugins = ChosenPluginCount;
+        SetStage(RestoreStage.VerifyingIntegrity, plugins, dalamud);
         try
         {
-            var progress = new UiProgress<RestoreProgress>(_uiThread, value => SetStage(value.Stage, row.PluginCount));
-            Result = await _restores.RestoreAsync(new RestoreRequest(row.FilePath), progress);
-            SetStage(RestoreStage.Completed, row.PluginCount);
+            var progress = new UiProgress<RestoreProgress>(_uiThread, value => SetStage(value.Stage, plugins, dalamud));
+            Result = await _restores.RestoreAsync(new RestoreRequest(row.FilePath) { Selection = selection }, progress);
+            SetStage(RestoreStage.Completed, plugins, dalamud);
             Step = 4;
         }
         catch (XivVaultException ex)
@@ -508,7 +601,7 @@ public sealed partial class RestoreViewModel : PageViewModel
         RestoreNowCommand.NotifyCanExecuteChanged();
     }
 
-    private void SetStage(RestoreStage stage, int pluginCount)
+    private void SetStage(RestoreStage stage, int pluginCount, bool dalamudSettings)
     {
         var current = stage switch
         {
@@ -522,8 +615,8 @@ public sealed partial class RestoreViewModel : PageViewModel
         [
             "Verifying backup integrity",
             "Creating pre-restore safety backup",
-            $"Restoring {Formatting.Count(pluginCount, "plugin configuration")}",
-            "Restoring Dalamud settings",
+            pluginCount > 0 ? $"Restoring {Formatting.Count(pluginCount, "plugin configuration")}" : "Plugin configurations stay as they are",
+            dalamudSettings ? "Restoring Dalamud settings" : "Dalamud settings stay as they are",
         ];
         Stages.Clear();
         for (var i = 0; i < labels.Length; i++)
@@ -592,14 +685,25 @@ public sealed partial class RestoreViewModel : PageViewModel
     {
         var now = _session.Clock.GetLocalNow().DateTime;
         var contents = preview.Contents;
-        Contents.Clear();
-        Contents.Add(new ContentItem(true, Formatting.Count(contents.PluginConfigCount, "plugin configuration")));
-        Contents.Add(new ContentItem(contents.DalamudConfig, "Dalamud settings"));
-        Contents.Add(new ContentItem(contents.DalamudVfs, "Plugin collection database"));
-        Contents.Add(new ContentItem(contents.DalamudConfig, contents.CustomRepositoryCount is { } repos and > 0
-            ? $"Custom repository settings · {Formatting.Count(repos, "repo")}"
-            : "Custom repository settings"));
-        Contents.Add(new ContentItem(contents.DalamudUi, contents.DalamudUi ? "UI layout" : "UI layout — not included"));
+        foreach (var choice in PluginChoices)
+        {
+            choice.PropertyChanged -= OnPluginChoiceChanged;
+        }
+
+        PluginChoices.Clear();
+        foreach (var name in preview.Backup.PluginNames)
+        {
+            var choice = new PluginChoice(name);
+            choice.PropertyChanged += OnPluginChoiceChanged;
+            PluginChoices.Add(choice);
+        }
+
+        PluginFilter = "";
+        IsPluginListOpen = false;
+        FilterPlugins();
+        DalamudSettingsChosen = HasDalamudSettings;
+        BuildDalamudDetails();
+        ChoicesChanged();
 
         Current.Clear();
         if (preview.Current is { } current)
@@ -611,5 +715,62 @@ public sealed partial class RestoreViewModel : PageViewModel
             Current.Add(new CurrentItem("Custom repository settings", current.CustomRepositoryCount is { } currentRepos ? Formatting.Count(currentRepos, "repo") : "none"));
             Current.Add(new CurrentItem("UI layout", contents.DalamudUi ? "will be replaced" : "kept as is"));
         }
+    }
+
+    private void OnPluginChoiceChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(PluginChoice.IsChosen))
+        {
+            ChoicesChanged();
+        }
+    }
+
+    private void ChooseEveryPlugin(bool chosen)
+    {
+        foreach (var choice in PluginChoices)
+        {
+            choice.IsChosen = chosen;
+        }
+    }
+
+    private void FilterPlugins()
+    {
+        var filter = PluginFilter.Trim();
+        VisiblePluginChoices.Clear();
+        foreach (var choice in PluginChoices.Where(choice => filter.Length == 0 || choice.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+        {
+            VisiblePluginChoices.Add(choice);
+        }
+
+        OnPropertyChanged(nameof(NoPluginMatches));
+    }
+
+    private void BuildDalamudDetails()
+    {
+        DalamudDetails.Clear();
+        if (Preview?.Contents is not { } contents)
+        {
+            return;
+        }
+
+        var chosen = DalamudSettingsChosen;
+        DalamudDetails.Add(new ContentItem(chosen && contents.DalamudVfs, "Plugin collection database"));
+        DalamudDetails.Add(new ContentItem(chosen && contents.DalamudConfig, contents.CustomRepositoryCount is { } repos and > 0
+            ? $"Custom repository settings · {Formatting.Count(repos, "repo")}"
+            : "Custom repository settings"));
+        DalamudDetails.Add(new ContentItem(chosen && contents.DalamudUi, contents.DalamudUi ? "UI layout" : "UI layout — not included"));
+    }
+
+    private void ChoicesChanged()
+    {
+        OnPropertyChanged(nameof(ChosenPluginCount));
+        OnPropertyChanged(nameof(AnyPluginChosen));
+        OnPropertyChanged(nameof(PluginsLabel));
+        OnPropertyChanged(nameof(Selection));
+        OnPropertyChanged(nameof(ShowOlderWarning));
+        OnPropertyChanged(nameof(OlderWarningText));
+        OnPropertyChanged(nameof(CanContinueReview));
+        OnPropertyChanged(nameof(RestoreSummary));
+        ContinueCommand.NotifyCanExecuteChanged();
     }
 }
