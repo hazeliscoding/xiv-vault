@@ -29,7 +29,7 @@ All three are self-contained: no .NET install is needed. Check downloads against
 
 ![Backups](docs/screenshots/backups-inspect.png)
 
-![Restore review](docs/screenshots/restore-2-review.png)
+![Restore review with two plugins chosen](docs/screenshots/restore-2-choose.png)
 
 ## Moving to a new PC
 
