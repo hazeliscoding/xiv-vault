@@ -7,6 +7,46 @@ public sealed record RestoreRequest(string ArchivePath)
 {
     /// <summary>Overrides the configured XIVLauncher folder for this restore.</summary>
     public string? Source { get; init; }
+
+    public RestoreSelection Selection { get; init; } = RestoreSelection.Everything;
+}
+
+/// <summary>
+/// What a restore writes: some or all of the backup's plugins, and Dalamud settings as one choice.
+/// The safety snapshot and validation always cover everything, whatever is chosen.
+/// </summary>
+public sealed class RestoreSelection
+{
+    private RestoreSelection(IReadOnlySet<string>? plugins, bool dalamudSettings)
+    {
+        Plugins = plugins;
+        DalamudSettings = dalamudSettings;
+    }
+
+    public static RestoreSelection Everything { get; } = new(null, dalamudSettings: true);
+
+    /// <summary>The plugins to restore, by name; null means every plugin in the backup.</summary>
+    public IReadOnlySet<string>? Plugins { get; }
+
+    /// <summary><c>dalamudConfig.json</c>, <c>dalamudVfs.db</c> and <c>dalamudUI.ini</c>.</summary>
+    public bool DalamudSettings { get; }
+
+    /// <summary>Plugin names are matched without regard to case, as Windows matches file names.</summary>
+    public static RestoreSelection Only(IEnumerable<string> plugins, bool dalamudSettings) =>
+        new(new HashSet<string>(plugins, StringComparer.OrdinalIgnoreCase), dalamudSettings);
+
+    public bool IncludesPlugin(string name) => Plugins is null || Plugins.Contains(name);
+
+    /// <summary>Chosen plugin names that <paramref name="backupPlugins"/> doesn't hold, sorted.</summary>
+    public IReadOnlyList<string> PluginsMissingFrom(IReadOnlyCollection<string> backupPlugins) =>
+        Plugins is null
+            ? []
+            : Plugins.Where(name => !backupPlugins.Contains(name, StringComparer.OrdinalIgnoreCase)).Order(StringComparer.OrdinalIgnoreCase).ToList();
+
+    internal bool Includes(PortableItem item, string relativeTarget) =>
+        item == PortableItem.PluginConfig
+            ? IncludesPlugin(BackupAllowlist.PluginNameFor(relativeTarget[(BackupAllowlist.PluginConfigsDirectory.Length + 1)..]))
+            : DalamudSettings;
 }
 
 /// <summary>What the backup holds.</summary>
@@ -39,6 +79,15 @@ public sealed record RestorePreview(
 {
     /// <summary>True when restoring will roll back settings that changed after the backup was taken.</summary>
     public bool IsOlderThanCurrent => PluginsChangedSinceBackup.Count > 0 || DalamudConfigChangedSinceBackup;
+
+    /// <summary>The changes made since the backup that restoring <paramref name="selection"/> would roll back.</summary>
+    public UndoneChanges ChangesUndoneBy(RestoreSelection selection) =>
+        new(PluginsChangedSinceBackup.Where(selection.IncludesPlugin).ToList(), DalamudConfigChangedSinceBackup && selection.DalamudSettings);
+}
+
+public sealed record UndoneChanges(IReadOnlyList<string> Plugins, bool DalamudConfig)
+{
+    public bool Any => Plugins.Count > 0 || DalamudConfig;
 }
 
 public enum SafetyCheckId

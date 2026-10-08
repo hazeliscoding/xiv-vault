@@ -323,7 +323,9 @@ public sealed class RestoreService : IRestoreService
         }
 
         var target = located.Installation!;
-        EnsureNoLinks(target.DataPath, manifest);
+        var selection = request.Selection;
+        var pluginCount = CheckSelection(selection, manifest);
+        EnsureNoLinks(target.DataPath, manifest, selection);
         EnsureNothingRunning();
 
         progress?.Report(new RestoreProgress(RestoreStage.CreatingSafetySnapshot, 10, "Creating pre-restore safety backup"));
@@ -338,19 +340,22 @@ public sealed class RestoreService : IRestoreService
         {
             progress?.Report(new RestoreProgress(RestoreStage.Extracting, 30, "Unpacking backup"));
             archive.Position = 0;
+            // Every file is unpacked and checked again, chosen or not, so a damaged archive is
+            // refused as a whole; only the chosen files are then written.
             var staged = Extract(archive, manifest, staging, cancellationToken);
+            var chosen = staged.Where(file => selection.Includes(file.Item, file.RelativeTarget)).ToList();
 
             EnsureNothingRunning();
-            var applied = Apply(staged, target.DataPath, rollback, manifest, progress, cancellationToken);
+            var applied = Apply(chosen, target.DataPath, rollback, pluginCount, progress, cancellationToken);
 
             progress?.Report(new RestoreProgress(RestoreStage.Completed, 100, "Restore complete"));
             _logger.LogInformation("Restored {Count} files into {Path}", applied, target.DataPath);
             return new RestoreResult(
                 applied,
-                manifest.Statistics.PluginConfigCount,
-                manifest.Contents.DalamudConfig,
-                manifest.Contents.DalamudVfs,
-                manifest.Contents.DalamudUi,
+                pluginCount,
+                manifest.Contents.DalamudConfig && selection.DalamudSettings,
+                manifest.Contents.DalamudVfs && selection.DalamudSettings,
+                manifest.Contents.DalamudUi && selection.DalamudSettings,
                 snapshot.Record,
                 target.DataPath,
                 stopwatch.Elapsed);
@@ -384,16 +389,41 @@ public sealed class RestoreService : IRestoreService
     }
 
     /// <summary>
+    /// Refuses a choice that names a plugin the backup doesn't hold, or that would write nothing,
+    /// before anything changes. Returns how many plugins will be restored.
+    /// </summary>
+    private static int CheckSelection(RestoreSelection selection, BackupManifest manifest)
+    {
+        var plugins = BackupAllowlist.PluginNames(manifest.Files.Select(file => file.Path));
+        var missing = selection.PluginsMissingFrom(plugins);
+        if (missing.Count > 0)
+        {
+            throw new XivVaultException(
+                XivVaultErrorKind.InvalidConfiguration,
+                $"This backup has no settings for {Formatting.JoinWords(missing)}.");
+        }
+
+        var writesSomething = manifest.Files.Any(file =>
+            BackupAllowlist.TryClassify(file.Path, out var item, out var relative) && selection.Includes(item, relative));
+        if (!writesSomething)
+        {
+            throw new XivVaultException(XivVaultErrorKind.InvalidConfiguration, "Choose at least one plugin, or Dalamud settings, to restore.");
+        }
+
+        return plugins.Count(selection.IncludesPlugin);
+    }
+
+    /// <summary>
     /// Backups never follow links under the Dalamud folder, so a restore must not write through one
     /// either: the safety snapshot would not have saved what lies behind it.
     /// </summary>
-    private static void EnsureNoLinks(string dataPath, BackupManifest manifest)
+    private static void EnsureNoLinks(string dataPath, BackupManifest manifest, RestoreSelection selection)
     {
         var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(dataPath));
         var checkedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in manifest.Files)
         {
-            if (!BackupAllowlist.TryClassify(file.Path, out _, out var relative))
+            if (!BackupAllowlist.TryClassify(file.Path, out var item, out var relative) || !selection.Includes(item, relative))
             {
                 continue;
             }
@@ -478,7 +508,7 @@ public sealed class RestoreService : IRestoreService
         List<StagedFile> staged,
         string dataPath,
         string rollback,
-        BackupManifest manifest,
+        int pluginCount,
         IProgress<RestoreProgress>? progress,
         CancellationToken cancellationToken)
     {
@@ -494,7 +524,7 @@ public sealed class RestoreService : IRestoreService
                 var file = ordered[i];
                 var percent = 40 + (58.0 * i / Math.Max(1, ordered.Count));
                 progress?.Report(file.Item == PortableItem.PluginConfig
-                    ? new RestoreProgress(RestoreStage.RestoringPluginConfigs, percent, $"Restoring {manifest.Statistics.PluginConfigCount} plugin configurations")
+                    ? new RestoreProgress(RestoreStage.RestoringPluginConfigs, percent, $"Restoring {Formatting.Count(pluginCount, "plugin configuration")}")
                     : new RestoreProgress(RestoreStage.RestoringDalamudSettings, percent, "Restoring Dalamud settings"));
 
                 var target = ArchivePaths.ResolveUnder(dataPath, file.RelativeTarget);
