@@ -4,6 +4,8 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-08
+
 ### Added
 
 - Restore only some plugins. The restore review lists the backup's plugins with a filter and Select all / Select none, and Dalamud settings are their own choice. Everything is chosen to start with, so a full restore is still one click. Plugins you leave out, and Dalamud settings if you leave them out, stay exactly as they are. However little is chosen, the whole backup is still verified and the safety backup still holds everything a full restore would replace.
@@ -50,7 +52,8 @@ First release.
 - Installer: `xiv-vault-setup-win-x64.exe` installs the desktop app for the current user and keeps it up to date from GitHub releases. Updates install only when chosen in Settings, wait for running backups, restores and scheduled backups, and the check can be turned off. Uninstalling removes the scheduled backup task.
 - Self-contained Windows x64 builds: `xiv-vault-setup-win-x64.exe`, plus portable `xiv-vault-desktop-win-x64.zip` and `xiv-vault-cli-win-x64.zip`.
 
-[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.0...v0.1.1
