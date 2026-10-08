@@ -187,6 +187,11 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     public string PluginListButtonLabel => IsPluginListOpen ? "Done" : "Choose";
 
+    public string PluginListButtonName => IsPluginListOpen ? "Done choosing plugins" : "Choose which plugins to restore";
+
+    /// <summary>Why Continue is unavailable in the review step, or null.</summary>
+    public string? ChoiceProblem => Preview is { Target: not null } preview ? preview.ProblemWith(Selection) : null;
+
     public string PluginsLabel
     {
         get
@@ -225,7 +230,7 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     public string? TargetProblem => Preview?.TargetProblem;
 
-    public bool CanContinueReview => Preview is { Target: not null } && (AnyPluginChosen || (DalamudSettingsChosen && HasDalamudSettings));
+    public bool CanContinueReview => Preview is { Target: not null } preview && preview.ProblemWith(Selection) is null;
 
     public string RestoreSummary
     {
@@ -236,12 +241,18 @@ public sealed partial class RestoreViewModel : PageViewModel
                 return "";
             }
 
-            var plugins = Formatting.Count(PluginChoices.Count > 0 ? ChosenPluginCount : row.PluginCount, "plugin configuration");
-            var dalamud = DalamudSettingsChosen && HasDalamudSettings;
-            var what = PluginChoices.Count > 0 && !AnyPluginChosen ? "Dalamud settings"
-                : dalamud && Selection != RestoreSelection.Everything ? $"{plugins} and Dalamud settings"
-                : plugins;
-            return $"Restores {what} from {row.Day}, {row.Time}";
+            var parts = new List<string>();
+            if (AnyPluginChosen || PluginChoices.Count == 0)
+            {
+                parts.Add(Formatting.Count(PluginChoices.Count > 0 ? ChosenPluginCount : row.PluginCount, "plugin configuration"));
+            }
+
+            if (DalamudSettingsChosen && HasDalamudSettings)
+            {
+                parts.Add("Dalamud settings");
+            }
+
+            return $"Restores {Formatting.JoinWords(parts)} from {row.Day}, {row.Time}";
         }
     }
 
@@ -249,7 +260,12 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     public bool CanGoBack => !IsRestoring;
 
-    public string ResultPlugins => Result is { } result ? $"{Formatting.Count(result.PluginConfigCount, "plugin configuration")} restored" : "";
+    public string ResultPlugins => Result switch
+    {
+        null => "",
+        _ when PluginChoices.Count > 0 && !AnyPluginChosen => "Plugin configurations unchanged (not chosen)",
+        var result => $"{Formatting.Count(result.PluginConfigCount, "plugin configuration")} restored",
+    };
 
     public string ResultDalamud => Result switch
     {
@@ -294,11 +310,16 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     partial void OnPluginFilterChanged(string value) => FilterPlugins();
 
-    partial void OnIsPluginListOpenChanged(bool value) => OnPropertyChanged(nameof(PluginListButtonLabel));
+    partial void OnIsPluginListOpenChanged(bool value)
+    {
+        OnPropertyChanged(nameof(PluginListButtonLabel));
+        OnPropertyChanged(nameof(PluginListButtonName));
+    }
 
     partial void OnDalamudSettingsChosenChanged(bool value)
     {
         BuildDalamudDetails();
+        BuildCurrent();
         ChoicesChanged();
     }
 
@@ -703,18 +724,25 @@ public sealed partial class RestoreViewModel : PageViewModel
         FilterPlugins();
         DalamudSettingsChosen = HasDalamudSettings;
         BuildDalamudDetails();
+        BuildCurrent();
         ChoicesChanged();
+    }
 
+    private void BuildCurrent()
+    {
         Current.Clear();
-        if (preview.Current is { } current)
+        if (Preview is not { Current: { } current } preview)
         {
-            string Changed(DateTime? utc) => utc is { } value ? "changed " + Formatting.Day(value.ToLocalTime(), now).Replace("Today", "today", StringComparison.Ordinal).Replace("Yesterday", "yesterday", StringComparison.Ordinal) : "not set up";
-            Current.Add(new CurrentItem(Formatting.Count(current.PluginConfigCount, "plugin configuration"), Changed(current.PluginConfigsChangedUtc)));
-            Current.Add(new CurrentItem("Dalamud settings", current.DalamudConfig ? Changed(current.DalamudConfigChangedUtc) : "not set up"));
-            Current.Add(new CurrentItem("Plugin collection database", current.DalamudVfs ? Changed(current.DalamudVfsChangedUtc) : "not set up"));
-            Current.Add(new CurrentItem("Custom repository settings", current.CustomRepositoryCount is { } currentRepos ? Formatting.Count(currentRepos, "repo") : "none"));
-            Current.Add(new CurrentItem("UI layout", contents.DalamudUi ? "will be replaced" : "kept as is"));
+            return;
         }
+
+        var now = _session.Clock.GetLocalNow().DateTime;
+        string Changed(DateTime? utc) => utc is { } value ? "changed " + Formatting.Day(value.ToLocalTime(), now).Replace("Today", "today", StringComparison.Ordinal).Replace("Yesterday", "yesterday", StringComparison.Ordinal) : "not set up";
+        Current.Add(new CurrentItem(Formatting.Count(current.PluginConfigCount, "plugin configuration"), Changed(current.PluginConfigsChangedUtc)));
+        Current.Add(new CurrentItem("Dalamud settings", current.DalamudConfig ? Changed(current.DalamudConfigChangedUtc) : "not set up"));
+        Current.Add(new CurrentItem("Plugin collection database", current.DalamudVfs ? Changed(current.DalamudVfsChangedUtc) : "not set up"));
+        Current.Add(new CurrentItem("Custom repository settings", current.CustomRepositoryCount is { } currentRepos ? Formatting.Count(currentRepos, "repo") : "none"));
+        Current.Add(new CurrentItem("UI layout", preview.Contents.DalamudUi && DalamudSettingsChosen ? "will be replaced" : "kept as is"));
     }
 
     private void OnPluginChoiceChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -725,9 +753,10 @@ public sealed partial class RestoreViewModel : PageViewModel
         }
     }
 
+    // Acts on what the filter shows, so "Select none" after filtering leaves hidden plugins alone.
     private void ChooseEveryPlugin(bool chosen)
     {
-        foreach (var choice in PluginChoices)
+        foreach (var choice in VisiblePluginChoices)
         {
             choice.IsChosen = chosen;
         }
@@ -770,6 +799,7 @@ public sealed partial class RestoreViewModel : PageViewModel
         OnPropertyChanged(nameof(ShowOlderWarning));
         OnPropertyChanged(nameof(OlderWarningText));
         OnPropertyChanged(nameof(CanContinueReview));
+        OnPropertyChanged(nameof(ChoiceProblem));
         OnPropertyChanged(nameof(RestoreSummary));
         ContinueCommand.NotifyCanExecuteChanged();
     }

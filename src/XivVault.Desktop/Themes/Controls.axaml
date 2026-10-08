@@ -410,8 +410,8 @@
   </ControlTheme>
 
   <!-- A choice that reads like the restore review's lists: a check when chosen, a dash when not.
-       A ToggleButton, so screen readers announce it as on or off. -->
-  <ControlTheme x:Key="ChoiceToggle" TargetType="ToggleButton">
+       A CheckBox, so screen readers announce it as a check box, checked or not. -->
+  <ControlTheme x:Key="ChoiceToggle" TargetType="CheckBox">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="Foreground" Value="{StaticResource Text3}" />
     <Setter Property="FontSize" Value="13" />

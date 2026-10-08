@@ -465,6 +465,86 @@ public class RestoreViewModelTests
         Assert.Equal(5, restore.VisiblePluginChoices.Count);
     }
 
+    [Fact]
+    public async Task Select_all_and_none_act_on_the_plugins_the_filter_shows()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        var restore = await ReviewAsync(host);
+
+        restore.PluginFilter = "auto";
+        restore.ChooseNoPluginsCommand.Execute(null);
+
+        Assert.Equal(["AutoRetainer"], restore.PluginChoices.Where(choice => !choice.IsChosen).Select(choice => choice.Name));
+        restore.ChooseAllPluginsCommand.Execute(null);
+        Assert.All(restore.PluginChoices, choice => Assert.True(choice.IsChosen));
+    }
+
+    [Fact]
+    public async Task Leaving_out_Dalamud_settings_shows_the_UI_layout_kept_as_is()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        var config = host.Get<IConfigStore>();
+        config.Save(config.Load() with { IncludeDalamudUi = true });
+        await host.BackUpAsync();
+        var restore = await ReviewAsync(host);
+        Assert.Equal("will be replaced", restore.Current.Single(item => item.Label == "UI layout").Meta);
+
+        restore.DalamudSettingsChosen = false;
+
+        Assert.Equal("kept as is", restore.Current.Single(item => item.Label == "UI layout").Meta);
+    }
+
+    [Fact]
+    public async Task The_summary_says_whether_Dalamud_settings_are_restored()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        var restore = await ReviewAsync(host);
+        Assert.StartsWith("Restores 5 plugin configurations and Dalamud settings from", restore.RestoreSummary);
+
+        restore.DalamudSettingsChosen = false;
+        Assert.StartsWith("Restores 5 plugin configurations from", restore.RestoreSummary);
+
+        restore.DalamudSettingsChosen = true;
+        restore.ChooseNoPluginsCommand.Execute(null);
+        Assert.StartsWith("Restores Dalamud settings from", restore.RestoreSummary);
+    }
+
+    [Fact]
+    public async Task A_Dalamud_only_restore_reports_plugin_configurations_unchanged()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        var restore = await ReviewAsync(host);
+        restore.ChooseNoPluginsCommand.Execute(null);
+
+        await restore.ContinueCommand.ExecuteAsync(null);
+        await restore.RestoreNowCommand.ExecuteAsync(null);
+
+        Assert.Equal("Plugin configurations unchanged (not chosen)", restore.ResultPlugins);
+        Assert.Equal("Dalamud configuration restored", restore.ResultDalamud);
+    }
+
+    [Fact]
+    public async Task The_review_says_why_Continue_is_unavailable()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        await host.BackUpAsync();
+        var restore = await ReviewAsync(host);
+        Assert.Null(restore.ChoiceProblem);
+
+        restore.ChooseNoPluginsCommand.Execute(null);
+        restore.DalamudSettingsChosen = false;
+
+        Assert.Equal("Choose at least one plugin, or Dalamud settings, to restore.", restore.ChoiceProblem);
+    }
+
     private static async Task<RestoreViewModel> ReviewAsync(DesktopTestHost host)
     {
         var restore = host.Get<RestoreViewModel>();

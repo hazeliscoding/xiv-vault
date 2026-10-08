@@ -138,7 +138,7 @@
                     <TextBlock Classes="body" Text="{Binding PluginsLabel}" Classes.t1="{Binding AnyPluginChosen}" Classes.t3="{Binding !AnyPluginChosen}" />
                   </StackPanel>
                   <c:XvButton Grid.Column="1" Classes="ghost sm" Content="{Binding PluginListButtonLabel}" Command="{Binding TogglePluginListCommand}"
-                              AutomationProperties.Name="Choose which plugins to restore" Margin="0,-4" />
+                              AutomationProperties.Name="{Binding PluginListButtonName}" Margin="0,-4" />
                 </Grid>
                 <Border IsVisible="{Binding IsPluginListOpen}" Background="{StaticResource Bg1}" BorderBrush="{StaticResource Border1}"
                         BorderThickness="1" CornerRadius="6" Padding="8">
@@ -162,8 +162,8 @@
                       <ItemsControl ItemsSource="{Binding VisiblePluginChoices}" AutomationProperties.Name="Plugins to restore">
                         <ItemsControl.ItemTemplate>
                           <DataTemplate x:DataType="vm:PluginChoice">
-                            <ToggleButton Theme="{StaticResource ChoiceToggle}" Content="{Binding Name}" IsChecked="{Binding IsChosen}"
-                                          AutomationProperties.Name="{Binding Name}" />
+                            <CheckBox Theme="{StaticResource ChoiceToggle}" Content="{Binding Name}" IsChecked="{Binding IsChosen}"
+                                      AutomationProperties.Name="{Binding Name}" />
                           </DataTemplate>
                         </ItemsControl.ItemTemplate>
                       </ItemsControl>
@@ -171,8 +171,8 @@
                     <TextBlock Classes="compact t3" Text="No plugins match." Margin="4,0" IsVisible="{Binding NoPluginMatches}" />
                   </StackPanel>
                 </Border>
-                <ToggleButton Theme="{StaticResource ChoiceToggle}" Content="Dalamud settings" IsChecked="{Binding DalamudSettingsChosen}"
-                              IsEnabled="{Binding HasDalamudSettings}" Margin="-4,-3" />
+                <CheckBox Theme="{StaticResource ChoiceToggle}" Content="Dalamud settings" IsChecked="{Binding DalamudSettingsChosen}"
+                          IsEnabled="{Binding HasDalamudSettings}" Margin="-4,-3" />
                 <ItemsControl ItemsSource="{Binding DalamudDetails}" Margin="22,0,0,0">
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate>
@@ -213,9 +213,11 @@
           <c:Banner Tone="Info" Icon="ShieldCheck" Title="XIV Vault will create a safety backup of your current configuration before restoring anything."
                     Description="It appears in Backups as a Pre-Restore Safety Backup and can be restored the same way." />
         </StackPanel>
-        <Grid ColumnDefinitions="*,Auto">
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
           <c:XvButton Classes="ghost" Icon="ChevronLeft" Content="Back" Command="{Binding BackCommand}" />
-          <c:XvButton Grid.Column="1" Classes="primary" IconRight="ChevronRight" Content="Continue"
+          <TextBlock Grid.Column="1" Classes="compact t3" Text="{Binding ChoiceProblem}" VerticalAlignment="Center"
+                     IsVisible="{Binding ChoiceProblem, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          <c:XvButton Grid.Column="2" Classes="primary" IconRight="ChevronRight" Content="Continue"
                       Command="{Binding ContinueCommand}" IsLoading="{Binding IsLoading}" />
         </Grid>
       </StackPanel>
