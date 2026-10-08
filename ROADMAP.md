@@ -147,6 +147,8 @@ An independent review of the restore and validation code found failure modes; th
 
 **Done when:** on a new PC with OneDrive Files On-Demand, opening XIV Vault downloads nothing until a restore is chosen.
 
+Released as 0.2.0 on 2026-10-08. A real 0.1.2 install updated itself to it from GitHub.
+
 ## M9: Restore only some plugins (0.3)
 
 - [ ] Choose plugins in the review step of the restore wizard; Dalamud settings are their own choice.
