@@ -158,7 +158,10 @@ public sealed class RestoreService : IRestoreService
             manifest.Contents.DalamudConfig,
             manifest.Contents.DalamudVfs,
             manifest.Contents.DalamudUi,
-            backupRepos);
+            backupRepos,
+            manifest.Contents.GameSettings,
+            manifest.Contents.GameConfig,
+            manifest.Statistics.CharacterCount);
 
         var located = _locator.Locate(source);
         if (!located.IsFound)
@@ -269,7 +272,7 @@ public sealed class RestoreService : IRestoreService
         var config = _configStore.Load();
         var destination = config.BackupDestination!;
         var snapshotWritable = ProbeWritable(destination, out var destinationProblem);
-        var current = _scanner.Scan(target.DataPath, includeDalamudUi: true);
+        var current = _scanner.Scan(target.DataPath, includeDalamudUi: true, GameSettingsFolder.In(_environment));
         checks.Add(new SafetyCheck(
             SafetyCheckId.SnapshotReady,
             "Safety snapshot ready",
@@ -323,9 +326,10 @@ public sealed class RestoreService : IRestoreService
         }
 
         var target = located.Installation!;
+        var gamePath = GameSettingsFolder.In(_environment);
         var selection = request.Selection;
         var pluginCount = CheckSelection(selection, manifest);
-        EnsureNoLinks(target.DataPath, manifest, selection);
+        EnsureNoLinks(target.DataPath, gamePath, manifest, selection);
         EnsureNothingRunning();
 
         progress?.Report(new RestoreProgress(RestoreStage.CreatingSafetySnapshot, 10, "Creating pre-restore safety backup"));
@@ -346,7 +350,7 @@ public sealed class RestoreService : IRestoreService
             var chosen = staged.Where(file => selection.Includes(file.Item, file.RelativeTarget)).ToList();
 
             EnsureNothingRunning();
-            var applied = Apply(chosen, target.DataPath, rollback, pluginCount, progress, cancellationToken);
+            var applied = Apply(chosen, target.DataPath, gamePath, rollback, pluginCount, progress, cancellationToken);
 
             progress?.Report(new RestoreProgress(RestoreStage.Completed, 100, "Restore complete"));
             _logger.LogInformation("Restored {Count} files into {Path}", applied, target.DataPath);
@@ -358,7 +362,9 @@ public sealed class RestoreService : IRestoreService
                 manifest.Contents.DalamudUi && selection.DalamudSettings,
                 snapshot.Record,
                 target.DataPath,
-                stopwatch.Elapsed);
+                stopwatch.Elapsed,
+                manifest.Contents.GameSettings && selection.GameSettings,
+                manifest.Contents.GameConfig && selection.GameConfig);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not XivVaultException)
         {
@@ -396,24 +402,31 @@ public sealed class RestoreService : IRestoreService
     {
         var plugins = BackupAllowlist.PluginNames(manifest.Files.Select(file => file.Path));
         var contents = manifest.Contents;
-        if (selection.ProblemIn(plugins, contents.DalamudConfig || contents.DalamudVfs || contents.DalamudUi) is { } problem)
+        if (selection.ProblemIn(plugins, contents.DalamudConfig || contents.DalamudVfs || contents.DalamudUi, contents.GameSettings, contents.GameConfig) is { } problem)
         {
             throw new XivVaultException(XivVaultErrorKind.InvalidConfiguration, problem);
         }
 
         var chosen = plugins.Count(selection.IncludesPlugin);
         _logger.LogInformation(
-            "Restoring {Chosen} of {Total} plugin(s); Dalamud settings {Dalamud}", chosen, plugins.Count, selection.DalamudSettings ? "chosen" : "not chosen");
+            "Restoring {Chosen} of {Total} plugin(s); Dalamud settings {Dalamud}; game settings {Game}; FFXIV.cfg {GameConfig}",
+            chosen,
+            plugins.Count,
+            Chosen(selection.DalamudSettings),
+            Chosen(selection.GameSettings),
+            Chosen(selection.GameConfig));
         return chosen;
+
+        static string Chosen(bool chosen) => chosen ? "chosen" : "not chosen";
     }
 
     /// <summary>
-    /// Backups never follow links under the Dalamud folder, so a restore must not write through one
-    /// either: the safety snapshot would not have saved what lies behind it.
+    /// Backups never follow links under the Dalamud folder or the game's settings folder, so a
+    /// restore must not write through one either: the safety snapshot would not have saved what lies
+    /// behind it.
     /// </summary>
-    private static void EnsureNoLinks(string dataPath, BackupManifest manifest, RestoreSelection selection)
+    private static void EnsureNoLinks(string dataPath, string gamePath, BackupManifest manifest, RestoreSelection selection)
     {
-        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(dataPath));
         var checkedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in manifest.Files)
         {
@@ -422,6 +435,7 @@ public sealed class RestoreService : IRestoreService
                 continue;
             }
 
+            var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(BackupAllowlist.IsGame(item) ? gamePath : dataPath));
             var target = ArchivePaths.ResolveUnder(root, relative);
             if (new FileInfo(target).LinkTarget is not null)
             {
@@ -439,7 +453,7 @@ public sealed class RestoreService : IRestoreService
 
         static XivVaultException LinkRefused(string path) => new(
             XivVaultErrorKind.RestoreValidationFailed,
-            $"{path} is a link to another location. XIV Vault does not back up or restore through links; replace it with a normal folder or file and try again.");
+            $"{BackupAllowlist.ForDisplay(path)} is a link to another location. XIV Vault does not back up or restore through links; replace it with a normal folder or file and try again.");
     }
 
     private void EnsureNothingRunning()
@@ -453,6 +467,10 @@ public sealed class RestoreService : IRestoreService
     }
 
     private sealed record StagedFile(string StagedPath, string RelativeTarget, PortableItem Item);
+
+    /// <summary>Keeps game files apart from Dalamud files in the staging and rollback folders.</summary>
+    private static string AreaPath(PortableItem item, string relativeTarget) =>
+        (BackupAllowlist.IsGame(item) ? "game/" : "dalamud/") + relativeTarget;
 
     /// <summary>
     /// Extracts the manifest's files into a private folder and re-checks every hash. The archive is
@@ -474,7 +492,7 @@ public sealed class RestoreService : IRestoreService
                 throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, $"Refusing {BackupAllowlist.ForDisplay(file.Path)}: it is not an allowlisted file.");
             }
 
-            var destination = ArchivePaths.ResolveUnder(staging, relativeTarget);
+            var destination = ArchivePaths.ResolveUnder(staging, AreaPath(item, relativeTarget));
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             using (var input = entry.Open())
             using (var output = new FileStream(destination, FileMode.CreateNew, FileAccess.Write))
@@ -501,6 +519,7 @@ public sealed class RestoreService : IRestoreService
     private int Apply(
         List<StagedFile> staged,
         string dataPath,
+        string gamePath,
         string rollback,
         int pluginCount,
         IProgress<RestoreProgress>? progress,
@@ -509,25 +528,34 @@ public sealed class RestoreService : IRestoreService
         Directory.CreateDirectory(dataPath);
         var replaced = new List<(string Target, string? Original)>();
         var createdDirectories = new List<string>();
-        var ordered = staged.OrderBy(file => file.Item != PortableItem.PluginConfig).ToList();
+
+        // Plugin configs, then Dalamud settings, then game settings, matching the stages the UI shows.
+        var ordered = staged
+            .OrderBy(file => file.Item == PortableItem.PluginConfig ? 0 : BackupAllowlist.IsGame(file.Item) ? 2 : 1)
+            .ToList();
         try
         {
             for (var i = 0; i < ordered.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var file = ordered[i];
+                var game = BackupAllowlist.IsGame(file.Item);
                 var percent = 40 + (58.0 * i / Math.Max(1, ordered.Count));
-                progress?.Report(file.Item == PortableItem.PluginConfig
-                    ? new RestoreProgress(RestoreStage.RestoringPluginConfigs, percent, $"Restoring {Formatting.Count(pluginCount, "plugin configuration")}")
+                progress?.Report(
+                    file.Item == PortableItem.PluginConfig ? new RestoreProgress(RestoreStage.RestoringPluginConfigs, percent, $"Restoring {Formatting.Count(pluginCount, "plugin configuration")}")
+                    : game ? new RestoreProgress(RestoreStage.RestoringGameSettings, percent, "Restoring game settings")
                     : new RestoreProgress(RestoreStage.RestoringDalamudSettings, percent, "Restoring Dalamud settings"));
 
-                var target = ArchivePaths.ResolveUnder(dataPath, file.RelativeTarget);
-                CreateParents(dataPath, target, createdDirectories);
+                var target = ArchivePaths.ResolveUnder(game ? gamePath : dataPath, file.RelativeTarget);
+
+                // On a PC where the game never started, the game folder and My Games don't exist yet.
+                // They are created like any other missing folder, so a failed restore removes them again.
+                CreateParents(game ? _environment.Documents : dataPath, target, createdDirectories);
 
                 string? original = null;
                 if (File.Exists(target))
                 {
-                    original = ArchivePaths.ResolveUnder(rollback, file.RelativeTarget);
+                    original = ArchivePaths.ResolveUnder(rollback, AreaPath(file.Item, file.RelativeTarget));
                     Directory.CreateDirectory(Path.GetDirectoryName(original)!);
                     File.Copy(target, original, overwrite: false);
                 }

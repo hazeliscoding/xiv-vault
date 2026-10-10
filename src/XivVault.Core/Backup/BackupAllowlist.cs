@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace XivVault.Core.Backup;
 
 public enum PortableItem
@@ -19,7 +21,7 @@ public enum PortableItem
 /// the game's settings folder, or writes back to them. Everything else (installedPlugins, runtime,
 /// addon, logs, caches, chat logs, screenshots) is machine-specific or private and stays out.
 /// </summary>
-public static class BackupAllowlist
+public static partial class BackupAllowlist
 {
     public const string ManifestEntryName = "manifest.json";
     public const string PayloadPrefix = "payload/";
@@ -170,11 +172,13 @@ public static class BackupAllowlist
         .Count();
 
     /// <summary>
-    /// A path that is safe to show or log. A character folder is named by a content ID that
-    /// identifies the character, so it is never shown.
+    /// An archive or file system path that is safe to show or log. A character folder is named by a
+    /// content ID that identifies the character, so it is never shown.
     /// </summary>
-    public static string ForDisplay(string path) =>
-        string.Join('/', path.Split('/').Select(segment => IsCharacterFolder(segment) ? CharacterFolderPrefix + "…" : segment));
+    public static string ForDisplay(string path) => CharacterFolderInPath().Replace(path, CharacterFolderPrefix + "…");
+
+    [GeneratedRegex(@"(?<=^|[\\/])FFXIV_CHR[0-9A-F]+(?=$|[\\/])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex CharacterFolderInPath();
 
     public static bool IsExcludedPluginDirectory(string name) => ExcludedPluginDirectories.Contains(name);
 

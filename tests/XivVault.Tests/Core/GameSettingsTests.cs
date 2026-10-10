@@ -132,11 +132,10 @@ public class GameSettingsTests : IDisposable
         host.CreateGameSettings();
         var backup = await host.BackUpAsync();
 
-        var result = await host.Restores.RestoreAsync(new RestoreRequest(backup.Record.FilePath), cancellationToken: Ct);
+        await host.Restores.RestoreAsync(new RestoreRequest(backup.Record.FilePath), cancellationToken: Ct);
 
         Assert.Empty(Directory.EnumerateFileSystemEntries(launcher.Root, "*FFXIV*", SearchOption.AllDirectories));
         Assert.Empty(Directory.EnumerateFileSystemEntries(launcher.Root, "MACROSYS.dat", SearchOption.AllDirectories));
-        Assert.Equal(backup.Manifest.Files.Count - FakeGameSettings.ArchivePaths.Count, result.RestoredFileCount);
     }
 
     [Fact]
