@@ -270,19 +270,19 @@ public sealed partial class RestoreViewModel : PageViewModel
                 parts.Add(Formatting.Count(PluginChoices.Count > 0 ? ChosenPluginCount : row.PluginCount, "plugin configuration"));
             }
 
-            if (DalamudSettingsChosen && HasDalamudSettings)
-            {
-                parts.Add("Dalamud settings");
-            }
+            var available = new[] { (HasDalamudSettings, DalamudSettingsChosen, "Dalamud settings"), (HasCharacterSettings, CharacterSettingsChosen, "character settings"), (HasSystemSettings, SystemSettingsChosen, "system settings") }
+                .Where(setting => setting.Item1)
+                .ToList();
+            var settings = available.Where(setting => setting.Item2).Select(setting => setting.Item3).ToList();
 
-            if (CharacterSettingsChosen && HasCharacterSettings)
+            // Listing every kind would run under the Restore button, so a full set has a short name.
+            if (settings.Count > 1 && settings.Count == available.Count)
             {
-                parts.Add("character settings");
+                parts.Add("all settings");
             }
-
-            if (SystemSettingsChosen && HasSystemSettings)
+            else
             {
-                parts.Add("system settings");
+                parts.AddRange(settings);
             }
 
             return $"Restores {Formatting.JoinWords(parts)} from {row.Day}, {row.Time}";

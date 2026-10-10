@@ -63,6 +63,20 @@ public class GameSettingsDesktopTests
     }
 
     [Fact]
+    public async Task The_summary_stays_short_when_every_setting_is_chosen()
+    {
+        using var host = new DesktopTestHost();
+        host.CreateLauncher();
+        host.CreateGameSettings();
+        await host.BackUpAsync();
+        var restore = await ReviewAsync(host);
+        Assert.StartsWith("Restores 5 plugin configurations and all settings from", restore.RestoreSummary);
+
+        restore.SystemSettingsChosen = false;
+        Assert.StartsWith("Restores 5 plugin configurations, Dalamud settings and character settings from", restore.RestoreSummary);
+    }
+
+    [Fact]
     public async Task A_backup_without_game_settings_offers_no_game_choices()
     {
         using var host = new DesktopTestHost();

@@ -285,11 +285,12 @@
 
         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
           <c:XvButton Classes="ghost" Icon="ChevronLeft" Content="Back" Command="{Binding BackCommand}" />
-          <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-            <TextBlock Classes="compact t3" Text="{Binding RestoreSummary}" VerticalAlignment="Center" />
-            <c:XvButton Classes="ghost" Icon="RefreshCw" Content="Run checks again" Command="{Binding RunChecksCommand}"
+          <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBlock Classes="compact t3" Text="{Binding RestoreSummary}" VerticalAlignment="Center" TextAlignment="Right"
+                       TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding RestoreSummary}" />
+            <c:XvButton Grid.Column="1" Classes="ghost" Icon="RefreshCw" Content="Run checks again" Command="{Binding RunChecksCommand}"
                         IsVisible="{Binding !ChecksPassed}" />
-          </StackPanel>
+          </Grid>
           <Border Grid.Column="2" Classes="glow">
             <c:XvButton Classes="primary" Icon="RotateCcw" Content="Restore Configuration"
                         Command="{Binding RestoreNowCommand}" IsEnabled="{Binding CanRestore}" IsLoading="{Binding IsRestoring}" />
