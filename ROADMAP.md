@@ -53,7 +53,7 @@ An independent review of the restore and validation code found failure modes; th
 - **1.0 means safe to trust and stable to build on:** proven on real setups other than the author's, compatibility promises written down (0.1.0 backups always restore; the CLI, its JSON output and exit codes stay stable), and updates proven across releases.
 - **Restoring only some plugins is part of 1.0.** It removes the biggest limitation of a restore, which today returns every plugin in the backup to its old settings.
 - **Synced folders are the main case to harden.** Listing backups opens every archive, and verification reads each one in full, so on a new PC with OneDrive Files On-Demand, opening XIV Vault downloads every backup.
-- **Code signing waits until after 1.0**, once there is an established userbase. Until then SmartScreen asks users to confirm Setup and the zips, and the README says so.
+- **Code signing waits until after 1.0**, once there is an established userbase. Until then SmartScreen asks users to confirm Setup and the zips, and the README says so. (Changed on 2026-10-10: signing comes first in M10.)
 
 ## Decisions (2026-10-06, game settings)
 
@@ -83,6 +83,13 @@ An independent review of the restore and validation code found failure modes; th
 - **The game keeps files restored before its first start.** Checked on the author's PC: with the game folder set aside and only a default restore's files put back, the game used the restored character folder, and the HUD, hotbars, keybinds, macros and gear sets came back without a server download. A restore creates the game folder and character folders itself; nobody has to start the game first.
 - **Without `FFXIV.cfg` the game starts from defaults:** controller calibration, graphics, window theme colors and sound settings such as mount music.
 - **`FFXIV.cfg` is always backed up and chosen at restore,** replacing the opt-in from 2026-10-06. Square Enix's own server backups are manual and easy to forget, so XIV Vault may hold the only copy. It is its own choice in the restore review step and in `xiv-vault restore`, chosen by default like everything else, so someone on a PC with a different monitor can leave it out.
+
+## Decisions (2026-10-10, code signing)
+
+- **Signing comes first in M10,** so 0.4 is the first signed release. It no longer waits for 1.0: a Public Trust certificate from Azure Artifact Signing, publisher Hazel Granados, already exists.
+- **No secrets.** The release workflow signs in to Azure with GitHub's OIDC token. Only tag builds, which run in the `release` environment, can sign; the account and certificate profile names are variables of that environment, not part of the workflow. Manual runs and forks build unsigned.
+- **Everything Windows runs is signed.** Both exes are signed right after publishing, so the zips and the update packages carry signed copies; `vpk pack` then signs Setup and its own files and skips what is already signed. The build fails if a signature doesn't verify.
+- **SmartScreen still warns** about a newly signed Setup until downloads build reputation. It then names the publisher instead of "Unknown publisher".
 
 ## M0: Bootstrap
 
@@ -170,8 +177,10 @@ Released as 0.2.0 on 2026-10-08. A real 0.1.2 install updated itself to it from 
 
 **Done when:** restoring one plugin's settings leaves every other plugin and Dalamud's settings as they were.
 
-## M10: Game settings (0.4)
+## M10: Signing and game settings (0.4)
 
+- [ ] Sign releases with Artifact Signing: both exes, Setup and the update packages, verified with `signtool` before the draft is made. Manual runs of the release workflow build unsigned.
+- [ ] README: replace the "not code-signed" notes once a signed release is out, and say what SmartScreen shows until reputation builds.
 - [ ] Back up the game allowlist under `payload/game/` with manifest version 2, and validate it by the same rules as the Dalamud payload.
 - [ ] Restore game settings: in the safety snapshot, by character folder, refused while the game runs, rolled back across both folders on failure, and creating the game folder on a PC where the game has never started.
 - [x] A PC where the game has never started: check whether the game keeps files restored before its first start. (It does; see the 2026-10-09 decisions.)
@@ -179,7 +188,7 @@ Released as 0.2.0 on 2026-10-08. A real 0.1.2 install updated itself to it from 
 - [ ] Logs and the Diagnostics report count characters and never show a content ID.
 - [ ] README safety model, AGENTS.md safety contract and `docs/backup-format.md` cover game settings.
 
-**Done when:** tests back up a fake game folder beside a fake XIVLauncher folder and restore it, the chat log, running-game, content-ID and partial-failure cases fail safely, and on the author's setup a restore brings back the HUD layout, hotbars and macros in game.
+**Done when:** a tag build publishes a signed Setup and signed zips, tests back up a fake game folder beside a fake XIVLauncher folder and restore it, the chat log, running-game, content-ID and partial-failure cases fail safely, and on the author's setup a restore brings back the HUD layout, hotbars and macros in game.
 
 ## M11: 1.0
 
@@ -193,7 +202,6 @@ Released as 0.2.0 on 2026-10-08. A real 0.1.2 install updated itself to it from 
 ## Later
 
 - XIVLauncher layouts and folders that users report, fixed in patch releases as they come in.
-- Code signing, after 1.0 once there is an established userbase.
 - Light theme.
 
 ## Not planned
