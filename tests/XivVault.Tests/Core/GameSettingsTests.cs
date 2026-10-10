@@ -87,8 +87,8 @@ public class GameSettingsTests : IDisposable
         var manifest = (await host.BackUpAsync()).Manifest;
 
         Assert.Equal(2, manifest.SchemaVersion);
-        Assert.True(manifest.Contents.GameSettings);
-        Assert.True(manifest.Contents.GameConfig);
+        Assert.True(manifest.Contents.CharacterSettings);
+        Assert.True(manifest.Contents.SystemSettings);
         Assert.Equal(2, manifest.Statistics.CharacterCount);
     }
 
@@ -102,8 +102,8 @@ public class GameSettingsTests : IDisposable
 
         Assert.Equal(IntegrityState.Verified, result.Record.Integrity);
         Assert.Empty(GamePaths(result.Manifest));
-        Assert.False(result.Manifest.Contents.GameSettings);
-        Assert.False(result.Manifest.Contents.GameConfig);
+        Assert.False(result.Manifest.Contents.CharacterSettings);
+        Assert.False(result.Manifest.Contents.SystemSettings);
         Assert.Equal(0, result.Manifest.Statistics.CharacterCount);
     }
 

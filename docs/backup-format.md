@@ -54,8 +54,8 @@ Entry names use forward slashes and are relative. Every file under `payload/` is
     "dalamudConfig": true,
     "dalamudVfs": true,
     "dalamudUi": false,
-    "gameSettings": true,
-    "gameConfig": true
+    "characterSettings": true,
+    "systemSettings": true
   },
   "statistics": {
     "pluginConfigCount": 43,
@@ -81,7 +81,7 @@ Entry names use forward slashes and are relative. Every file under `payload/` is
 | `createdAtUtc` | When the backup was taken, UTC, whole seconds. |
 | `backupType` | `manual`, `scheduled` or `preRestore`. |
 | `source.layout` | `standard` or `dalamudUserData`: where Dalamud kept its files. Informational; a restore follows the target PC's layout. |
-| `contents` | Which allowlisted items are present. `gameSettings` covers everything under `game/` apart from `FFXIV.cfg`, which is `gameConfig`. |
+| `contents` | Which allowlisted items are present. `characterSettings` covers everything under `game/` apart from `FFXIV.cfg`, which is `systemSettings`. |
 | `statistics.pluginConfigCount` | Distinct plugins in `pluginConfigs/`. `Foo.json` and `Foo/` count as one plugin. |
 | `statistics.characterCount` | Distinct character folders under `game/`. |
 | `files[].path` | Archive path, always under `payload/`. |
@@ -105,4 +105,4 @@ Restore re-checks every hash after extracting to a temp folder, so an archive ch
 
 ## Compatibility
 
-Version 1 archives will stay restorable by later versions. Version 1 is version 2 without `payload/game/`, `contents.gameSettings`, `contents.gameConfig` and `statistics.characterCount`; a version 1 manifest that lacks them reads as having no game settings. XIV Vault 0.3 and earlier refuse version 2 archives as "made by a newer XIV Vault". A future format will get a new `schemaVersion`, and this document will describe it.
+Version 1 archives will stay restorable by later versions. Version 1 is version 2 without `payload/game/`, `contents.characterSettings`, `contents.systemSettings` and `statistics.characterCount`; a version 1 manifest that lacks them reads as having no game settings. XIV Vault 0.3 and earlier refuse version 2 archives as "made by a newer XIV Vault". A future format will get a new `schemaVersion`, and this document will describe it.

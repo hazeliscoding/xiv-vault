@@ -102,7 +102,7 @@ public sealed class StatusService(
             folder,
             Directory.Exists(folder),
             BackupAllowlist.CharacterCount(scan.Files.Select(file => file.ArchivePath)),
-            scan.Files.Any(file => file.Item == PortableItem.GameConfig),
+            scan.Files.Any(file => file.Item == PortableItem.SystemSettings),
             scan.Files.Sum(file => file.Size),
             scan.LinkedCharacterFolders);
     }

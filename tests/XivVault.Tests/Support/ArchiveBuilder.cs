@@ -110,8 +110,8 @@ public sealed class ArchiveBuilder
                 ["dalamudConfig"] = Paths.Contains("payload/dalamudConfig.json"),
                 ["dalamudVfs"] = Paths.Contains("payload/dalamudVfs.db"),
                 ["dalamudUi"] = Paths.Contains("payload/dalamudUI.ini"),
-                ["gameSettings"] = Paths.Any(path => path.StartsWith("payload/game/", StringComparison.OrdinalIgnoreCase) && path != "payload/game/FFXIV.cfg"),
-                ["gameConfig"] = Paths.Contains("payload/game/FFXIV.cfg"),
+                ["characterSettings"] = Paths.Any(path => path.StartsWith("payload/game/", StringComparison.OrdinalIgnoreCase) && path != "payload/game/FFXIV.cfg"),
+                ["systemSettings"] = Paths.Contains("payload/game/FFXIV.cfg"),
             },
             ["statistics"] = new JsonObject
             {

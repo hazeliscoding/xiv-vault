@@ -9,11 +9,11 @@ public enum PortableItem
     DalamudVfs,
     DalamudUi,
 
-    /// <summary>The game's shared macros, appearance saves and per-character settings.</summary>
-    GameSettings,
+    /// <summary>The game's character settings: each character's folder, shared macros and appearance saves.</summary>
+    CharacterSettings,
 
     /// <summary><c>FFXIV.cfg</c>, the game's system settings.</summary>
-    GameConfig,
+    SystemSettings,
 }
 
 /// <summary>
@@ -119,7 +119,7 @@ public static partial class BackupAllowlist
     /// </summary>
     private static bool TryClassifyGame(string relative, out PortableItem item, out string relativeTarget)
     {
-        item = PortableItem.GameSettings;
+        item = PortableItem.CharacterSettings;
         relativeTarget = relative;
         var segments = relative.Split('/');
         if (segments.Length == 2)
@@ -135,7 +135,7 @@ public static partial class BackupAllowlist
         var name = segments[0];
         if (string.Equals(name, GameConfigFile, StringComparison.OrdinalIgnoreCase))
         {
-            item = PortableItem.GameConfig;
+            item = PortableItem.SystemSettings;
             relativeTarget = GameConfigFile;
             return true;
         }
@@ -154,7 +154,7 @@ public static partial class BackupAllowlist
     private static bool HasExtension(string name, string extension) =>
         string.Equals(Path.GetExtension(name), extension, StringComparison.OrdinalIgnoreCase);
 
-    public static bool IsGame(PortableItem item) => item is PortableItem.GameSettings or PortableItem.GameConfig;
+    public static bool IsGame(PortableItem item) => item is PortableItem.CharacterSettings or PortableItem.SystemSettings;
 
     /// <summary>A character folder is <c>FFXIV_CHR</c> and the character's content ID in hex.</summary>
     public static bool IsCharacterFolder(string name) =>

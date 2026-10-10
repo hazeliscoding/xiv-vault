@@ -159,8 +159,8 @@ public sealed class RestoreService : IRestoreService
             manifest.Contents.DalamudVfs,
             manifest.Contents.DalamudUi,
             backupRepos,
-            manifest.Contents.GameSettings,
-            manifest.Contents.GameConfig,
+            manifest.Contents.CharacterSettings,
+            manifest.Contents.SystemSettings,
             manifest.Statistics.CharacterCount);
 
         var located = _locator.Locate(source);
@@ -363,8 +363,8 @@ public sealed class RestoreService : IRestoreService
                 snapshot.Record,
                 target.DataPath,
                 stopwatch.Elapsed,
-                manifest.Contents.GameSettings && selection.GameSettings,
-                manifest.Contents.GameConfig && selection.GameConfig);
+                manifest.Contents.CharacterSettings && selection.CharacterSettings,
+                manifest.Contents.SystemSettings && selection.SystemSettings);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not XivVaultException)
         {
@@ -402,19 +402,19 @@ public sealed class RestoreService : IRestoreService
     {
         var plugins = BackupAllowlist.PluginNames(manifest.Files.Select(file => file.Path));
         var contents = manifest.Contents;
-        if (selection.ProblemIn(plugins, contents.DalamudConfig || contents.DalamudVfs || contents.DalamudUi, contents.GameSettings, contents.GameConfig) is { } problem)
+        if (selection.ProblemIn(plugins, contents.DalamudConfig || contents.DalamudVfs || contents.DalamudUi, contents.CharacterSettings, contents.SystemSettings) is { } problem)
         {
             throw new XivVaultException(XivVaultErrorKind.InvalidConfiguration, problem);
         }
 
         var chosen = plugins.Count(selection.IncludesPlugin);
         _logger.LogInformation(
-            "Restoring {Chosen} of {Total} plugin(s); Dalamud settings {Dalamud}; game settings {Game}; FFXIV.cfg {GameConfig}",
+            "Restoring {Chosen} of {Total} plugin(s); Dalamud settings {Dalamud}; character settings {Character}; system settings {System}",
             chosen,
             plugins.Count,
             Chosen(selection.DalamudSettings),
-            Chosen(selection.GameSettings),
-            Chosen(selection.GameConfig));
+            Chosen(selection.CharacterSettings),
+            Chosen(selection.SystemSettings));
         return chosen;
 
         static string Chosen(bool chosen) => chosen ? "chosen" : "not chosen";

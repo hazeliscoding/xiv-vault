@@ -42,8 +42,8 @@ public class GameSettingsRestoreTests
         Assert.Equal($"HOTBAR.DAT of {Second}", game.Read(Second, "HOTBAR.DAT"));
         Assert.Equal("shared macros", game.Read("MACROSYS.dat"));
         Assert.StartsWith("<FINAL FANTASY XIV Config File>", game.Read("FFXIV.cfg"));
-        Assert.True(result.GameSettingsRestored);
-        Assert.True(result.GameConfigRestored);
+        Assert.True(result.CharacterSettingsRestored);
+        Assert.True(result.SystemSettingsRestored);
         Assert.Equal(backup.Manifest.Files.Count, result.RestoredFileCount);
     }
 
@@ -172,8 +172,8 @@ public class GameSettingsRestoreTests
 
         Assert.Equal(Changed, game.Read(First, "HOTBAR.DAT"));
         Assert.Equal(Changed, game.Read("FFXIV.cfg"));
-        Assert.False(result.GameSettingsRestored);
-        Assert.False(result.GameConfigRestored);
+        Assert.False(result.CharacterSettingsRestored);
+        Assert.False(result.SystemSettingsRestored);
     }
 
     [Fact]
@@ -187,31 +187,31 @@ public class GameSettingsRestoreTests
         game.Write(Changed, "FFXIV.cfg");
         launcher.Write(Changed, "dalamudConfig.json");
 
-        await RestoreAsync(host, backup, RestoreSelection.Only([], dalamudSettings: false, gameSettings: true, gameConfig: false));
+        await RestoreAsync(host, backup, RestoreSelection.Only([], dalamudSettings: false, characterSettings: true, systemSettings: false));
 
         Assert.Equal($"HOTBAR.DAT of {First}", game.Read(First, "HOTBAR.DAT"));
         Assert.Equal(Changed, game.Read("FFXIV.cfg"));
         Assert.Equal(Changed, launcher.Read("dalamudConfig.json"));
 
         game.Write(Changed, First, "HOTBAR.DAT");
-        await RestoreAsync(host, backup, RestoreSelection.Only([], dalamudSettings: false, gameSettings: false, gameConfig: true));
+        await RestoreAsync(host, backup, RestoreSelection.Only([], dalamudSettings: false, characterSettings: false, systemSettings: true));
 
         Assert.StartsWith("<FINAL FANTASY XIV Config File>", game.Read("FFXIV.cfg"));
         Assert.Equal(Changed, game.Read(First, "HOTBAR.DAT"));
     }
 
     [Fact]
-    public async Task Choosing_game_settings_from_a_backup_without_them_is_refused()
+    public async Task Choosing_character_settings_from_a_backup_without_them_is_refused()
     {
         using var host = new TestHost();
         host.CreateLauncher();
         var backup = await host.BackUpAsync();
 
         var error = await Assert.ThrowsAsync<XivVaultException>(
-            () => RestoreAsync(host, backup, RestoreSelection.Only([], dalamudSettings: false, gameSettings: true)));
+            () => RestoreAsync(host, backup, RestoreSelection.Only([], dalamudSettings: false, characterSettings: true)));
 
         Assert.Equal(XivVaultErrorKind.InvalidConfiguration, error.Kind);
-        Assert.Equal("This backup has no game settings.", error.Message);
+        Assert.Equal("This backup has no character settings.", error.Message);
     }
 
     [Fact]
@@ -224,10 +224,10 @@ public class GameSettingsRestoreTests
 
         var preview = await host.Restores.PreviewAsync(backup.Record.FilePath, cancellationToken: Ct);
 
-        Assert.True(preview.Contents.GameSettings);
-        Assert.True(preview.Contents.GameConfig);
+        Assert.True(preview.Contents.CharacterSettings);
+        Assert.True(preview.Contents.SystemSettings);
         Assert.Equal(2, preview.Contents.CharacterCount);
-        Assert.Null(preview.ProblemWith(RestoreSelection.Only([], dalamudSettings: false, gameSettings: true)));
+        Assert.Null(preview.ProblemWith(RestoreSelection.Only([], dalamudSettings: false, characterSettings: true)));
     }
 
     private static List<string> Snapshot(string root) =>

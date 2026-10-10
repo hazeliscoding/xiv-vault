@@ -13,20 +13,20 @@ public sealed record RestoreRequest(string ArchivePath)
 
 /// <summary>
 /// What a restore writes: some or all of the backup's plugins, Dalamud settings as one choice, and
-/// the game's settings with <c>FFXIV.cfg</c> as a choice of its own. The safety snapshot and
-/// validation always cover everything, whatever is chosen.
+/// the game's character settings and system settings (<c>FFXIV.cfg</c>) as one choice each. The
+/// safety snapshot and validation always cover everything, whatever is chosen.
 /// </summary>
 public sealed class RestoreSelection
 {
-    private RestoreSelection(IReadOnlySet<string>? plugins, bool dalamudSettings, bool gameSettings, bool gameConfig)
+    private RestoreSelection(IReadOnlySet<string>? plugins, bool dalamudSettings, bool characterSettings, bool systemSettings)
     {
         Plugins = plugins;
         DalamudSettings = dalamudSettings;
-        GameSettings = gameSettings;
-        GameConfig = gameConfig;
+        CharacterSettings = characterSettings;
+        SystemSettings = systemSettings;
     }
 
-    public static RestoreSelection Everything { get; } = new(null, dalamudSettings: true, gameSettings: true, gameConfig: true);
+    public static RestoreSelection Everything { get; } = new(null, dalamudSettings: true, characterSettings: true, systemSettings: true);
 
     /// <summary>The plugins to restore, by name; null means every plugin in the backup.</summary>
     public IReadOnlySet<string>? Plugins { get; }
@@ -34,17 +34,17 @@ public sealed class RestoreSelection
     /// <summary><c>dalamudConfig.json</c>, <c>dalamudVfs.db</c> and <c>dalamudUI.ini</c>.</summary>
     public bool DalamudSettings { get; }
 
-    /// <summary>Shared macros, appearance saves and every character's settings.</summary>
-    public bool GameSettings { get; }
+    /// <summary>Every character's HUD layout, hotbars, keybinds, macros and gear sets, with shared macros and appearance saves.</summary>
+    public bool CharacterSettings { get; }
 
     /// <summary><c>FFXIV.cfg</c>, which holds resolution and monitor settings that may not suit another PC.</summary>
-    public bool GameConfig { get; }
+    public bool SystemSettings { get; }
 
     /// <summary>Plugin names are matched without regard to case, as Windows matches file names.</summary>
-    public static RestoreSelection Only(IEnumerable<string> plugins, bool dalamudSettings, bool gameSettings = false, bool gameConfig = false) =>
-        new(new HashSet<string>(plugins, StringComparer.OrdinalIgnoreCase), dalamudSettings, gameSettings, gameConfig);
+    public static RestoreSelection Only(IEnumerable<string> plugins, bool dalamudSettings, bool characterSettings = false, bool systemSettings = false) =>
+        new(new HashSet<string>(plugins, StringComparer.OrdinalIgnoreCase), dalamudSettings, characterSettings, systemSettings);
 
-    public bool IsEverything => Plugins is null && DalamudSettings && GameSettings && GameConfig;
+    public bool IsEverything => Plugins is null && DalamudSettings && CharacterSettings && SystemSettings;
 
     public bool IncludesPlugin(string name) => Plugins is null || Plugins.Contains(name);
 
@@ -55,8 +55,8 @@ public sealed class RestoreSelection
     public string? ProblemIn(
         IReadOnlyCollection<string> backupPlugins,
         bool backupHasDalamudSettings,
-        bool backupHasGameSettings = false,
-        bool backupHasGameConfig = false)
+        bool backupHasCharacterSettings = false,
+        bool backupHasSystemSettings = false)
     {
         var missing = PluginsMissingFrom(backupPlugins);
         if (missing.Count > 0)
@@ -69,20 +69,20 @@ public sealed class RestoreSelection
         if (IsEverything
             || backupPlugins.Any(IncludesPlugin)
             || (DalamudSettings && backupHasDalamudSettings)
-            || (GameSettings && backupHasGameSettings)
-            || (GameConfig && backupHasGameConfig))
+            || (CharacterSettings && backupHasCharacterSettings)
+            || (SystemSettings && backupHasSystemSettings))
         {
             return null;
         }
 
-        var game = GameSettings || GameConfig;
-        return (Plugins, DalamudSettings, game) switch
-        {
-            ({ Count: 0 }, true, false) => "This backup has no Dalamud settings.",
-            ({ Count: 0 }, false, true) => "This backup has no game settings.",
-            ({ Count: 0 }, true, true) => "This backup has no Dalamud settings or game settings.",
-            _ => "Choose at least one plugin, or Dalamud settings, to restore.",
-        };
+        // Only settings were chosen, and the backup holds none of them.
+        var chosen = new[] { (DalamudSettings, "Dalamud settings"), (CharacterSettings, "character settings"), (SystemSettings, "system settings") }
+            .Where(choice => choice.Item1)
+            .Select(choice => choice.Item2)
+            .ToList();
+        return Plugins is { Count: 0 } && chosen.Count > 0
+            ? $"This backup has no {string.Join(" or ", chosen)}."
+            : "Choose at least one plugin or setting to restore.";
     }
 
     /// <summary>Chosen plugin names that <paramref name="backupPlugins"/> doesn't hold, sorted.</summary>
@@ -95,8 +95,8 @@ public sealed class RestoreSelection
     {
         PortableItem.PluginConfig => IncludesPlugin(BackupAllowlist.PluginNameFor(relativeTarget[(BackupAllowlist.PluginConfigsDirectory.Length + 1)..])),
         PortableItem.DalamudConfig or PortableItem.DalamudVfs or PortableItem.DalamudUi => DalamudSettings,
-        PortableItem.GameSettings => GameSettings,
-        PortableItem.GameConfig => GameConfig,
+        PortableItem.CharacterSettings => CharacterSettings,
+        PortableItem.SystemSettings => SystemSettings,
         _ => false,
     };
 }
@@ -108,8 +108,8 @@ public sealed record RestoreContents(
     bool DalamudVfs,
     bool DalamudUi,
     int? CustomRepositoryCount,
-    bool GameSettings = false,
-    bool GameConfig = false,
+    bool CharacterSettings = false,
+    bool SystemSettings = false,
     int CharacterCount = 0);
 
 /// <summary>What is on this PC right now, for the side-by-side review.</summary>
@@ -137,7 +137,7 @@ public sealed record RestorePreview(
 
     /// <summary>Why <paramref name="selection"/> can't be restored from this backup, or null when it can.</summary>
     public string? ProblemWith(RestoreSelection selection) =>
-        selection.ProblemIn(Backup.PluginNames, Contents.DalamudConfig || Contents.DalamudVfs || Contents.DalamudUi, Contents.GameSettings, Contents.GameConfig);
+        selection.ProblemIn(Backup.PluginNames, Contents.DalamudConfig || Contents.DalamudVfs || Contents.DalamudUi, Contents.CharacterSettings, Contents.SystemSettings);
 
     /// <summary>The changes made since the backup that restoring <paramref name="selection"/> would roll back.</summary>
     public UndoneChanges ChangesUndoneBy(RestoreSelection selection) =>
@@ -182,5 +182,5 @@ public sealed record RestoreResult(
     BackupRecord SafetySnapshot,
     string TargetDataPath,
     TimeSpan Duration,
-    bool GameSettingsRestored = false,
-    bool GameConfigRestored = false);
+    bool CharacterSettingsRestored = false,
+    bool SystemSettingsRestored = false);

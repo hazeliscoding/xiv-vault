@@ -327,8 +327,8 @@ public sealed class BackupService(
                 DalamudConfig = written.Any(item => item.Item == PortableItem.DalamudConfig),
                 DalamudVfs = written.Any(item => item.Item == PortableItem.DalamudVfs),
                 DalamudUi = written.Any(item => item.Item == PortableItem.DalamudUi),
-                GameSettings = written.Any(item => item.Item == PortableItem.GameSettings),
-                GameConfig = written.Any(item => item.Item == PortableItem.GameConfig),
+                CharacterSettings = written.Any(item => item.Item == PortableItem.CharacterSettings),
+                SystemSettings = written.Any(item => item.Item == PortableItem.SystemSettings),
             },
             Statistics = new ManifestStatistics
             {

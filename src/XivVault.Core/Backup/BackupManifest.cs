@@ -60,11 +60,11 @@ public sealed record ManifestContents
 
     public bool DalamudUi { get; init; }
 
-    /// <summary>The game's own settings under <c>payload/game/</c>, apart from <c>FFXIV.cfg</c>. Version 2 and later.</summary>
-    public bool GameSettings { get; init; }
+    /// <summary>The game's character settings: everything under <c>payload/game/</c> apart from <c>FFXIV.cfg</c>. Version 2 and later.</summary>
+    public bool CharacterSettings { get; init; }
 
-    /// <summary><c>FFXIV.cfg</c>: graphics, sound and other system settings. Version 2 and later.</summary>
-    public bool GameConfig { get; init; }
+    /// <summary><c>FFXIV.cfg</c>, the game's system settings: graphics, sound, display and more. Version 2 and later.</summary>
+    public bool SystemSettings { get; init; }
 }
 
 public sealed record ManifestStatistics

@@ -28,8 +28,8 @@ public class GameSettingsReportingTests
         var manifest = (await host.BackUpAsync()).Manifest;
 
         Assert.DoesNotContain(manifest.Files, file => file.Path.StartsWith("payload/game/", StringComparison.Ordinal));
-        Assert.False(manifest.Contents.GameSettings);
-        Assert.False(manifest.Contents.GameConfig);
+        Assert.False(manifest.Contents.CharacterSettings);
+        Assert.False(manifest.Contents.SystemSettings);
     }
 
     [Fact]

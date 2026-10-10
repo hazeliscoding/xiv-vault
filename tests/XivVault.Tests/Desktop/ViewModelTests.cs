@@ -542,7 +542,7 @@ public class RestoreViewModelTests
         restore.ChooseNoPluginsCommand.Execute(null);
         restore.DalamudSettingsChosen = false;
 
-        Assert.Equal("Choose at least one plugin, or Dalamud settings, to restore.", restore.ChoiceProblem);
+        Assert.Equal("Choose at least one plugin or setting to restore.", restore.ChoiceProblem);
     }
 
     private static async Task<RestoreViewModel> ReviewAsync(DesktopTestHost host)

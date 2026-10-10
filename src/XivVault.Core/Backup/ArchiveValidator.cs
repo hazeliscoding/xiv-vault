@@ -189,8 +189,8 @@ public sealed class ArchiveValidator
             && contents.DalamudConfig == Has(BackupAllowlist.ArchivePathFor(PortableItem.DalamudConfig))
             && contents.DalamudVfs == Has(BackupAllowlist.ArchivePathFor(PortableItem.DalamudVfs))
             && contents.DalamudUi == Has(BackupAllowlist.ArchivePathFor(PortableItem.DalamudUi))
-            && contents.GameSettings == paths.Any(path => Classify(path) == PortableItem.GameSettings)
-            && contents.GameConfig == paths.Any(path => Classify(path) == PortableItem.GameConfig)
+            && contents.CharacterSettings == paths.Any(path => Classify(path) == PortableItem.CharacterSettings)
+            && contents.SystemSettings == paths.Any(path => Classify(path) == PortableItem.SystemSettings)
             && statistics.FileCount == paths.Count
             && statistics.PluginConfigCount == BackupAllowlist.PluginNames(paths).Count
             && statistics.CharacterCount == BackupAllowlist.CharacterCount(paths)
