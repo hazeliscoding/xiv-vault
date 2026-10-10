@@ -58,7 +58,7 @@ An independent review of the restore and validation code found failure modes; th
 ## Decisions (2026-10-06, game settings)
 
 - **Game settings are part of 1.0.** XIV Vault also backs up the game's own settings from `Documents\My Games\FINAL FANTASY XIV - A Realm Reborn`: HUD layout, hotbars, keybinds, macros and gear sets, which are what people lose on a new PC. The folder is found through Documents, so a Documents folder that OneDrive has moved is followed. They come before 1.0 because 1.0 writes the backup format down as stable.
-- **Game allowlist:** `MACROSYS.dat`, the `FFXIV_CHARA_*.dat` appearance saves, and the `.DAT` files directly inside each `FFXIV_CHR*` character folder, matched by extension so a file added by a game patch is not silently missed. `FFXIV.cfg` only when the user opts in, because it holds resolution, monitor and window mode that may not suit another PC. Never `log/` (chat logs), `screenshots/`, `cfgcopy/`, `*.old` or `FFXIV_BOOT.cfg`. The files are copied byte for byte and never parsed.
+- **Game allowlist:** `MACROSYS.dat`, the `FFXIV_CHARA_*.dat` appearance saves, and the `.DAT` files directly inside each `FFXIV_CHR*` character folder, matched by extension so a file added by a game patch is not silently missed. `FFXIV.cfg` only when the user opts in, because it holds resolution, monitor and window mode that may not suit another PC (changed on 2026-10-09: always backed up, chosen at restore). Never `log/` (chat logs), `screenshots/`, `cfgcopy/`, `*.old` or `FFXIV_BOOT.cfg`. The files are copied byte for byte and never parsed.
 - **Character folders are named by a content ID that identifies the character.** Logs, Diagnostics and the UI never show it; they count characters. A restore writes each character's files back to the folder with the same name, never to another character, and a character folder the backup doesn't contain stays.
 - **Backup format:** game files go under `payload/game/`, and the manifest moves to `schemaVersion: 2` with a `contents` flag for them. Version 1 backups still restore, and older XIV Vault versions refuse version 2 with their existing "made by a newer XIV Vault" message.
 - **The same guards as Dalamud settings.** The safety snapshot holds every game file a restore would replace, a restore refuses while the game runs (it rewrites these files on logout), and a failed restore puts back what it replaced in both folders.
@@ -77,6 +77,12 @@ An independent review of the restore and validation code found failure modes; th
 - **Everything is chosen when the review step opens,** so a full restore stays one click.
 - **The checklist lives in the review step.** The plugin line in "In this backup" opens into a checklist with a filter and Select all / none. Continue is unavailable while nothing is chosen.
 - **On the command line,** `--plugin <name>` (repeatable) and `--dalamud-settings` choose what to restore. With either option only what they name is restored; with neither, everything is. A plugin the backup doesn't hold is an argument error (exit code 2).
+
+## Decisions (2026-10-09, game settings on a new PC)
+
+- **The game keeps files restored before its first start.** Checked on the author's PC: with the game folder set aside and only a default restore's files put back, the game used the restored character folder, and the HUD, hotbars, keybinds, macros and gear sets came back without a server download. A restore creates the game folder and character folders itself; nobody has to start the game first.
+- **Without `FFXIV.cfg` the game starts from defaults:** controller calibration, graphics, window theme colors and sound settings such as mount music.
+- **`FFXIV.cfg` is always backed up and chosen at restore,** replacing the opt-in from 2026-10-06. Square Enix's own server backups are manual and easy to forget, so XIV Vault may hold the only copy. It is its own choice in the restore review step and in `xiv-vault restore`, chosen by default like everything else, so someone on a PC with a different monitor can leave it out.
 
 ## M0: Bootstrap
 
@@ -167,9 +173,9 @@ Released as 0.2.0 on 2026-10-08. A real 0.1.2 install updated itself to it from 
 ## M10: Game settings (0.4)
 
 - [ ] Back up the game allowlist under `payload/game/` with manifest version 2, and validate it by the same rules as the Dalamud payload.
-- [ ] Restore game settings: in the safety snapshot, by character folder, refused while the game runs, rolled back across both folders on failure.
-- [ ] A PC where the game has never started: check whether the game keeps files restored before its first start, then either create the folder or ask the user to start the game once.
-- [ ] Game settings in `status`, `doctor`, Overview and the backup list; a switch in Settings, with `FFXIV.cfg` as its own opt-in; their own choice in the restore review step and in `xiv-vault restore`.
+- [ ] Restore game settings: in the safety snapshot, by character folder, refused while the game runs, rolled back across both folders on failure, and creating the game folder on a PC where the game has never started.
+- [x] A PC where the game has never started: check whether the game keeps files restored before its first start. (It does; see the 2026-10-09 decisions.)
+- [ ] Game settings in `status`, `doctor`, Overview and the backup list; a switch in Settings; their own choice in the restore review step and in `xiv-vault restore`, with `FFXIV.cfg` as a separate choice.
 - [ ] Logs and the Diagnostics report count characters and never show a content ID.
 - [ ] README safety model, AGENTS.md safety contract and `docs/backup-format.md` cover game settings.
 
