@@ -659,7 +659,7 @@ public class DiagnosticsViewModelTests
 
         await diagnostics.ActivateAsync();
 
-        Assert.Equal(["XIVLauncher", "Dalamud", "Game settings", "Backup destination", "Scheduling"], diagnostics.Groups.Select(group => group.Title));
+        Assert.Equal(["XIVLauncher", "Dalamud", "Backup destination", "Scheduling", "Game settings"], diagnostics.Groups.Select(group => group.Title));
         Assert.Contains("passed", diagnostics.Subtitle);
         Assert.True(diagnostics.HasBanner);
         var copy = diagnostics.CopyReportCommand.ExecuteAsync(null);

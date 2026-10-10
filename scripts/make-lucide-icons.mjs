@@ -9,7 +9,7 @@ import { join } from "node:path";
 const icons = [
   "archive", "archive-restore", "boxes", "calendar-clock", "check", "chevron-down", "chevron-left",
   "chevron-right", "circle-help", "clock", "cloud", "copy", "external-link", "eye", "filter", "folder",
-  "folder-open", "github", "hard-drive", "inbox", "info", "layout-dashboard", "loader", "lock", "minus",
+  "folder-open", "gamepad-2", "github", "hard-drive", "inbox", "info", "layout-dashboard", "loader", "lock", "minus",
   "monitor", "octagon-alert", "pause", "pencil", "plus", "refresh-cw", "rotate-ccw", "settings",
   "shield-check", "stethoscope", "trash-2", "triangle-alert", "unplug", "x",
 ];

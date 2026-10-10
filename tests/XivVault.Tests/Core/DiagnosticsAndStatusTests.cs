@@ -71,7 +71,7 @@ public class DiagnosticsAndStatusTests
 
         Assert.Contains(report.Groups[0].Checks, check => check.Label == "XIVLauncher installed" && check.Detail == "v1.1.2");
         Assert.Equal(
-            [DiagnosticArea.XivLauncher, DiagnosticArea.Dalamud, DiagnosticArea.GameSettings, DiagnosticArea.BackupDestination, DiagnosticArea.Scheduling],
+            [DiagnosticArea.XivLauncher, DiagnosticArea.Dalamud, DiagnosticArea.BackupDestination, DiagnosticArea.Scheduling, DiagnosticArea.GameSettings],
             report.Groups.Select(group => group.Area));
         Assert.Equal(DiagnosticStatus.Healthy, report.Groups[0].Status);
         Assert.Equal(DiagnosticStatus.Healthy, report.Groups[1].Status);

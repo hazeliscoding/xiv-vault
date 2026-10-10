@@ -53,6 +53,9 @@ public sealed partial class BackupRowViewModel : ObservableObject
 
     public string ContentsLine { get; private set; } = "";
 
+    /// <summary>The game settings a backup holds. Characters are counted, never named.</summary>
+    public string GameLine { get; private set; } = "";
+
     public IReadOnlyList<string> PluginChips { get; private set; } = [];
 
     public string? MoreChip { get; private set; }
@@ -115,6 +118,18 @@ public sealed partial class BackupRowViewModel : ObservableObject
             }
         }
 
+        var game = new List<string>();
+        if (record.Manifest is { Contents.CharacterSettings: true })
+        {
+            game.Add(record.CharacterCount > 0 ? $"character settings for {Formatting.Count(record.CharacterCount, "character")}" : "character settings");
+        }
+
+        if (record.Manifest is { Contents.SystemSettings: true })
+        {
+            game.Add("system settings");
+        }
+
+        GameLine = string.Join(" · ", game);
         ContentsLine = !record.HasManifest && record.IsOnlineOnly ? "in the cloud · contents show once it is downloaded"
             : contents.Count > 0 ? string.Join(" · ", contents)
             : "no Dalamud settings";

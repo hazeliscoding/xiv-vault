@@ -84,6 +84,8 @@
                         <TextBlock Classes="data t2" FontSize="11.5" Text="{Binding FileName}" TextWrapping="Wrap" />
                         <TextBlock Classes="data t2" FontSize="11.5" Text="{Binding HashLine}" TextWrapping="Wrap" />
                         <TextBlock Classes="data t2" FontSize="11.5" Text="{Binding ContentsLine}" TextWrapping="Wrap" />
+                        <TextBlock Classes="data t2" FontSize="11.5" Text="{Binding GameLine}" TextWrapping="Wrap"
+                                   IsVisible="{Binding GameLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                       </StackPanel>
                     </StackPanel>
                   </Grid>

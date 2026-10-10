@@ -156,7 +156,7 @@ public class GameSettingsCliTests
         var (_, json) = await Run(host, "doctor", "--json");
 
         var areas = JsonDocument.Parse(json).RootElement.GetProperty("groups").EnumerateArray().Select(group => group.GetProperty("area").GetString());
-        Assert.Equal(["xivLauncher", "dalamud", "gameSettings", "backupDestination", "scheduling"], areas);
+        Assert.Equal(["xivLauncher", "dalamud", "backupDestination", "scheduling", "gameSettings"], areas);
     }
 
     [Fact]

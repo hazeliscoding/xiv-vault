@@ -170,7 +170,7 @@ public sealed class RestoreService : IRestoreService
         }
 
         var target = located.Installation!;
-        var current = _scanner.Scan(target.DataPath, includeDalamudUi: true);
+        var current = _scanner.Scan(target.DataPath, includeDalamudUi: true, GameSettingsFolder.In(_environment));
         var currentConfig = new CurrentConfiguration(
             current.PluginConfigCount,
             current.LastWriteUtc(PortableItem.PluginConfig),
@@ -179,7 +179,11 @@ public sealed class RestoreService : IRestoreService
             current.Has(PortableItem.DalamudVfs),
             current.LastWriteUtc(PortableItem.DalamudVfs),
             current.Has(PortableItem.DalamudUi),
-            DalamudConfigReader.CountCustomRepositories(Path.Combine(target.DataPath, BackupAllowlist.DalamudConfigFile)));
+            DalamudConfigReader.CountCustomRepositories(Path.Combine(target.DataPath, BackupAllowlist.DalamudConfigFile)),
+            current.CharacterCount,
+            current.LastWriteUtc(PortableItem.CharacterSettings),
+            current.Has(PortableItem.SystemSettings),
+            current.LastWriteUtc(PortableItem.SystemSettings));
 
         // A file counts as changed when it was written after the backup and differs from the copy in
         // it. The date alone isn't enough: plugins and Dalamud often save their settings unchanged.

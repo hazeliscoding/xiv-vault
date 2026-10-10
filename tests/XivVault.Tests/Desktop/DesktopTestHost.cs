@@ -71,6 +71,8 @@ public sealed class DesktopTestHost : IDisposable
 
     public FakeXivLauncher CreateLauncher() => FakeXivLauncher.Create(Environment.XivLauncherPath);
 
+    public FakeGameSettings CreateGameSettings() => FakeGameSettings.Create(Environment.Documents);
+
     public string BackupFolder => Get<XivVault.Core.Configuration.IConfigStore>().Load().BackupDestination!;
 
     public async Task BackUpAsync()

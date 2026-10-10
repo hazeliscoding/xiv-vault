@@ -80,6 +80,7 @@ public sealed partial class DiagnosticsViewModel(
                     {
                         DiagnosticArea.XivLauncher => "Monitor",
                         DiagnosticArea.Dalamud => "Boxes",
+                        DiagnosticArea.GameSettings => "Gamepad2",
                         DiagnosticArea.BackupDestination => "Cloud",
                         _ => "CalendarClock",
                     },

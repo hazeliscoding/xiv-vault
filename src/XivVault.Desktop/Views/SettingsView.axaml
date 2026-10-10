@@ -52,6 +52,14 @@
             </Grid></Border>
             <Border Classes="setting divided"><Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
               <StackPanel Spacing="2" VerticalAlignment="Center">
+                <TextBlock Classes="strong" Text="Include game settings" />
+                <TextBlock Classes="compact t3" TextWrapping="Wrap"
+                           Text="Character settings such as HUD layout, hotbars, keybinds and macros, and system settings such as graphics and sound. Safety backups always include them." />
+              </StackPanel>
+              <c:XvSwitch Grid.Column="1" IsChecked="{Binding IncludeGame}" AutomationProperties.Name="Include game settings" />
+            </Grid></Border>
+            <Border Classes="setting divided"><Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+              <StackPanel Spacing="2" VerticalAlignment="Center">
                 <TextBlock Classes="strong" Text="Compression" />
                 <TextBlock Classes="compact t3" Text="{Binding CompressionHint}" TextWrapping="Wrap" />
               </StackPanel>

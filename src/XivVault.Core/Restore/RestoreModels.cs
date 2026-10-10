@@ -121,7 +121,11 @@ public sealed record CurrentConfiguration(
     bool DalamudVfs,
     DateTime? DalamudVfsChangedUtc,
     bool DalamudUi,
-    int? CustomRepositoryCount);
+    int? CustomRepositoryCount,
+    int CharacterCount = 0,
+    DateTime? CharacterSettingsChangedUtc = null,
+    bool SystemSettings = false,
+    DateTime? SystemSettingsChangedUtc = null);
 
 public sealed record RestorePreview(
     BackupRecord Backup,

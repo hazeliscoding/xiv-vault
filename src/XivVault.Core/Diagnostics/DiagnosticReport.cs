@@ -14,9 +14,9 @@ public enum DiagnosticArea
 {
     XivLauncher,
     Dalamud,
-    GameSettings,
     BackupDestination,
     Scheduling,
+    GameSettings,
 }
 
 public sealed record DiagnosticCheck(string Label, DiagnosticStatus Status, string Detail);

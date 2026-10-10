@@ -58,6 +58,9 @@ public sealed partial class SettingsViewModel : PageViewModel
     public partial bool IncludeUi { get; set; }
 
     [ObservableProperty]
+    public partial bool IncludeGame { get; set; }
+
+    [ObservableProperty]
     public partial Option<CompressionPreset> Compression { get; set; }
 
     [ObservableProperty]
@@ -105,6 +108,8 @@ public sealed partial class SettingsViewModel : PageViewModel
 
     partial void OnIncludeUiChanged(bool value) => Save(config => config with { IncludeDalamudUi = value });
 
+    partial void OnIncludeGameChanged(bool value) => Save(config => config with { IncludeGameSettings = value });
+
     partial void OnCheckForUpdatesChanged(bool value) => Save(config => config with { CheckForUpdates = value });
 
     partial void OnCompressionChanged(Option<CompressionPreset> value)
@@ -128,6 +133,7 @@ public sealed partial class SettingsViewModel : PageViewModel
             Destination = config.BackupDestination!;
             Retention = config.RetentionCount;
             IncludeUi = config.IncludeDalamudUi;
+            IncludeGame = config.IncludeGameSettings;
             Compression = CompressionOptions.First(option => option.Value == config.Compression);
             CheckForUpdates = config.CheckForUpdates;
             HasOverride = config.XivLauncherPathOverride is not null;

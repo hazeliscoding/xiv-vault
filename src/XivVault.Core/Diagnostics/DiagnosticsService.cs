@@ -35,7 +35,7 @@ public sealed class DiagnosticsService(
                 clock.GetUtcNow().UtcDateTime,
                 XivVaultInfo.Version,
                 RuntimeInformation.OSDescription,
-                [.. new[] { Launcher(status), Dalamud(status), GameSettings(status), Destination(status), Scheduling(status) }.Select(Redact)]),
+                [.. new[] { Launcher(status), Dalamud(status), Destination(status), Scheduling(status), GameSettings(status) }.Select(Redact)]),
             cancellationToken).ConfigureAwait(false);
     }
 

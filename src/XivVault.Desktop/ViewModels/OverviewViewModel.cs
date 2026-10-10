@@ -300,9 +300,16 @@ public sealed partial class OverviewViewModel : PageViewModel
         StatusRow.Add(status.Launcher.IsFound
             ? new StatusItem(Tone.Healthy, "XIVLauncher detected")
             : new StatusItem(Tone.Critical, "XIVLauncher not found"));
+        // Game settings join the Dalamud line so the row stays on one line, and get their own
+        // only when backups leave them out.
+        var gameBackedUp = status.Game.Found && status.Config.IncludeGameSettings;
         StatusRow.Add(status.Launcher.Installation is { HasPortableConfiguration: true }
-            ? new StatusItem(Tone.Healthy, "Dalamud configuration found")
+            ? new StatusItem(Tone.Healthy, gameBackedUp ? "Dalamud and game settings found" : "Dalamud configuration found")
             : new StatusItem(Tone.Warning, "No Dalamud configuration yet"));
+        if (status.Game.Found && !status.Config.IncludeGameSettings)
+        {
+            StatusRow.Add(new StatusItem(Tone.Paused, "Game settings off"));
+        }
         StatusRow.Add(status.AutomaticBackupsEnabled
             ? new StatusItem(Tone.Healthy, "Automatic backups enabled")
             : new StatusItem(Tone.Paused, "Automatic backups off"));

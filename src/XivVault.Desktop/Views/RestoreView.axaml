@@ -189,6 +189,14 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                <CheckBox Theme="{StaticResource ChoiceToggle}" Content="{Binding CharacterSettingsLabel}" IsChecked="{Binding CharacterSettingsChosen}"
+                          IsEnabled="{Binding HasCharacterSettings}" Margin="-4,-3" AutomationProperties.Name="Character settings" />
+                <TextBlock Classes="compact t3" Margin="22,-6,0,0" TextWrapping="Wrap" IsVisible="{Binding HasCharacterSettings}"
+                           Text="HUD layout, hotbars, keybinds, macros and gear sets" />
+                <CheckBox Theme="{StaticResource ChoiceToggle}" Content="{Binding SystemSettingsLabel}" IsChecked="{Binding SystemSettingsChosen}"
+                          IsEnabled="{Binding HasSystemSettings}" Margin="-4,-3" AutomationProperties.Name="System settings" />
+                <TextBlock Classes="compact t3" Margin="22,-6,0,0" TextWrapping="Wrap" IsVisible="{Binding HasSystemSettings}"
+                           Text="Graphics, sound and display, including the resolution and monitor" />
               </StackPanel>
             </Border>
             <Border Grid.Column="1" Classes="card" Padding="16,14">
@@ -309,6 +317,10 @@
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <c:StatusDot Tone="Healthy" VerticalAlignment="Center" />
                 <TextBlock Classes="body" Text="{Binding ResultDalamud}" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <c:StatusDot Tone="Healthy" VerticalAlignment="Center" />
+                <TextBlock Classes="body" Text="{Binding ResultGame}" />
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <c:StatusDot Tone="Healthy" VerticalAlignment="Center" />

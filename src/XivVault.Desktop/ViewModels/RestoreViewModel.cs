@@ -147,6 +147,12 @@ public sealed partial class RestoreViewModel : PageViewModel
     [ObservableProperty]
     public partial bool DalamudSettingsChosen { get; set; }
 
+    [ObservableProperty]
+    public partial bool CharacterSettingsChosen { get; set; }
+
+    [ObservableProperty]
+    public partial bool SystemSettingsChosen { get; set; }
+
     public ObservableCollection<CurrentItem> Current { get; } = [];
 
     public ObservableCollection<CheckItem> Checks { get; } = [];
@@ -179,6 +185,16 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     public bool HasDalamudSettings => Preview?.Contents is { } contents && (contents.DalamudConfig || contents.DalamudVfs || contents.DalamudUi);
 
+    public bool HasCharacterSettings => Preview?.Contents.CharacterSettings == true;
+
+    public bool HasSystemSettings => Preview?.Contents.SystemSettings == true;
+
+    public string CharacterSettingsLabel => Preview?.Contents is { CharacterSettings: true } contents
+        ? $"Character settings · {Formatting.Count(contents.CharacterCount, "character")}"
+        : "Character settings — not in this backup";
+
+    public string SystemSettingsLabel => HasSystemSettings ? "System settings · FFXIV.cfg" : "System settings — not in this backup";
+
     public int ChosenPluginCount => PluginChoices.Count(choice => choice.IsChosen);
 
     public bool AnyPluginChosen => ChosenPluginCount > 0;
@@ -206,9 +222,16 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     /// <summary>What the restore will write, from the review step's choices.</summary>
     public RestoreSelection Selection =>
-        ChosenPluginCount == PluginChoices.Count && (DalamudSettingsChosen || !HasDalamudSettings)
+        ChosenPluginCount == PluginChoices.Count
+            && (DalamudSettingsChosen || !HasDalamudSettings)
+            && (CharacterSettingsChosen || !HasCharacterSettings)
+            && (SystemSettingsChosen || !HasSystemSettings)
             ? RestoreSelection.Everything
-            : RestoreSelection.Only(PluginChoices.Where(choice => choice.IsChosen).Select(choice => choice.Name), DalamudSettingsChosen);
+            : RestoreSelection.Only(
+                PluginChoices.Where(choice => choice.IsChosen).Select(choice => choice.Name),
+                DalamudSettingsChosen,
+                CharacterSettingsChosen,
+                SystemSettingsChosen);
 
     public bool ShowOlderWarning => Preview?.ChangesUndoneBy(Selection).Any == true;
 
@@ -252,6 +275,16 @@ public sealed partial class RestoreViewModel : PageViewModel
                 parts.Add("Dalamud settings");
             }
 
+            if (CharacterSettingsChosen && HasCharacterSettings)
+            {
+                parts.Add("character settings");
+            }
+
+            if (SystemSettingsChosen && HasSystemSettings)
+            {
+                parts.Add("system settings");
+            }
+
             return $"Restores {Formatting.JoinWords(parts)} from {row.Day}, {row.Time}";
         }
     }
@@ -272,6 +305,14 @@ public sealed partial class RestoreViewModel : PageViewModel
         { DalamudConfigRestored: true } => "Dalamud configuration restored",
         _ when !DalamudSettingsChosen && HasDalamudSettings => "Dalamud configuration unchanged (not chosen)",
         _ => "Dalamud configuration unchanged (not in this backup)",
+    };
+
+    public string ResultGame => Result switch
+    {
+        null => "",
+        _ when !HasCharacterSettings && !HasSystemSettings => "Game settings unchanged (not in this backup)",
+        { CharacterSettingsRestored: true, SystemSettingsRestored: true } => "Character and system settings restored",
+        var result => $"{GameResult(result.CharacterSettingsRestored, HasCharacterSettings, "Character settings")} · {GameResult(result.SystemSettingsRestored, HasSystemSettings, "system settings")}",
     };
 
     public string ResultSnapshot => Result is { } result
@@ -323,9 +364,17 @@ public sealed partial class RestoreViewModel : PageViewModel
         ChoicesChanged();
     }
 
+    partial void OnCharacterSettingsChosenChanged(bool value) => ChoicesChanged();
+
+    partial void OnSystemSettingsChosenChanged(bool value) => ChoicesChanged();
+
     partial void OnPreviewChanged(RestorePreview? value)
     {
         OnPropertyChanged(nameof(HasDalamudSettings));
+        OnPropertyChanged(nameof(HasCharacterSettings));
+        OnPropertyChanged(nameof(HasSystemSettings));
+        OnPropertyChanged(nameof(CharacterSettingsLabel));
+        OnPropertyChanged(nameof(SystemSettingsLabel));
         OnPropertyChanged(nameof(ShowOlderWarning));
         OnPropertyChanged(nameof(OlderWarningText));
         OnPropertyChanged(nameof(TargetProblem));
@@ -347,6 +396,7 @@ public sealed partial class RestoreViewModel : PageViewModel
     {
         OnPropertyChanged(nameof(ResultPlugins));
         OnPropertyChanged(nameof(ResultDalamud));
+        OnPropertyChanged(nameof(ResultGame));
         OnPropertyChanged(nameof(ResultSnapshot));
         OnPropertyChanged(nameof(ResultSnapshotFile));
     }
@@ -510,12 +560,19 @@ public sealed partial class RestoreViewModel : PageViewModel
         var selection = Selection;
         var dalamud = DalamudSettingsChosen && HasDalamudSettings;
         var plugins = ChosenPluginCount;
-        SetStage(RestoreStage.VerifyingIntegrity, plugins, dalamud);
+        var game = (CharacterSettingsChosen && HasCharacterSettings, SystemSettingsChosen && HasSystemSettings) switch
+        {
+            (true, true) => "Restoring character and system settings",
+            (true, false) => "Restoring character settings",
+            (false, true) => "Restoring system settings",
+            _ => "Game settings stay as they are",
+        };
+        SetStage(RestoreStage.VerifyingIntegrity, plugins, dalamud, game);
         try
         {
-            var progress = new UiProgress<RestoreProgress>(_uiThread, value => SetStage(value.Stage, plugins, dalamud));
+            var progress = new UiProgress<RestoreProgress>(_uiThread, value => SetStage(value.Stage, plugins, dalamud, game));
             Result = await _restores.RestoreAsync(new RestoreRequest(row.FilePath) { Selection = selection }, progress);
-            SetStage(RestoreStage.Completed, plugins, dalamud);
+            SetStage(RestoreStage.Completed, plugins, dalamud, game);
             Step = 4;
         }
         catch (XivVaultException ex)
@@ -622,7 +679,7 @@ public sealed partial class RestoreViewModel : PageViewModel
         RestoreNowCommand.NotifyCanExecuteChanged();
     }
 
-    private void SetStage(RestoreStage stage, int pluginCount, bool dalamudSettings)
+    private void SetStage(RestoreStage stage, int pluginCount, bool dalamudSettings, string gameSettings)
     {
         var current = stage switch
         {
@@ -630,7 +687,8 @@ public sealed partial class RestoreViewModel : PageViewModel
             RestoreStage.CreatingSafetySnapshot => 1,
             RestoreStage.Extracting or RestoreStage.RestoringPluginConfigs => 2,
             RestoreStage.RestoringDalamudSettings => 3,
-            _ => 4,
+            RestoreStage.RestoringGameSettings => 4,
+            _ => 5,
         };
         string[] labels =
         [
@@ -638,6 +696,7 @@ public sealed partial class RestoreViewModel : PageViewModel
             "Creating pre-restore safety backup",
             pluginCount > 0 ? $"Restoring {Formatting.Count(pluginCount, "plugin configuration")}" : "Plugin configurations stay as they are",
             dalamudSettings ? "Restoring Dalamud settings" : "Dalamud settings stay as they are",
+            gameSettings,
         ];
         Stages.Clear();
         for (var i = 0; i < labels.Length; i++)
@@ -723,6 +782,8 @@ public sealed partial class RestoreViewModel : PageViewModel
         IsPluginListOpen = false;
         FilterPlugins();
         DalamudSettingsChosen = HasDalamudSettings;
+        CharacterSettingsChosen = HasCharacterSettings;
+        SystemSettingsChosen = HasSystemSettings;
         BuildDalamudDetails();
         BuildCurrent();
         ChoicesChanged();
@@ -743,7 +804,14 @@ public sealed partial class RestoreViewModel : PageViewModel
         Current.Add(new CurrentItem("Plugin collection database", current.DalamudVfs ? Changed(current.DalamudVfsChangedUtc) : "not set up"));
         Current.Add(new CurrentItem("Custom repository settings", current.CustomRepositoryCount is { } currentRepos ? Formatting.Count(currentRepos, "repo") : "none"));
         Current.Add(new CurrentItem("UI layout", preview.Contents.DalamudUi && DalamudSettingsChosen ? "will be replaced" : "kept as is"));
+        Current.Add(new CurrentItem("Character settings", current.CharacterCount > 0
+            ? $"{Formatting.Count(current.CharacterCount, "character")} · {Changed(current.CharacterSettingsChangedUtc)}"
+            : "not set up"));
+        Current.Add(new CurrentItem("System settings", current.SystemSettings ? Changed(current.SystemSettingsChangedUtc) : "not set up"));
     }
+
+    private static string GameResult(bool restored, bool inBackup, string name) =>
+        restored ? $"{name} restored" : inBackup ? $"{name} unchanged (not chosen)" : $"{name} unchanged (not in this backup)";
 
     private void OnPluginChoiceChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
