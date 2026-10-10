@@ -53,6 +53,7 @@ internal sealed class World : IDisposable
 
         _services = collection.BuildServiceProvider();
         CreateLauncher(withHistory ? 40 : 43);
+        CreateGameSettings();
         if (withHistory)
         {
             CreateHistory();
@@ -74,6 +75,8 @@ internal sealed class World : IDisposable
     public IServiceProvider Services => _services;
 
     public string LauncherPath => Path.Combine(Environment.RoamingAppData, "XIVLauncher");
+
+    public string GamePath => Path.Combine(Environment.Documents, "My Games", "FINAL FANTASY XIV - A Realm Reborn");
 
     /// <summary>A fake PC. A demo world has animations on and paces backups and restores for recording.</summary>
     public static World Create(string root, bool withHistory, bool demo = false) => new(root, withHistory, demo);
@@ -127,6 +130,38 @@ internal sealed class World : IDisposable
         File.WriteAllText(Path.Combine(current, "sq.version"), "<package><metadata><id>XIVLauncher</id><version>7.0.20</version></metadata></package>");
     }
 
+    /// <summary>The game's settings folder for two characters, with the chat logs and old copies backups skip.</summary>
+    private void CreateGameSettings()
+    {
+        void Write(int size, params string[] relative)
+        {
+            var path = Path.Combine([GamePath, .. relative]);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllBytes(path, RandomNumberGenerator.GetBytes(size));
+        }
+
+        Write(4_200, "FFXIV.cfg");
+        Write(4_100, "FFXIV.cfg.old");
+        Write(1_100, "FFXIV_BOOT.cfg");
+        Write(31_000, "MACROSYS.dat");
+        foreach (var save in new[] { "FFXIV_CHARA_01.dat", "FFXIV_CHARA_02.dat", "FFXIV_CHARA_03.dat" })
+        {
+            Write(1_400, save);
+        }
+
+        Write(250_000, "screenshots", "ffxiv_09282026_131200_042.png");
+        foreach (var character in new[] { "FFXIV_CHR004000174A1B2C3D", "FFXIV_CHR0040002E5F6A7B8C" })
+        {
+            foreach (var (file, size) in new[] { ("ADDON.DAT", 52_000), ("COMMON.DAT", 9_000), ("CONTROL0.DAT", 3_000), ("CONTROL1.DAT", 3_000), ("GEARSET.DAT", 40_000), ("HOTBAR.DAT", 21_000), ("KEYBIND.DAT", 11_000), ("LOGFLTR.DAT", 2_000), ("MACRO.DAT", 31_000), ("UISAVE.DAT", 18_000) })
+            {
+                Write(size, character, file);
+            }
+
+            Write(21_000, character, "HOTBAR.DAT.old");
+            Write(64_000, character, "log", "00000000.log");
+        }
+    }
+
     private void AddPlugin(string name)
     {
         var folder = Path.Combine(LauncherPath, "pluginConfigs");
@@ -176,7 +211,7 @@ internal sealed class World : IDisposable
 
         // Everything on disk was "last touched" before the latest backup, except two plugins
         // configured since, so the restore review has something to warn about.
-        foreach (var file in Directory.EnumerateFiles(LauncherPath, "*", SearchOption.AllDirectories))
+        foreach (var file in Directory.EnumerateFiles(LauncherPath, "*", SearchOption.AllDirectories).Concat(Directory.EnumerateFiles(GamePath, "*", SearchOption.AllDirectories)))
         {
             File.SetLastWriteTime(file, new DateTime(2026, 9, 27, 20, 0, 0));
         }
