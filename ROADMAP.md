@@ -182,7 +182,7 @@ Released as 0.2.0 on 2026-10-08. A real 0.1.2 install updated itself to it from 
 - [ ] Sign releases with Artifact Signing: both exes, Setup and the update packages, verified with `signtool` before the draft is made. Manual runs of the release workflow build unsigned.
 - [ ] README: replace the "not code-signed" notes once a signed release is out, and say what SmartScreen shows until reputation builds.
 - [x] Back up the game allowlist under `payload/game/` with manifest version 2, and validate it by the same rules as the Dalamud payload. (On the author's PC: 20 game files and 1 character, with no chat logs, screenshots or old copies.)
-- [ ] Restore game settings: in the safety snapshot, by character folder, refused while the game runs, rolled back across both folders on failure, and creating the game folder on a PC where the game has never started.
+- [x] Restore game settings: in the safety snapshot, by character folder, refused while the game runs, rolled back across both folders on failure, and creating the game folder on a PC where the game has never started.
 - [x] A PC where the game has never started: check whether the game keeps files restored before its first start. (It does; see the 2026-10-09 decisions.)
 - [ ] Game settings in `status`, `doctor`, Overview and the backup list; a switch in Settings; their own choice in the restore review step and in `xiv-vault restore`, with `FFXIV.cfg` as a separate choice.
 - [ ] Logs and the Diagnostics report count characters and never show a content ID.
