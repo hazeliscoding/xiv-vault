@@ -4,6 +4,20 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+### Added
+
+- Game settings. Backups also hold the game's own settings from `Documents\My Games\FINAL FANTASY XIV - A Realm Reborn`: each character's HUD layout, hotbars, keybinds, macros and gear sets, the shared macros, appearance saves, and system settings (`FFXIV.cfg`). Chat logs, screenshots and old copies stay out. A restore puts each character's settings back in that character's own folder, works on a PC where the game has never started, and refuses while the game runs.
+- Character settings and system settings are choices of their own in the restore review, both chosen to start with. Leave out system settings when the new PC has a different monitor. `xiv-vault restore` takes `--character-settings` and `--system-settings`.
+- A switch in Settings, and `xiv-vault config set include-game`, to leave game settings out of backups. Safety backups hold them either way.
+- Diagnostics and `xiv-vault doctor` have a Game settings group. `status`, `list` and Backups count characters.
+
+### Changed
+
+- Setup, the update packages and both executables are code-signed, with Hazel Granados as the publisher. Windows SmartScreen may still warn about Setup until the download builds a reputation.
+- Backups use format version 2. Version 1 backups still restore; XIV Vault 0.3 and earlier can't restore version 2 backups.
+- `xiv-vault doctor --json` has a `gameSettings` group, `status --json` a `gameSettings` object, and `list --json` has `characterCount` and `systemSettings` fields.
+- A character's folder is named by a content ID that identifies the character. Logs, error messages and the diagnostic report never show it.
+
 ## [0.3.0] - 2026-10-08
 
 ### Added
