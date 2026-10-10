@@ -50,6 +50,7 @@ public sealed class BackupService(
     RetentionService retention,
     PathDisplay paths,
     OperationLock operationLock,
+    IAppEnvironment environment,
     TimeProvider clock,
     ILogger<BackupService> logger) : IBackupService
 {
@@ -91,6 +92,7 @@ public sealed class BackupService(
     /// Writes, verifies and finalizes one archive, then applies retention. Also used by restore for
     /// the pre-restore snapshot, which always includes the UI layout and may be empty on a fresh PC;
     /// restore applies snapshot retention itself, after it is done with the archive it restores.
+    /// Game settings are included whenever the game's settings folder exists.
     /// </summary>
     internal BackupResult Create(
         XivLauncherInstallation installation,
@@ -110,11 +112,11 @@ public sealed class BackupService(
         PortableSnapshot snapshot;
         try
         {
-            snapshot = scanner.Scan(installation.DataPath, includeDalamudUi);
+            snapshot = scanner.Scan(installation.DataPath, includeDalamudUi, GameSettingsFolder.In(environment));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            throw new XivVaultException(XivVaultErrorKind.Unexpected, $"The Dalamud files could not be read ({ex.Message}).", ex);
+            throw new XivVaultException(XivVaultErrorKind.Unexpected, $"The settings to back up could not be read ({ex.Message}).", ex);
         }
         if (snapshot.Files.Count == 0 && kind != BackupKind.PreRestore)
         {
@@ -231,14 +233,14 @@ public sealed class BackupService(
 
             using (var zip = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true))
             {
-                // Dalamud settings first, then plugin configs, matching the stages the UI shows.
-                foreach (var file in snapshot.Files.OrderBy(file => file.Item == PortableItem.PluginConfig))
+                // Settings first, then plugin configs, matching the stages the UI shows.
+                foreach (var file in snapshot.Files.OrderBy(file => file.Item == PortableItem.PluginConfig).ThenBy(file => BackupAllowlist.IsGame(file.Item)))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     var stage = file.Item == PortableItem.PluginConfig ? BackupStage.CompressingPluginConfigs : BackupStage.SnapshottingSettings;
                     var label = stage == BackupStage.CompressingPluginConfigs
                         ? $"Compressing {pluginCount} configurations"
-                        : "Snapshotting Dalamud settings";
+                        : BackupAllowlist.IsGame(file.Item) ? "Snapshotting game settings" : "Snapshotting Dalamud settings";
                     reporter.Report(stage, 4 + (80.0 * doneBytes / totalBytes), label);
 
                     var entry = AddFile(zip, file, level);
@@ -323,11 +325,14 @@ public sealed class BackupService(
                 DalamudConfig = written.Any(item => item.Item == PortableItem.DalamudConfig),
                 DalamudVfs = written.Any(item => item.Item == PortableItem.DalamudVfs),
                 DalamudUi = written.Any(item => item.Item == PortableItem.DalamudUi),
+                GameSettings = written.Any(item => item.Item == PortableItem.GameSettings),
+                GameConfig = written.Any(item => item.Item == PortableItem.GameConfig),
             },
             Statistics = new ManifestStatistics
             {
                 PluginConfigCount = BackupAllowlist.PluginNames(written.Select(item => item.File.Path)).Count,
                 PluginConfigDirectories = snapshot.PluginConfigDirectories,
+                CharacterCount = BackupAllowlist.CharacterCount(written.Select(item => item.File.Path)),
                 FileCount = written.Count,
                 TotalBytes = written.Sum(item => item.File.Size),
             },

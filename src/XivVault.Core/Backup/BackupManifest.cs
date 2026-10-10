@@ -8,7 +8,10 @@ namespace XivVault.Core.Backup;
 /// </summary>
 public sealed record BackupManifest
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
+
+    /// <summary>The first version that can hold game settings under <c>payload/game/</c>.</summary>
+    public const int GameSettingsSchemaVersion = 2;
 
     public int SchemaVersion { get; init; }
 
@@ -56,6 +59,12 @@ public sealed record ManifestContents
     public bool DalamudVfs { get; init; }
 
     public bool DalamudUi { get; init; }
+
+    /// <summary>The game's own settings under <c>payload/game/</c>, apart from <c>FFXIV.cfg</c>. Version 2 and later.</summary>
+    public bool GameSettings { get; init; }
+
+    /// <summary><c>FFXIV.cfg</c>: graphics, sound and other system settings. Version 2 and later.</summary>
+    public bool GameConfig { get; init; }
 }
 
 public sealed record ManifestStatistics
@@ -64,6 +73,9 @@ public sealed record ManifestStatistics
     public int PluginConfigCount { get; init; }
 
     public int PluginConfigDirectories { get; init; }
+
+    /// <summary>Character folders under <c>payload/game/</c>. Their names are never shown, only this count.</summary>
+    public int CharacterCount { get; init; }
 
     public int FileCount { get; init; }
 

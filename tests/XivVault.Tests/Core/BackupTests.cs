@@ -33,7 +33,7 @@ public class BackupTests
 
         var manifest = (await host.BackUpAsync(BackupKind.Scheduled)).Manifest;
 
-        Assert.Equal(1, manifest.SchemaVersion);
+        Assert.Equal(2, manifest.SchemaVersion);
         Assert.Equal(XivVaultInfo.Version, manifest.XivVaultVersion);
         Assert.Equal(new DateTime(2026, 10, 4, 13, 19, 0, DateTimeKind.Utc), manifest.CreatedAtUtc);
         Assert.Equal(BackupKind.Scheduled, manifest.BackupType);
@@ -47,7 +47,7 @@ public class BackupTests
 
         using var zip = ZipFile.OpenRead((await host.BackUpAsync()).Record.FilePath);
         var json = new StreamReader(zip.GetEntry("manifest.json")!.Open()).ReadToEnd();
-        Assert.Contains("\"schemaVersion\": 1", json);
+        Assert.Contains("\"schemaVersion\": 2", json);
         Assert.Contains("\"createdAtUtc\": \"2026-10-04T13:20:00Z\"", json);
         Assert.Contains("\"backupType\": \"manual\"", json);
     }

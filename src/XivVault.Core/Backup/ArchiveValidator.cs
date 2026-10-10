@@ -189,10 +189,16 @@ public sealed class ArchiveValidator
             && contents.DalamudConfig == Has(BackupAllowlist.ArchivePathFor(PortableItem.DalamudConfig))
             && contents.DalamudVfs == Has(BackupAllowlist.ArchivePathFor(PortableItem.DalamudVfs))
             && contents.DalamudUi == Has(BackupAllowlist.ArchivePathFor(PortableItem.DalamudUi))
+            && contents.GameSettings == paths.Any(path => Classify(path) == PortableItem.GameSettings)
+            && contents.GameConfig == paths.Any(path => Classify(path) == PortableItem.GameConfig)
             && statistics.FileCount == paths.Count
             && statistics.PluginConfigCount == BackupAllowlist.PluginNames(paths).Count
+            && statistics.CharacterCount == BackupAllowlist.CharacterCount(paths)
             && statistics.TotalBytes == DeclaredTotal(manifest);
     }
+
+    private static PortableItem? Classify(string path) =>
+        BackupAllowlist.TryClassify(path, out var item, out _) ? item : null;
 
     private static ArchiveValidation Validate(ZipArchive zip, bool verifyContents, CancellationToken cancellationToken)
     {
@@ -212,27 +218,35 @@ public sealed class ArchiveValidator
                 continue;
             }
 
+            // Paths in messages never show a character's content ID.
+            var shown = BackupAllowlist.ForDisplay(file.Path);
             if (!ArchivePaths.IsSafe(file.Path) || ArchivePaths.IsDirectoryEntry(file.Path))
             {
-                issues.Add(new ArchiveIssue(ArchiveIssueCode.UnsafePath, $"manifest.json lists an unsafe path: {file.Path}", file.Path));
+                issues.Add(new ArchiveIssue(ArchiveIssueCode.UnsafePath, $"manifest.json lists an unsafe path: {shown}", shown));
                 continue;
             }
 
-            if (!BackupAllowlist.TryClassify(file.Path, out _, out _))
+            if (!BackupAllowlist.TryClassify(file.Path, out var item, out _))
             {
-                issues.Add(new ArchiveIssue(ArchiveIssueCode.NotAllowlisted, $"manifest.json lists a file XIV Vault never backs up: {file.Path}", file.Path));
+                issues.Add(new ArchiveIssue(ArchiveIssueCode.NotAllowlisted, $"manifest.json lists a file XIV Vault never backs up: {shown}", shown));
+                continue;
+            }
+
+            if (BackupAllowlist.IsGame(item) && manifest.SchemaVersion < BackupManifest.GameSettingsSchemaVersion)
+            {
+                issues.Add(new ArchiveIssue(ArchiveIssueCode.NotAllowlisted, $"manifest.json lists game settings, which a version {manifest.SchemaVersion} backup can't hold: {shown}", shown));
                 continue;
             }
 
             if (file.Size < 0 || file.Sha256 is not { Length: 64 } || !file.Sha256.All(char.IsAsciiHexDigit))
             {
-                issues.Add(new ArchiveIssue(ArchiveIssueCode.MalformedManifest, $"manifest.json has an invalid size or hash for {file.Path}.", file.Path));
+                issues.Add(new ArchiveIssue(ArchiveIssueCode.MalformedManifest, $"manifest.json has an invalid size or hash for {shown}.", shown));
                 continue;
             }
 
             if (!expected.TryAdd(file.Path, file))
             {
-                issues.Add(new ArchiveIssue(ArchiveIssueCode.DuplicateEntry, $"manifest.json lists {file.Path} twice.", file.Path));
+                issues.Add(new ArchiveIssue(ArchiveIssueCode.DuplicateEntry, $"manifest.json lists {shown} twice.", shown));
             }
         }
 
@@ -250,9 +264,10 @@ public sealed class ArchiveValidator
                 continue;
             }
 
+            var shown = BackupAllowlist.ForDisplay(name);
             if (!ArchivePaths.IsSafe(name))
             {
-                issues.Add(new ArchiveIssue(ArchiveIssueCode.UnsafePath, $"The archive contains an unsafe path: {name}", name));
+                issues.Add(new ArchiveIssue(ArchiveIssueCode.UnsafePath, $"The archive contains an unsafe path: {shown}", shown));
                 continue;
             }
 
@@ -261,7 +276,7 @@ public sealed class ArchiveValidator
                 // Folder entries carry no data. Some ZIP tools add them; they are fine inside payload/.
                 if (!name.StartsWith(BackupAllowlist.PayloadPrefix, StringComparison.Ordinal))
                 {
-                    issues.Add(new ArchiveIssue(ArchiveIssueCode.UnexpectedEntry, $"The archive contains an unexpected folder: {name}", name));
+                    issues.Add(new ArchiveIssue(ArchiveIssueCode.UnexpectedEntry, $"The archive contains an unexpected folder: {shown}", shown));
                 }
 
                 continue;
@@ -269,27 +284,28 @@ public sealed class ArchiveValidator
 
             if (!seen.TryAdd(name, entry))
             {
-                issues.Add(new ArchiveIssue(ArchiveIssueCode.DuplicateEntry, $"The archive contains {name} twice.", name));
+                issues.Add(new ArchiveIssue(ArchiveIssueCode.DuplicateEntry, $"The archive contains {shown} twice.", shown));
                 continue;
             }
 
             if (!expected.ContainsKey(name))
             {
-                issues.Add(new ArchiveIssue(ArchiveIssueCode.UnexpectedEntry, $"The archive contains a file the manifest does not list: {name}", name));
+                issues.Add(new ArchiveIssue(ArchiveIssueCode.UnexpectedEntry, $"The archive contains a file the manifest does not list: {shown}", shown));
             }
         }
 
         foreach (var (path, file) in expected)
         {
+            var shown = BackupAllowlist.ForDisplay(path);
             if (!seen.TryGetValue(path, out var entry))
             {
-                issues.Add(new ArchiveIssue(ArchiveIssueCode.MissingFile, $"{path} is listed in the manifest but missing from the archive.", path));
+                issues.Add(new ArchiveIssue(ArchiveIssueCode.MissingFile, $"{shown} is listed in the manifest but missing from the archive.", shown));
                 continue;
             }
 
             if (entry.Length != file.Size)
             {
-                issues.Add(new ArchiveIssue(ArchiveIssueCode.SizeMismatch, $"{path} does not have the size recorded in the manifest.", path));
+                issues.Add(new ArchiveIssue(ArchiveIssueCode.SizeMismatch, $"{shown} does not have the size recorded in the manifest.", shown));
             }
         }
 
@@ -301,18 +317,19 @@ public sealed class ArchiveValidator
         foreach (var (path, file) in expected)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var shown = BackupAllowlist.ForDisplay(path);
             using var content = seen[path].Open();
             var actual = HashBounded(content, file.Size, out var overflow);
             if (overflow)
             {
-                issues.Add(new ArchiveIssue(ArchiveIssueCode.SizeMismatch, $"{path} holds more data than the manifest records.", path));
+                issues.Add(new ArchiveIssue(ArchiveIssueCode.SizeMismatch, $"{shown} holds more data than the manifest records.", shown));
             }
             else if (!string.Equals(actual, file.Sha256, StringComparison.OrdinalIgnoreCase))
             {
                 issues.Add(new ArchiveIssue(
                     ArchiveIssueCode.ChecksumMismatch,
-                    $"{path} does not match its recorded hash (expected {Short(file.Sha256)}, got {Short(actual)}).",
-                    path));
+                    $"{shown} does not match its recorded hash (expected {Short(file.Sha256)}, got {Short(actual)}).",
+                    shown));
             }
         }
 

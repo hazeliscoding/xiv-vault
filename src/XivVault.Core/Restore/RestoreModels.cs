@@ -69,10 +69,14 @@ public sealed class RestoreSelection
             ? []
             : Plugins.Where(name => !backupPlugins.Contains(name, StringComparer.OrdinalIgnoreCase)).Order(StringComparer.OrdinalIgnoreCase).ToList();
 
-    internal bool Includes(PortableItem item, string relativeTarget) =>
-        item == PortableItem.PluginConfig
-            ? IncludesPlugin(BackupAllowlist.PluginNameFor(relativeTarget[(BackupAllowlist.PluginConfigsDirectory.Length + 1)..]))
-            : DalamudSettings;
+    // Game settings belong in the game's own folder, which restore doesn't write yet. They must never
+    // be treated as Dalamud settings, or they would land in the XIVLauncher folder.
+    internal bool Includes(PortableItem item, string relativeTarget) => item switch
+    {
+        PortableItem.PluginConfig => IncludesPlugin(BackupAllowlist.PluginNameFor(relativeTarget[(BackupAllowlist.PluginConfigsDirectory.Length + 1)..])),
+        PortableItem.DalamudConfig or PortableItem.DalamudVfs or PortableItem.DalamudUi => DalamudSettings,
+        _ => false,
+    };
 }
 
 /// <summary>What the backup holds.</summary>

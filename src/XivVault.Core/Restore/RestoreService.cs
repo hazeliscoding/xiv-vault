@@ -471,7 +471,7 @@ public sealed class RestoreService : IRestoreService
             cancellationToken.ThrowIfCancellationRequested();
             if (!BackupAllowlist.TryClassify(file.Path, out var item, out var relativeTarget) || !entries.TryGetValue(file.Path, out var entry))
             {
-                throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, $"Refusing {file.Path}: it is not an allowlisted file.");
+                throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, $"Refusing {BackupAllowlist.ForDisplay(file.Path)}: it is not an allowlisted file.");
             }
 
             var destination = ArchivePaths.ResolveUnder(staging, relativeTarget);
@@ -487,7 +487,7 @@ public sealed class RestoreService : IRestoreService
                 var actual = ArchiveValidator.HashBounded(check, file.Size, out var overflow);
                 if (overflow || !string.Equals(actual, file.Sha256, StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, $"{file.Path} changed while it was unpacked. Nothing was restored.");
+                    throw new XivVaultException(XivVaultErrorKind.RestoreValidationFailed, $"{BackupAllowlist.ForDisplay(file.Path)} changed while it was unpacked. Nothing was restored.");
                 }
             }
 

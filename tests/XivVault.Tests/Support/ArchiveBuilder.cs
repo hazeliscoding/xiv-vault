@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace XivVault.Tests.Support;
 
@@ -14,6 +15,7 @@ public sealed class ArchiveBuilder
     private string? _rawManifest;
     private int? _schemaVersion = 1;
     private JsonObject? _claimedContents;
+    private int? _claimedCharacterCount;
 
     public static string Sha256(byte[] data) => Convert.ToHexStringLower(SHA256.HashData(data));
 
@@ -56,6 +58,12 @@ public sealed class ArchiveBuilder
         return this;
     }
 
+    public ArchiveBuilder ClaimCharacterCount(int count)
+    {
+        _claimedCharacterCount = count;
+        return this;
+    }
+
     public ArchiveBuilder RawManifest(string json)
     {
         _rawManifest = json;
@@ -80,6 +88,14 @@ public sealed class ArchiveBuilder
 
     private List<string> Paths => _files.Select(file => (string)file["path"]!).ToList();
 
+    // Counted here rather than by Core, so a mistake in Core's count can't hide in the test archives.
+    private List<string> CharacterFolders => Paths
+        .Select(path => path.Split('/'))
+        .Where(segments => segments.Length == 4 && segments[1] == "game" && Regex.IsMatch(segments[2], "^FFXIV_CHR[0-9A-Fa-f]+$"))
+        .Select(segments => segments[2])
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
+
     private string BuildManifest()
     {
         var root = new JsonObject
@@ -94,11 +110,14 @@ public sealed class ArchiveBuilder
                 ["dalamudConfig"] = Paths.Contains("payload/dalamudConfig.json"),
                 ["dalamudVfs"] = Paths.Contains("payload/dalamudVfs.db"),
                 ["dalamudUi"] = Paths.Contains("payload/dalamudUI.ini"),
+                ["gameSettings"] = Paths.Any(path => path.StartsWith("payload/game/", StringComparison.OrdinalIgnoreCase) && path != "payload/game/FFXIV.cfg"),
+                ["gameConfig"] = Paths.Contains("payload/game/FFXIV.cfg"),
             },
             ["statistics"] = new JsonObject
             {
                 ["pluginConfigCount"] = XivVault.Core.Backup.BackupAllowlist.PluginNames(Paths).Count,
                 ["pluginConfigDirectories"] = 0,
+                ["characterCount"] = _claimedCharacterCount ?? CharacterFolders.Count,
                 ["fileCount"] = _files.Count,
                 ["totalBytes"] = _files.Sum(file => (int)file["size"]!),
             },

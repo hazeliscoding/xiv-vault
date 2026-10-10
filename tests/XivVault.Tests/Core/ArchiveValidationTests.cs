@@ -112,7 +112,7 @@ public class ArchiveValidationTests : IDisposable
     [Fact]
     public void Manifest_from_a_newer_XIV_Vault_is_unsupported()
     {
-        var result = Validate(new ArchiveBuilder().File("payload/dalamudConfig.json", "{}").SchemaVersion(2));
+        var result = Validate(new ArchiveBuilder().File("payload/dalamudConfig.json", "{}").SchemaVersion(3));
 
         var issue = Assert.Single(result.Issues);
         Assert.Equal(ArchiveIssueCode.UnsupportedSchema, issue.Code);

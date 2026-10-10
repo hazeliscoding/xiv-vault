@@ -14,6 +14,8 @@ public sealed record PortableSnapshot(
 
     public int PluginConfigCount => PluginNames.Count;
 
+    public int CharacterCount => BackupAllowlist.CharacterCount(Files.Select(file => file.ArchivePath));
+
     public bool Has(PortableItem item) => Files.Any(file => file.Item == item);
 
     public DateTime? LastWriteUtc(PortableItem item)
@@ -23,10 +25,13 @@ public sealed record PortableSnapshot(
     }
 }
 
-/// <summary>Lists the allowlisted files in a Dalamud data folder. Reads metadata only, never contents.</summary>
+/// <summary>
+/// Lists the allowlisted files in a Dalamud data folder and, when given, the game's settings folder.
+/// Reads metadata only, never contents.
+/// </summary>
 public sealed class PortableStateScanner(ILogger<PortableStateScanner> logger)
 {
-    public PortableSnapshot Scan(string dataPath, bool includeDalamudUi)
+    public PortableSnapshot Scan(string dataPath, bool includeDalamudUi, string? gamePath = null)
     {
         var files = new List<PortableFile>();
         foreach (var item in new[] { PortableItem.DalamudConfig, PortableItem.DalamudVfs, PortableItem.DalamudUi })
@@ -52,13 +57,53 @@ public sealed class PortableStateScanner(ILogger<PortableStateScanner> logger)
             Walk(pluginRoot, BackupAllowlist.PayloadPrefix + BackupAllowlist.PluginConfigsDirectory + "/", files);
         }
 
+        if (gamePath is not null)
+        {
+            ScanGame(new DirectoryInfo(gamePath), files);
+        }
+
         var pluginNames = BackupAllowlist.PluginNames(files.Select(file => file.ArchivePath));
+        var snapshot = new PortableSnapshot(dataPath, files, pluginNames, directories);
         logger.LogInformation(
-            "Scanned {Path}: {FileCount} files, {PluginCount} plugin configs",
+            "Scanned {Path}: {FileCount} files, {PluginCount} plugin configs, {CharacterCount} characters",
             dataPath,
             files.Count,
-            pluginNames.Count);
-        return new PortableSnapshot(dataPath, files, pluginNames, directories);
+            pluginNames.Count,
+            snapshot.CharacterCount);
+        return snapshot;
+    }
+
+    /// <summary>
+    /// The game folder itself is followed even when it is a link, as the game follows it. Links
+    /// inside it are not, the same as in the XIVLauncher folder.
+    /// </summary>
+    private static void ScanGame(DirectoryInfo root, List<PortableFile> files)
+    {
+        if (!root.Exists)
+        {
+            return;
+        }
+
+        AddGameFiles(root, BackupAllowlist.GamePrefix, files);
+        foreach (var character in root.EnumerateDirectories())
+        {
+            if (!IsLink(character) && BackupAllowlist.IsCharacterFolder(character.Name))
+            {
+                AddGameFiles(character, BackupAllowlist.GamePrefix + character.Name + "/", files);
+            }
+        }
+    }
+
+    private static void AddGameFiles(DirectoryInfo directory, string archivePrefix, List<PortableFile> files)
+    {
+        foreach (var file in directory.EnumerateFiles())
+        {
+            var archivePath = archivePrefix + file.Name;
+            if (!IsLink(file) && BackupAllowlist.TryClassify(archivePath, out var item, out _))
+            {
+                files.Add(new PortableFile(archivePath, file.FullName, file.Length, file.LastWriteTimeUtc, item));
+            }
+        }
     }
 
     private void Walk(DirectoryInfo directory, string archivePrefix, List<PortableFile> files)

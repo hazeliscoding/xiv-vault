@@ -60,6 +60,8 @@ public sealed class TestHost : IDisposable
     public FakeXivLauncher CreateLauncher(bool userDataLayout = false, bool withUi = true) =>
         FakeXivLauncher.Create(Environment.XivLauncherPath, userDataLayout, withUi: withUi);
 
+    public FakeGameSettings CreateGameSettings() => FakeGameSettings.Create(Environment.Documents);
+
     public void UpdateConfig(Func<XivVaultConfig, XivVaultConfig> change) => Config.Save(change(Config.Load()));
 
     /// <summary>Creates a backup and moves the clock on, so every archive gets its own timestamp.</summary>
