@@ -1,8 +1,16 @@
 name: Release
 
+# A pushed v* tag builds, signs and creates a draft GitHub release. Run it by hand to build the same
+# files without signing or publishing anything.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to build (nothing is signed or published, and no delta package is made)
+        required: true
+        default: 0.0.1
 
 permissions:
   contents: read
@@ -10,9 +18,16 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    # Tag builds run in the release environment, whose variables let this job sign in to Azure Artifact Signing.
+    # Manual runs have no environment, so they build unsigned.
+    environment: ${{ github.ref_type == 'tag' && 'release' || '' }}
+    permissions:
+      contents: read
+      id-token: write
     env:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
+      SIGN: ${{ vars.AZURE_CLIENT_ID != '' && vars.ARTIFACT_SIGNING_ENDPOINT != '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -20,11 +35,13 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Version from tag
+      - name: Version
         shell: pwsh
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          $version = '${{ github.ref_name }}'.TrimStart('v')
-          if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "Tag ${{ github.ref_name }} is not a version" }
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { $env:INPUT_VERSION }
+          if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "Not a version: $version" }
           "VERSION=$version" >> $env:GITHUB_ENV
 
       - name: Test
@@ -35,17 +52,73 @@ jobs:
           dotnet publish src/XivVault.Cli -p:PublishProfile=win-x64 -p:Version=${{ env.VERSION }}
           dotnet publish src/XivVault.Desktop -p:PublishProfile=win-x64 -p:Version=${{ env.VERSION }}
 
+      - name: Sign in to Azure for code signing
+        if: env.SIGN == 'true'
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # Signed here, before packaging, because vpk signs a copy of the publish folder: the zips are made
+      # from this folder, and the CLI never goes through vpk. vpk skips files that are already signed.
+      - name: Sign the executables
+        if: env.SIGN == 'true'
+        uses: Azure/artifact-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82 # v2.0.0
+        with:
+          endpoint: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
+          files: |
+            ${{ github.workspace }}\artifacts\publish\XivVault.Cli\xiv-vault.exe
+            ${{ github.workspace }}\artifacts\publish\XivVault.Desktop\XIV-Vault.exe
+
       - name: Smoke test the published CLI
         shell: pwsh
         run: ./scripts/smoke-test.ps1 -Cli artifacts/publish/XivVault.Cli/xiv-vault.exe
 
-      # Setup.exe and the update packages installed copies download. The previous published
-      # release is fetched first so vpk can add a small delta update from it.
-      - name: Installer and updates
+      - name: Write the Artifact Signing metadata
+        if: env.SIGN == 'true'
+        shell: pwsh
+        env:
+          ENDPOINT: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
+          ACCOUNT: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
+          PROFILE: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
         run: |
+          [ordered]@{ Endpoint = $env:ENDPOINT; CodeSigningAccountName = $env:ACCOUNT; CertificateProfileName = $env:PROFILE } |
+            ConvertTo-Json | Out-File -Encoding utf8NoBOM "$env:RUNNER_TEMP/signing.json"
+
+      # Setup.exe and the update packages installed copies download. On tag builds the previous published
+      # release is fetched first so vpk can add a small delta update from it; a manual run's version may be
+      # lower than the latest release, which vpk refuses.
+      - name: Installer and updates
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
           dotnet tool restore
-          dotnet vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ github.token }} --outputDir artifacts/velopack
-          dotnet vpk pack --runtime win-x64 --packId XivVault --packVersion ${{ env.VERSION }} --packTitle "XIV Vault" --packAuthors "Hazel Granados" --packDir artifacts/publish/XivVault.Desktop --mainExe XIV-Vault.exe --icon docs/brand/xiv-vault.ico --shortcuts StartMenuRoot --noPortable --outputDir artifacts/velopack
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            dotnet vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ github.token }} --outputDir artifacts/velopack
+          }
+          $sign = @(if ($env:SIGN -eq 'true') { '--azureTrustedSignFile', "$env:RUNNER_TEMP/signing.json" })
+          dotnet vpk pack --runtime win-x64 --packId XivVault --packVersion $env:VERSION --packTitle "XIV Vault" --packAuthors "Hazel Granados" --packDir artifacts/publish/XivVault.Desktop --mainExe XIV-Vault.exe --icon docs/brand/xiv-vault.ico --shortcuts StartMenuRoot --noPortable --outputDir artifacts/velopack @sign
+
+      - name: Check the signatures
+        if: env.SIGN == 'true'
+        shell: pwsh
+        run: |
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter signtool.exe |
+            Where-Object FullName -like '*\x64\*' | Sort-Object FullName -Descending | Select-Object -First 1
+          $package = New-Item -ItemType Directory "$env:RUNNER_TEMP/full-package"
+          tar -xf "artifacts/velopack/XivVault-$env:VERSION-full.nupkg" -C $package
+          $files = @(
+            'artifacts/velopack/XivVault-win-Setup.exe'
+            'artifacts/publish/XivVault.Cli/xiv-vault.exe'
+            'artifacts/publish/XivVault.Desktop/XIV-Vault.exe'
+          ) + (Get-ChildItem "$package/lib/app" -Recurse -Include *.exe, *.dll).FullName
+          foreach ($file in $files) {
+            & $signtool.FullName verify /pa $file
+            if ($LASTEXITCODE -ne 0) { throw "$file isn't signed" }
+          }
 
       - name: Package
         shell: pwsh
@@ -82,6 +155,7 @@ jobs:
   # The only job with write access. It runs no repository code, only the GitHub CLI.
   release:
     needs: build
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
       contents: write
