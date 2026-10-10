@@ -65,10 +65,19 @@ internal sealed class BackupCommand(
     {
         var record = result.Record;
         var manifest = result.Manifest;
-        var what = manifest.Contents.DalamudConfig
-            ? $"{Formatting.Count(manifest.Statistics.PluginConfigCount, "plugin configuration")} and Dalamud settings"
-            : Formatting.Count(manifest.Statistics.PluginConfigCount, "plugin configuration");
-        Output.Success($"Backed up {what}");
+        var what = new List<string> { Formatting.Count(manifest.Statistics.PluginConfigCount, "plugin configuration") };
+        if (manifest.Contents.DalamudConfig)
+        {
+            what.Add("Dalamud settings");
+        }
+
+        if (manifest.Contents.CharacterSettings || manifest.Contents.SystemSettings)
+        {
+            var characters = manifest.Statistics.CharacterCount;
+            what.Add(characters > 0 ? $"game settings for {Formatting.Count(characters, "character")}" : "game settings");
+        }
+
+        Output.Success($"Backed up {Formatting.JoinWords(what)}");
         Output.Detail($"{record.FileName} · {Formatting.Bytes(record.SizeBytes)} · verified sha256 {ArchiveValidator.Short(record.ArchiveSha256 ?? "")}");
         var saved = $"Saved to {paths.Friendly(Path.GetDirectoryName(record.FilePath)!)}";
         if (result.RemovedByRetention.Count > 0)

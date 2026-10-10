@@ -32,6 +32,7 @@ internal sealed class ConfigShowCommand(CliOutput output, IConfigStore configSto
         grid.AddRow($"[{CliOutput.Dim}]destination[/]", Markup.Escape(config.BackupDestination!) + (friendly == config.BackupDestination ? "" : $" [{CliOutput.Dim}]({Markup.Escape(friendly)})[/]"));
         grid.AddRow($"[{CliOutput.Dim}]retention[/]", $"keep latest {config.RetentionCount}");
         grid.AddRow($"[{CliOutput.Dim}]include-ui[/]", config.IncludeDalamudUi ? "yes" : "no");
+        grid.AddRow($"[{CliOutput.Dim}]include-game[/]", config.IncludeGameSettings ? "yes" : "no");
         grid.AddRow($"[{CliOutput.Dim}]compression[/]", config.Compression.ToString().ToLowerInvariant());
         grid.AddRow($"[{CliOutput.Dim}]source[/]", config.XivLauncherPathOverride is { } source ? Markup.Escape(source) : "auto (detected)");
         grid.AddRow($"[{CliOutput.Dim}]schedule[/]", Markup.Escape(config.Schedule.Enabled ? Formatting.Schedule(config.Schedule) : "off"));
@@ -46,7 +47,7 @@ internal sealed class ConfigSetCommand(CliOutput output, IConfigStore configStor
     internal sealed class Settings : GlobalSettings
     {
         [CommandArgument(0, "<KEY>")]
-        [Description("destination, retention, include-ui, compression or source.")]
+        [Description("destination, retention, include-ui, include-game, compression or source.")]
         public string Key { get; init; } = "";
 
         [CommandArgument(1, "<VALUE>")]
@@ -67,11 +68,14 @@ internal sealed class ConfigSetCommand(CliOutput output, IConfigStore configStor
             "include-ui" => bool.TryParse(value, out var include) || TryYesNo(value, out include)
                 ? config with { IncludeDalamudUi = include }
                 : throw Invalid("include-ui must be true or false."),
+            "include-game" => bool.TryParse(value, out var includeGame) || TryYesNo(value, out includeGame)
+                ? config with { IncludeGameSettings = includeGame }
+                : throw Invalid("include-game must be true or false."),
             "compression" => Enum.TryParse<CompressionPreset>(value, ignoreCase: true, out var preset) && Enum.IsDefined(preset)
                 ? config with { Compression = preset }
                 : throw Invalid("compression must be fast, balanced or maximum."),
             "source" => config with { XivLauncherPathOverride = value.Equals("auto", StringComparison.OrdinalIgnoreCase) ? null : Path.GetFullPath(value) },
-            _ => throw Invalid($"Unknown setting '{settings.Key}'. Use destination, retention, include-ui, compression or source."),
+            _ => throw Invalid($"Unknown setting '{settings.Key}'. Use destination, retention, include-ui, include-game, compression or source."),
         };
 
         configStore.Save(config);

@@ -44,6 +44,8 @@ internal sealed class StatusCommand(
             grid.AddRow($"[{CliOutput.Dim}]Plugin configs[/]", count.ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
 
+        grid.AddRow($"[{CliOutput.Dim}]Game settings[/]", GameSettings(status));
+
         grid.AddRow($"[{CliOutput.Dim}]Destination[/]", Markup.Escape(paths.Friendly(status.Destination))
             + (status.DestinationAvailable ? "" : $" [{CliOutput.Warn}](not created yet or unavailable)[/]"));
         grid.AddRow($"[{CliOutput.Dim}]Backups[/]", Markup.Escape($"{Formatting.Count(status.Backups.Count, "backup")} · {Formatting.Bytes(status.TotalBytes)} · keeping latest {status.Config.RetentionCount}"));
@@ -61,6 +63,29 @@ internal sealed class StatusCommand(
         Output.Markup($"[bold]XIV Vault[/] [{CliOutput.Dim}]{XivVaultInfo.Version}[/]");
         Output.Write(grid);
         return 0;
+    }
+
+    /// <summary>Characters are counted, never named.</summary>
+    private static string GameSettings(XivVaultStatus status)
+    {
+        var game = status.Game;
+        if (!game.Found)
+        {
+            return $"[{CliOutput.Dim}]none on this PC yet[/]";
+        }
+
+        if (!status.Config.IncludeGameSettings)
+        {
+            return $"[{CliOutput.Dim}]not backed up (turn on with: xiv-vault config set include-game yes)[/]";
+        }
+
+        var parts = new List<string> { Formatting.Count(game.CharacterCount, "character") };
+        if (game.HasSystemSettings)
+        {
+            parts.Add("system settings");
+        }
+
+        return Markup.Escape(string.Join(" · ", parts));
     }
 
     private static string State(XivVaultStatus status) => status.State switch

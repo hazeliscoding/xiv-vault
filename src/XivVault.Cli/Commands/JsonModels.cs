@@ -20,7 +20,9 @@ internal static class JsonModels
         int? PluginConfigCount,
         string Integrity,
         bool OnlineOnly,
-        string? Problem);
+        string? Problem,
+        int? CharacterCount,
+        bool? SystemSettings);
 
     public sealed record ScheduleJson(
         bool Installed,
@@ -34,6 +36,8 @@ internal static class JsonModels
 
     public sealed record LauncherJson(bool Found, string? Path, string? Layout, string? Version, bool HasConfiguration, string Message);
 
+    public sealed record GameSettingsJson(bool Found, bool Included, int CharacterCount, bool SystemSettings);
+
     public sealed record StatusJson(
         string Version,
         string State,
@@ -46,7 +50,8 @@ internal static class JsonModels
         int BackupCount,
         long TotalBytes,
         int RetentionCount,
-        ScheduleJson Schedule);
+        ScheduleJson Schedule,
+        GameSettingsJson GameSettings);
 
     public sealed record CheckJson(string Label, string Status, string Detail);
 
@@ -63,7 +68,9 @@ internal static class JsonModels
         record.HasManifest ? record.PluginConfigCount : null,
         Formatting.IntegrityLabel(record.Integrity).ToLowerInvariant(),
         record.IsOnlineOnly,
-        record.Problem);
+        record.Problem,
+        record.HasManifest ? record.CharacterCount : null,
+        record.HasManifest ? record.Manifest!.Contents.SystemSettings : null);
 
     public static ScheduleJson From(ScheduleStatus status) => new(
         status.Installed,
@@ -94,7 +101,8 @@ internal static class JsonModels
             status.Backups.Count,
             status.TotalBytes,
             status.Config.RetentionCount,
-            From(status.Schedule));
+            From(status.Schedule),
+            new GameSettingsJson(status.Game.Found, status.Config.IncludeGameSettings, status.Game.CharacterCount, status.Game.HasSystemSettings));
     }
 
     public static DoctorJson From(DiagnosticReport report) => new(
@@ -150,6 +158,7 @@ internal static class JsonModels
     {
         DiagnosticArea.XivLauncher => "xivLauncher",
         DiagnosticArea.Dalamud => "dalamud",
+        DiagnosticArea.GameSettings => "gameSettings",
         DiagnosticArea.BackupDestination => "backupDestination",
         _ => "scheduling",
     };

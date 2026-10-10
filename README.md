@@ -52,6 +52,7 @@ xiv-vault doctor                        # health checks; --report for a shareabl
 xiv-vault restore                       # choose from a list
 xiv-vault restore latest                # asks before it changes anything; --yes for scripts
 xiv-vault restore latest --plugin Artisan   # only that plugin; repeat --plugin, add --dalamud-settings
+xiv-vault restore latest --character-settings   # only the game's character settings; add --system-settings for FFXIV.cfg
 xiv-vault schedule weekly --day Sunday --time 18:30
 xiv-vault schedule status
 xiv-vault schedule remove
@@ -59,7 +60,7 @@ xiv-vault config                        # show settings; config set <key> <value
 xiv-vault version
 ```
 
-`config set` takes `destination`, `retention`, `include-ui`, `compression` (`fast`, `balanced`, `maximum`) and `source` (the XIVLauncher folder, or `auto`). Add `--verbose` to any command to see each step.
+`config set` takes `destination`, `retention`, `include-ui`, `include-game` (the game's own settings, on by default), `compression` (`fast`, `balanced`, `maximum`) and `source` (the XIVLauncher folder, or `auto`). Add `--verbose` to any command to see each step.
 
 Exit codes are stable, so scripts can rely on them:
 

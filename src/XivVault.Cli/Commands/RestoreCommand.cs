@@ -33,12 +33,20 @@ internal sealed class RestoreCommand(
         public string? Source { get; init; }
 
         [CommandOption("--plugin <NAME>")]
-        [Description("Restore only this plugin's settings. Repeat it to choose more plugins. Dalamud settings stay as they are unless --dalamud-settings is also given.")]
+        [Description("Restore only this plugin's settings. Repeat it to choose more plugins. Other settings stay as they are unless their own option is also given.")]
         public string[] Plugins { get; init; } = [];
 
         [CommandOption("--dalamud-settings")]
-        [Description("Restore Dalamud's own settings: the Dalamud config, the plugin collection database and the UI layout. On its own, no plugin settings are restored.")]
+        [Description("Restore Dalamud's own settings: the Dalamud config, the plugin collection database and the UI layout. On its own, nothing else is restored.")]
         public bool DalamudSettings { get; init; }
+
+        [CommandOption("--character-settings")]
+        [Description("Restore the game's character settings: each character's HUD layout, hotbars, keybinds, macros and gear sets, with shared macros and appearance saves. On its own, nothing else is restored.")]
+        public bool CharacterSettings { get; init; }
+
+        [CommandOption("--system-settings")]
+        [Description("Restore the game's system settings (FFXIV.cfg): graphics, sound, display and more. They hold the resolution and monitor, which may not suit another PC.")]
+        public bool SystemSettings { get; init; }
     }
 
     protected override async Task<int> RunAsync(Settings settings, CancellationToken cancellationToken)
@@ -56,8 +64,8 @@ internal sealed class RestoreCommand(
         }
 
         var preview = await restores.PreviewAsync(record.FilePath, source, cancellationToken);
-        var selection = settings.Plugins.Length > 0 || settings.DalamudSettings
-            ? RestoreSelection.Only(settings.Plugins, settings.DalamudSettings)
+        var selection = settings.Plugins.Length > 0 || settings.DalamudSettings || settings.CharacterSettings || settings.SystemSettings
+            ? RestoreSelection.Only(settings.Plugins, settings.DalamudSettings, settings.CharacterSettings, settings.SystemSettings)
             : RestoreSelection.Everything;
         var inBackup = preview.Backup.PluginNames;
         if (preview.ProblemWith(selection) is { } problem)
@@ -99,6 +107,26 @@ internal sealed class RestoreCommand(
         else
         {
             Item(false, "Dalamud settings, plugin collection database and UI layout — not chosen");
+        }
+
+        if (!selection.CharacterSettings)
+        {
+            Item(false, "Character settings — not chosen");
+        }
+        else
+        {
+            Item(contents.CharacterSettings, contents.CharacterSettings
+                ? $"Character settings · {Formatting.Count(contents.CharacterCount, "character")}"
+                : "Character settings — not in this backup");
+        }
+
+        if (!selection.SystemSettings)
+        {
+            Item(false, "System settings — not chosen");
+        }
+        else
+        {
+            Item(contents.SystemSettings, contents.SystemSettings ? "System settings · FFXIV.cfg" : "System settings — not in this backup");
         }
 
         var undone = preview.ChangesUndoneBy(selection);
@@ -153,7 +181,10 @@ internal sealed class RestoreCommand(
         var restoredPlugins = result.PluginConfigCount > 0 || selection.Plugins is null
             ? $"{Formatting.Count(result.PluginConfigCount, "plugin configuration")} restored"
             : "Plugin configurations unchanged";
-        Output.Detail($"{restoredPlugins}{(result.DalamudConfigRestored ? " · Dalamud settings restored" : "")}");
+        var restoredSettings = (result.DalamudConfigRestored ? " · Dalamud settings restored" : "")
+            + (result.CharacterSettingsRestored ? " · character settings restored" : "")
+            + (result.SystemSettingsRestored ? " · system settings restored" : "");
+        Output.Detail(restoredPlugins + restoredSettings);
         Output.Detail($"Safety snapshot: {result.SafetySnapshot.FileName} in {paths.Friendly(Path.GetDirectoryName(result.SafetySnapshot.FilePath)!)}");
         return 0;
     }

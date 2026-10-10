@@ -45,6 +45,8 @@ public sealed record BackupRecord(
 
     public int PluginConfigCount => Manifest?.Statistics.PluginConfigCount ?? 0;
 
+    public int CharacterCount => Manifest?.Statistics.CharacterCount ?? 0;
+
     public IReadOnlyList<string> PluginNames =>
         Manifest is null ? [] : BackupAllowlist.PluginNames(Manifest.Files.Select(file => file.Path));
 }

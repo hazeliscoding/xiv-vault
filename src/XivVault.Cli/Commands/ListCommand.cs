@@ -70,10 +70,11 @@ internal sealed class ListCommand(
 
         var now = clock.GetLocalNow().DateTime;
         var table = new Table().Border(TableBorder.Simple).BorderColor(Color.Grey);
-        table.AddColumns("Date", "Time", "Size", "Plugins", "Type", "Integrity", "File");
+        table.AddColumns("Date", "Time", "Size", "Plugins", "Characters", "Type", "Integrity", "File");
         table.Columns[2].RightAligned();
         table.Columns[3].RightAligned();
-        table.Columns[6].NoWrap();
+        table.Columns[4].RightAligned();
+        table.Columns[7].NoWrap();
         foreach (var record in records)
         {
             var local = record.CreatedAtUtc.ToLocalTime();
@@ -89,6 +90,7 @@ internal sealed class ListCommand(
                 Markup.Escape(Formatting.Time(local)),
                 Markup.Escape(Formatting.Bytes(record.SizeBytes)),
                 record.HasManifest ? record.PluginConfigCount.ToString(System.Globalization.CultureInfo.InvariantCulture) : $"[{CliOutput.Dim}]–[/]",
+                record.HasManifest ? record.CharacterCount.ToString(System.Globalization.CultureInfo.InvariantCulture) : $"[{CliOutput.Dim}]–[/]",
                 Markup.Escape(Formatting.KindLabel(record)),
                 integrity,
                 $"[{CliOutput.Dim}]{Markup.Escape(record.FileName)}[/]");
