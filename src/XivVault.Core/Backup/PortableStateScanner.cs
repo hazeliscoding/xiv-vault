@@ -25,6 +25,9 @@ public sealed record PortableSnapshot(
     }
 }
 
+/// <summary>The allowlisted files in the game's settings folder, and how many character folders are links.</summary>
+public sealed record GameScan(IReadOnlyList<PortableFile> Files, int LinkedCharacterFolders);
+
 /// <summary>
 /// Lists the allowlisted files in a Dalamud data folder and, when given, the game's settings folder.
 /// Reads metadata only, never contents.
@@ -59,7 +62,7 @@ public sealed class PortableStateScanner(ILogger<PortableStateScanner> logger)
 
         if (gamePath is not null)
         {
-            ScanGame(new DirectoryInfo(gamePath), files);
+            files.AddRange(ScanGame(gamePath).Files);
         }
 
         var pluginNames = BackupAllowlist.PluginNames(files.Select(file => file.ArchivePath));
@@ -77,21 +80,29 @@ public sealed class PortableStateScanner(ILogger<PortableStateScanner> logger)
     /// The game folder itself is followed even when it is a link, as the game follows it. Links
     /// inside it are not, the same as in the XIVLauncher folder.
     /// </summary>
-    private static void ScanGame(DirectoryInfo root, List<PortableFile> files)
+    public GameScan ScanGame(string gamePath)
     {
+        var root = new DirectoryInfo(gamePath);
+        var files = new List<PortableFile>();
         if (!root.Exists)
         {
-            return;
+            return new GameScan(files, 0);
         }
 
+        var linked = 0;
         AddGameFiles(root, BackupAllowlist.GamePrefix, files);
-        foreach (var character in root.EnumerateDirectories())
+        foreach (var character in root.EnumerateDirectories().Where(folder => BackupAllowlist.IsCharacterFolder(folder.Name)))
         {
-            if (!IsLink(character) && BackupAllowlist.IsCharacterFolder(character.Name))
+            if (IsLink(character))
             {
-                AddGameFiles(character, BackupAllowlist.GamePrefix + character.Name + "/", files);
+                linked++;
+                continue;
             }
+
+            AddGameFiles(character, BackupAllowlist.GamePrefix + character.Name + "/", files);
         }
+
+        return new GameScan(files, linked);
     }
 
     private static void AddGameFiles(DirectoryInfo directory, string archivePrefix, List<PortableFile> files)

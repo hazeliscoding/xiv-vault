@@ -92,7 +92,8 @@ public sealed class BackupService(
     /// Writes, verifies and finalizes one archive, then applies retention. Also used by restore for
     /// the pre-restore snapshot, which always includes the UI layout and may be empty on a fresh PC;
     /// restore applies snapshot retention itself, after it is done with the archive it restores.
-    /// Game settings are included whenever the game's settings folder exists.
+    /// Game settings are included when they are turned on, and always in a pre-restore snapshot,
+    /// since a restore may replace them.
     /// </summary>
     internal BackupResult Create(
         XivLauncherInstallation installation,
@@ -112,7 +113,8 @@ public sealed class BackupService(
         PortableSnapshot snapshot;
         try
         {
-            snapshot = scanner.Scan(installation.DataPath, includeDalamudUi, GameSettingsFolder.In(environment));
+            var gamePath = kind == BackupKind.PreRestore || config.IncludeGameSettings ? GameSettingsFolder.In(environment) : null;
+            snapshot = scanner.Scan(installation.DataPath, includeDalamudUi, gamePath);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

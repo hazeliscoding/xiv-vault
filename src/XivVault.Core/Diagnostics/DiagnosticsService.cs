@@ -35,7 +35,7 @@ public sealed class DiagnosticsService(
                 clock.GetUtcNow().UtcDateTime,
                 XivVaultInfo.Version,
                 RuntimeInformation.OSDescription,
-                [.. new[] { Launcher(status), Dalamud(status), Destination(status), Scheduling(status) }.Select(Redact)]),
+                [.. new[] { Launcher(status), Dalamud(status), GameSettings(status), Destination(status), Scheduling(status) }.Select(Redact)]),
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -117,6 +117,38 @@ public sealed class DiagnosticsService(
         }
 
         return new DiagnosticGroup(DiagnosticArea.Dalamud, "Dalamud", checks);
+    }
+
+    /// <summary>Characters are counted, never named: a character folder's name is a content ID.</summary>
+    private static DiagnosticGroup GameSettings(XivVaultStatus status)
+    {
+        var checks = new List<DiagnosticCheck>();
+        var game = status.Game;
+        if (!game.Found)
+        {
+            checks.Add(new("No game settings on this PC yet", DiagnosticStatus.Warning, "the game creates them when it first starts"));
+            return new DiagnosticGroup(DiagnosticArea.GameSettings, "Game settings", checks);
+        }
+
+        checks.Add(status.Config.IncludeGameSettings
+            ? new("Game settings folder found", DiagnosticStatus.Healthy, @"Documents\My Games")
+            : new("Game settings are not backed up", DiagnosticStatus.Warning, "turn them on in Settings"));
+        checks.Add(new(
+            game.CharacterCount == 0 ? "No characters yet" : Formatting.Count(game.CharacterCount, "character") + " found",
+            DiagnosticStatus.Healthy,
+            Formatting.Bytes(game.TotalBytes)));
+        checks.Add(game.HasSystemSettings
+            ? new("System settings found", DiagnosticStatus.Healthy, BackupAllowlist.GameConfigFile)
+            : new("No system settings file", DiagnosticStatus.Healthy, BackupAllowlist.GameConfigFile));
+        if (game.LinkedCharacterFolders > 0)
+        {
+            checks.Add(new(
+                game.LinkedCharacterFolders == 1 ? "A character folder is a link" : $"{game.LinkedCharacterFolders} character folders are links",
+                DiagnosticStatus.Warning,
+                "links are not followed, so those settings are not backed up"));
+        }
+
+        return new DiagnosticGroup(DiagnosticArea.GameSettings, "Game settings", checks);
     }
 
     private DiagnosticGroup Destination(XivVaultStatus status)

@@ -58,7 +58,7 @@ public class DiagnosticsAndStatusTests
     }
 
     [Fact]
-    public async Task Diagnostics_cover_all_four_areas()
+    public async Task Diagnostics_cover_all_five_areas()
     {
         using var host = new TestHost();
         host.CreateLauncher();
@@ -71,13 +71,13 @@ public class DiagnosticsAndStatusTests
 
         Assert.Contains(report.Groups[0].Checks, check => check.Label == "XIVLauncher installed" && check.Detail == "v1.1.2");
         Assert.Equal(
-            [DiagnosticArea.XivLauncher, DiagnosticArea.Dalamud, DiagnosticArea.BackupDestination, DiagnosticArea.Scheduling],
+            [DiagnosticArea.XivLauncher, DiagnosticArea.Dalamud, DiagnosticArea.GameSettings, DiagnosticArea.BackupDestination, DiagnosticArea.Scheduling],
             report.Groups.Select(group => group.Area));
         Assert.Equal(DiagnosticStatus.Healthy, report.Groups[0].Status);
         Assert.Equal(DiagnosticStatus.Healthy, report.Groups[1].Status);
         Assert.Contains(report.Groups[1].Checks, check => check.Label == "5 plugin configs detected");
-        Assert.Contains(report.Groups[2].Checks, check => check.Label == "Latest backup verified");
-        Assert.Contains(report.Groups[3].Checks, check => check.Label == "Automatic backups are off" && check.Status == DiagnosticStatus.Warning);
+        Assert.Contains(report.Groups.Single(group => group.Area == DiagnosticArea.BackupDestination).Checks, check => check.Label == "Latest backup verified");
+        Assert.Contains(report.Groups.Single(group => group.Area == DiagnosticArea.Scheduling).Checks, check => check.Label == "Automatic backups are off" && check.Status == DiagnosticStatus.Warning);
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public class DiagnosticsAndStatusTests
 
         var report = await host.Get<IDiagnosticsService>().RunAsync(Ct);
 
-        Assert.Contains(report.Groups[3].Checks, check => check.Label == "Last run failed" && check.Status == DiagnosticStatus.Error);
+        Assert.Contains(report.Groups.Single(group => group.Area == DiagnosticArea.Scheduling).Checks, check => check.Label == "Last run failed" && check.Status == DiagnosticStatus.Error);
     }
 
     [Fact]

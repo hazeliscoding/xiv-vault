@@ -650,7 +650,7 @@ public class RestoreViewModelTests
 public class DiagnosticsViewModelTests
 {
     [Fact]
-    public async Task Shows_the_four_groups_and_copies_a_report()
+    public async Task Shows_the_five_groups_and_copies_a_report()
     {
         using var host = new DesktopTestHost();
         host.CreateLauncher();
@@ -659,7 +659,7 @@ public class DiagnosticsViewModelTests
 
         await diagnostics.ActivateAsync();
 
-        Assert.Equal(["XIVLauncher", "Dalamud", "Backup destination", "Scheduling"], diagnostics.Groups.Select(group => group.Title));
+        Assert.Equal(["XIVLauncher", "Dalamud", "Game settings", "Backup destination", "Scheduling"], diagnostics.Groups.Select(group => group.Title));
         Assert.Contains("passed", diagnostics.Subtitle);
         Assert.True(diagnostics.HasBanner);
         var copy = diagnostics.CopyReportCommand.ExecuteAsync(null);

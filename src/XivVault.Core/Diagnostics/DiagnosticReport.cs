@@ -14,6 +14,7 @@ public enum DiagnosticArea
 {
     XivLauncher,
     Dalamud,
+    GameSettings,
     BackupDestination,
     Scheduling,
 }

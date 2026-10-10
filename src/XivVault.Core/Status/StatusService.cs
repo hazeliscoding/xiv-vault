@@ -1,6 +1,7 @@
 using XivVault.Core.Backup;
 using XivVault.Core.Configuration;
 using XivVault.Core.Discovery;
+using XivVault.Core.Platform;
 using XivVault.Core.Restore;
 using XivVault.Core.Scheduling;
 using XivVault.Core.State;
@@ -20,6 +21,18 @@ public enum ProtectionState
     NeedsAttention,
 }
 
+/// <summary>
+/// The game's own settings folder. Characters are counted, never named: a character folder's name
+/// is a content ID that identifies the character.
+/// </summary>
+public sealed record GameSettingsState(
+    string FolderPath,
+    bool Found,
+    int CharacterCount,
+    bool HasSystemSettings,
+    long TotalBytes,
+    int LinkedCharacterFolders);
+
 /// <summary>Everything the Overview screen and <c>xiv-vault status</c> show, gathered in one place.</summary>
 public sealed record XivVaultStatus(
     XivVaultConfig Config,
@@ -30,7 +43,8 @@ public sealed record XivVaultStatus(
     ScheduleStatus Schedule,
     RunningApps Running,
     ProtectionState State,
-    string? AttentionReason)
+    string? AttentionReason,
+    GameSettingsState Game)
 {
     public string Destination => Config.BackupDestination!;
 
@@ -54,7 +68,8 @@ public sealed class StatusService(
     PortableStateScanner scanner,
     IBackupCatalog catalog,
     IBackupScheduler scheduler,
-    GameProcessGuard guard) : IStatusService
+    GameProcessGuard guard,
+    IAppEnvironment environment) : IStatusService
 {
     public async Task<XivVaultStatus> GetAsync(bool verifyLatest = true, CancellationToken cancellationToken = default)
     {
@@ -74,9 +89,22 @@ public sealed class StatusService(
                     : catalog.List(destination);
 
                 var (state, reason) = Evaluate(config, launcher, available, backups.FirstOrDefault(record => record.IsRegular), schedule);
-                return new XivVaultStatus(config, launcher, portable, available, backups, schedule, guard.Check(), state, reason);
+                var game = ReadGameSettings(GameSettingsFolder.In(environment));
+                return new XivVaultStatus(config, launcher, portable, available, backups, schedule, guard.Check(), state, reason, game);
             },
             cancellationToken).ConfigureAwait(false);
+    }
+
+    private GameSettingsState ReadGameSettings(string folder)
+    {
+        var scan = scanner.ScanGame(folder);
+        return new GameSettingsState(
+            folder,
+            Directory.Exists(folder),
+            BackupAllowlist.CharacterCount(scan.Files.Select(file => file.ArchivePath)),
+            scan.Files.Any(file => file.Item == PortableItem.GameConfig),
+            scan.Files.Sum(file => file.Size),
+            scan.LinkedCharacterFolders);
     }
 
     private static (ProtectionState, string?) Evaluate(

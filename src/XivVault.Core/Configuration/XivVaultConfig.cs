@@ -17,6 +17,9 @@ public sealed record XivVaultConfig
 
     public bool IncludeDalamudUi { get; set; }
 
+    /// <summary>The game's own settings from Documents\My Games. Safety snapshots hold them either way.</summary>
+    public bool IncludeGameSettings { get; set; } = true;
+
     public CompressionPreset Compression { get; set; } = CompressionPreset.Balanced;
 
     /// <summary>Explicit XIVLauncher folder. Null means "detect it".</summary>

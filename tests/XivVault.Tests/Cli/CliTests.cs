@@ -234,7 +234,7 @@ public class CliTests
         var (_, report) = await Run(host, "doctor", "--report");
 
         Assert.Equal(0, code);
-        Assert.Equal(4, JsonDocument.Parse(json).RootElement.GetProperty("groups").GetArrayLength());
+        Assert.Equal(5, JsonDocument.Parse(json).RootElement.GetProperty("groups").GetArrayLength());
         Assert.StartsWith("XIV Vault diagnostic report", report);
     }
 

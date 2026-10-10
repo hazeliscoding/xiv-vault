@@ -334,7 +334,7 @@ public class OnlineOnlyTests
 
         var report = await host.Get<IDiagnosticsService>().RunAsync(Ct);
 
-        Assert.Contains(report.Groups[2].Checks, check => check.Label == "Latest backup is in the cloud" && check.Status == DiagnosticStatus.Healthy);
+        Assert.Contains(report.Groups.Single(group => group.Area == DiagnosticArea.BackupDestination).Checks, check => check.Label == "Latest backup is in the cloud" && check.Status == DiagnosticStatus.Healthy);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
