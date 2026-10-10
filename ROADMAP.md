@@ -184,8 +184,8 @@ Released as 0.2.0 on 2026-10-08. A real 0.1.2 install updated itself to it from 
 
 ## M10: Signing and game settings (0.4)
 
-- [ ] Sign releases with Artifact Signing: both exes, Setup and the update packages, verified with `signtool` before the draft is made. Manual runs of the release workflow build unsigned.
-- [ ] README: replace the "not code-signed" notes once a signed release is out, and say what SmartScreen shows until reputation builds.
+- [x] Sign releases with Artifact Signing: both exes, Setup and the update packages, verified with `signtool` before the draft is made. Manual runs of the release workflow build unsigned. (0.4.0 signed on its first tag build; every exe in Setup, the zips and the update package verifies with Hazel Granados as the signer.)
+- [x] README: replace the "not code-signed" notes once a signed release is out, and say what SmartScreen shows until reputation builds.
 - [x] Back up the game allowlist under `payload/game/` with manifest version 2, and validate it by the same rules as the Dalamud payload. (On the author's PC: 20 game files and 1 character, with no chat logs, screenshots or old copies.)
 - [x] Restore game settings: in the safety snapshot, by character folder, refused while the game runs, rolled back across both folders on failure, and creating the game folder on a PC where the game has never started.
 - [x] A PC where the game has never started: check whether the game keeps files restored before its first start. (It does; see the 2026-10-09 decisions.)
@@ -194,6 +194,8 @@ Released as 0.2.0 on 2026-10-08. A real 0.1.2 install updated itself to it from 
 - [x] README safety model, AGENTS.md safety contract and `docs/backup-format.md` cover game settings.
 
 **Done when:** a tag build publishes a signed Setup and signed zips, tests back up a fake game folder beside a fake XIVLauncher folder and restore it, the chat log, running-game, content-ID and partial-failure cases fail safely, and on the author's setup a restore brings back the HUD layout, hotbars and macros in game.
+
+Released as 0.4.0 on 2026-10-10.
 
 ## M11: 1.0
 
