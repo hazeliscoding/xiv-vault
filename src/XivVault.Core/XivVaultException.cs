@@ -15,8 +15,10 @@ public enum XivVaultErrorKind
     DestinationUnavailable = 7,
 }
 
+// Messages often quote a path from an IOException, and every front end shows them, so a
+// character's content ID is hidden here once rather than at each place that builds one.
 public sealed class XivVaultException(XivVaultErrorKind kind, string message, Exception? innerException = null)
-    : Exception(message, innerException)
+    : Exception(Backup.BackupAllowlist.ForDisplay(message), innerException)
 {
     public XivVaultErrorKind Kind { get; } = kind;
 }

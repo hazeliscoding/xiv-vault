@@ -1,3 +1,5 @@
+using XivVault.Core.Backup;
+
 namespace XivVault.Core.Platform;
 
 /// <summary>Turns paths into something a person recognizes, and strips the user name from reports.</summary>
@@ -45,7 +47,7 @@ public sealed class PathDisplay(IAppEnvironment environment)
 
     /// <summary>
     /// Replaces the profile folder anywhere in free text, such as an error message that quotes a
-    /// path, so nothing in a shared report carries the user name.
+    /// path, so nothing in a shared report carries the user name or a character's content ID.
     /// </summary>
     public string RedactText(string text)
     {
@@ -56,7 +58,7 @@ public sealed class PathDisplay(IAppEnvironment environment)
 
         var profile = Path.TrimEndingDirectorySeparator(environment.UserProfile);
         var redacted = text.Replace(profile, "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
-        return redacted.Replace(profile.Replace('\\', '/'), "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
+        return BackupAllowlist.ForDisplay(redacted.Replace(profile.Replace('\\', '/'), "%USERPROFILE%", StringComparison.OrdinalIgnoreCase));
     }
 
     private static string Join(string service, string relative) =>

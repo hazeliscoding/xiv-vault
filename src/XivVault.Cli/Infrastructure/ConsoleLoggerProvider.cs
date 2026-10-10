@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
+using XivVault.Core.Backup;
 
 namespace XivVault.Cli.Infrastructure;
 
@@ -34,7 +35,7 @@ internal sealed class ConsoleLoggerProvider(IAnsiConsole console) : ILoggerProvi
                 line += $" ({exception.GetType().Name}: {exception.Message})";
             }
 
-            console.MarkupLine($"[{CliOutput.Dim}]{Markup.Escape(line)}[/]");
+            console.MarkupLine($"[{CliOutput.Dim}]{Markup.Escape(BackupAllowlist.ForDisplay(line))}[/]");
         }
     }
 }

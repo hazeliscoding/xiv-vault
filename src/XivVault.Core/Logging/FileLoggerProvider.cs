@@ -1,12 +1,14 @@
 using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using XivVault.Core.Backup;
 
 namespace XivVault.Core.Logging;
 
 /// <summary>
 /// Daily log files under the XIV Vault data folder, kept for two weeks. Log messages carry paths,
-/// counts and results; callers never pass configuration contents.
+/// counts and results; callers never pass configuration contents. A character's content ID is
+/// hidden from every line, exception messages included.
 /// </summary>
 public sealed class FileLoggerProvider : ILoggerProvider
 {
@@ -99,7 +101,7 @@ public sealed class FileLoggerProvider : ILoggerProvider
                 line.Append(" | ").Append(exception.GetType().Name).Append(": ").Append(exception.Message);
             }
 
-            provider.Write(line.AppendLine().ToString());
+            provider.Write(BackupAllowlist.ForDisplay(line.AppendLine().ToString()));
         }
 
         private static string Level(LogLevel level) => level switch
