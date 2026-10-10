@@ -96,6 +96,10 @@ An independent review of the restore and validation code found failure modes; th
 - **Character settings and system settings,** as the game's own menus call them (Character Configuration, System Configuration). Character settings are each character's folder with the shared macros and appearance saves; system settings are `FFXIV.cfg`. "Game settings" covers both: the switch in Settings and the Diagnostics group use it.
 - **The same names everywhere:** `--character-settings` and `--system-settings` for `xiv-vault restore`, `characterSettings` and `systemSettings` in the manifest's `contents`, and the restore review's choices. Format version 2 was not released yet, so its fields changed with them.
 
+## Decisions (2026-10-10, before 1.0)
+
+- **A failed scheduled backup shows a Windows notification.** Scheduled backups run without a window, so today a failing schedule is only visible when someone opens the app. A backup tool that can fail unnoticed isn't safe to trust.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
@@ -199,6 +203,7 @@ Released as 0.4.0 on 2026-10-10. A real 0.3.0 install updated itself to it from 
 
 ## M11: 1.0
 
+- [ ] A Windows notification when a scheduled backup fails.
 - [ ] Real 0.1.0 archives kept as test files, which every later version must validate and restore.
 - [ ] The stable parts written down: backup format, CLI commands and options, JSON output, exit codes, and what a major version may change.
 - [ ] A release checklist that installs the previous release and updates it before a draft is published.
