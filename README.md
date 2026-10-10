@@ -14,7 +14,7 @@ Download the latest release from [Releases](https://github.com/hazeliscoding/xiv
 - `xiv-vault-desktop-win-x64.zip`: the same app as a portable copy. Unzip it anywhere and run `XIV-Vault.exe`. A portable copy doesn't update itself.
 - `xiv-vault-cli-win-x64.zip`: the command line. Unzip `xiv-vault.exe` into a folder on your `PATH`. Keep it out of the app's folder: Windows sees `xiv-vault.exe` and `XIV-Vault.exe` as the same name.
 
-All three are self-contained: no .NET install is needed. Check downloads against `SHA256SUMS` on the release page. The builds are not code-signed yet, so Windows SmartScreen may ask you to confirm the first run. The `.nupkg` and `releases.win.json` files on each release are what installed copies download to update.
+All three are self-contained: no .NET install is needed. Check downloads against `SHA256SUMS` on the release page. Setup and both programs are code-signed, with Hazel Granados as the publisher. While a release is new, Windows SmartScreen may still ask you to confirm Setup, until enough people have downloaded it. The `.nupkg` and `releases.win.json` files on each release are what installed copies download to update.
 
 ## Using the app
 
@@ -153,7 +153,7 @@ The archive format is documented in [docs/backup-format.md](docs/backup-format.m
 - Plugins are reinstalled by Dalamud on the new PC; XIV Vault restores their settings, not the plugins.
 - Some plugins keep data outside `pluginConfigs\`; that data is not included.
 - Restoring replaces settings for the plugins in the backup. Plugins configured after the backup return to their earlier settings; the restore review lists them, and the safety backup keeps today's values.
-- Builds are not code-signed yet.
+- A new release's Setup may get a SmartScreen warning until it has been downloaded enough to build a reputation.
 
 ## Troubleshooting
 
