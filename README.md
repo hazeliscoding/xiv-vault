@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/brand/lockup-dark.svg" alt="XIV Vault" height="48"></p>
 
-**Move to a new PC without losing your Dalamud setup.** XIV Vault backs up the portable part of your XIVLauncher / Dalamud configuration (plugin settings, Dalamud settings, the plugin database) into a plain ZIP in a folder you choose, such as OneDrive, Dropbox, a NAS or an external drive. On a fresh PC you install XIVLauncher, open XIV Vault and restore.
+**Move to a new PC without losing your Dalamud setup.** XIV Vault backs up the portable part of your XIVLauncher / Dalamud configuration (plugin settings, Dalamud settings, the plugin database) and the game's own settings (HUD layout, hotbars, keybinds, macros, gear sets) into a plain ZIP in a folder you choose, such as OneDrive, Dropbox, a NAS or an external drive. On a fresh PC you install XIVLauncher, open XIV Vault and restore.
 
 XIV Vault is a Windows desktop app and a command-line tool built on one engine. Every backup is hash-verified, and every restore takes a safety backup first.
 
@@ -22,10 +22,10 @@ All three are self-contained: no .NET install is needed. Check downloads against
 |---|---|
 | **Overview** | Whether your setup is protected, the last backup, and **Back Up Now**. |
 | **Backups** | Every backup with its size, plugin count, type (Manual, Scheduled, Pre-Restore) and integrity. Inspect, restore, show in Explorer or delete. |
-| **Restore** | A four-step wizard: choose a backup, review what changes, run safety checks, restore. In the review you can restore just some plugins, or leave Dalamud settings as they are. Nothing on disk changes before the last step. |
+| **Restore** | A four-step wizard: choose a backup, review what changes, run safety checks, restore. In the review you can restore just some plugins, or leave Dalamud settings, character settings or system settings as they are. Nothing on disk changes before the last step. |
 | **Schedule** | Automatic backups through Windows Task Scheduler: daily, weekly or at Windows login. |
-| **Diagnostics** | Checks for XIVLauncher, Dalamud, the backup folder and scheduling, plus a report you can paste into an issue. |
-| **Settings** | Backup folder, how many backups to keep, the UI layout option, compression, and the XIVLauncher folder. |
+| **Diagnostics** | Checks for XIVLauncher, Dalamud, the backup folder, scheduling and game settings, plus a report you can paste into an issue. |
+| **Settings** | Backup folder, how many backups to keep, the UI layout and game settings options, compression, and the XIVLauncher folder. |
 
 ![Backups](docs/screenshots/backups-inspect.png)
 
@@ -37,7 +37,9 @@ All three are self-contained: no .NET install is needed. Check downloads against
 2. Make your backups available: sign in to OneDrive or Dropbox, or plug in the drive. Backups that stay in the cloud are fine: XIV Vault lists them without downloading them.
 3. Install XIV Vault with Setup and open it. If the backups are in `OneDrive\XIV Vault`, XIV Vault finds them on its own. Otherwise choose the folder in **Settings**, or pick a backup file in the restore wizard.
 4. Open **Restore**, choose the newest backup, review it, and let the safety checks run. XIVLauncher and FFXIV must be closed. A backup that is still in the cloud downloads first, and XIV Vault shows its size before it starts.
-5. Select **Restore Configuration**, then open XIVLauncher. Dalamud downloads your plugins again and they pick up their restored settings.
+5. Select **Restore Configuration**, then open XIVLauncher. Dalamud downloads your plugins again and they pick up their restored settings, and the game finds your HUD layout, hotbars and macros when you log in. The game doesn't need to have started on the new PC first.
+
+System settings hold the resolution and monitor. If the new PC has a different screen, leave **System settings** out in the review and set graphics again in the game.
 
 ## Command line
 
@@ -114,22 +116,34 @@ From the XIVLauncher folder (`%AppData%\XIVLauncher`, or its `dalamudUserData` f
 
 Inside `pluginConfigs\`, temporary files and `logs`/`cache` folders are skipped, and links are not followed.
 
+From the game's settings folder (`Documents\My Games\FINAL FANTASY XIV - A Realm Reborn`):
+
+| Item | What it is |
+|---|---|
+| `FFXIV_CHR…\*.DAT` | Character settings, for each character: HUD layout, hotbars, keybinds, macros, gear sets, log filters and more |
+| `MACROSYS.dat` | Shared macros |
+| `FFXIV_CHARA_*.dat` | Appearance saves from character creation and the aesthetician |
+| `FFXIV.cfg` | System settings: graphics, sound, display and more, including the resolution and monitor |
+
+The files are copied byte for byte; XIV Vault never looks inside them. Each character's folder is named by a content ID that identifies the character, so XIV Vault counts characters and never shows or logs the ID. Turn game settings off in **Settings**, or with `xiv-vault config set include-game no`; safety backups hold them either way.
+
 ## What is not backed up
 
 - **Plugin binaries** (`installedPlugins\`). XIV Vault does not copy or install plugins. Dalamud downloads them again on the new PC.
 - Dalamud's runtime and hooks (`runtime\`, `addon\`), logs, caches and anything downloaded.
-- XIVLauncher's own settings and your game files.
+- XIVLauncher's own settings and the game install.
+- From the game's settings folder: chat logs, screenshots, `cfgcopy`, `*.old` copies and `FFXIV_BOOT.cfg`.
 
 ## Safety model
 
-- **Allowlist.** XIV Vault reads and writes only the items above. It never archives the whole XIVLauncher folder.
+- **Allowlist.** XIV Vault reads and writes only the items above. It never archives the whole XIVLauncher folder or the game's settings folder.
 - **Verified backups.** Each archive is written as `*.zip.tmp`, read back, and checked against the SHA-256 of every file before it is renamed. A failed backup never looks like a finished one, and old backups are only removed after a new one is verified. XIV Vault also checks the latest backup when it opens, and the backup being restored; `xiv-vault list --verify` checks them all.
-- **Guarded restores.** Before anything changes, XIV Vault checks the manifest and every hash, refuses while XIVLauncher or FFXIV runs, and takes a **pre-restore safety backup** (the newest 3 are kept). The safety backup holds everything a full restore would replace, even when you restore only some plugins. The archive is unpacked into a temporary folder and checked again, never extracted over XIVLauncher. Files the backup doesn't contain are never deleted. If a restore fails part-way, every file it changed is put back.
+- **Guarded restores.** Before anything changes, XIV Vault checks the manifest and every hash, refuses while XIVLauncher or FFXIV runs (the game rewrites its settings when you log out), and takes a **pre-restore safety backup** (the newest 3 are kept). The safety backup holds everything a full restore would replace, even when you restore only some plugins or settings. Each character's settings go back to the folder with the same name, never to another character. The archive is unpacked into a temporary folder and checked again, never extracted over XIVLauncher. Files the backup doesn't contain are never deleted. If a restore fails part-way, every file it changed is put back, in both folders.
 - **Hostile archives are refused:** paths with `..`, absolute or drive paths, files outside the allowlist, files the manifest doesn't list, manifests that misdescribe their files, and checksum mismatches.
-- **No links.** Backups don't follow links (junctions or symlinks) inside the XIVLauncher folder, and restores refuse to write through them.
+- **No links.** Backups don't follow links (junctions or symlinks) inside the XIVLauncher folder or the game's settings folder, and restores refuse to write through them.
 - **One operation at a time.** A scheduled backup and the app never write to the backup folder at the same time.
 - **Nothing is executed** from a backup, and **nothing about you leaves your PC**: no accounts, no telemetry. The only network call is the installed app's update check, which reads the public release list from GitHub, sends nothing about you or your backups, and can be turned off in **Settings**.
-- **Logs and diagnostic reports** hold paths, counts and results, never configuration contents.
+- **Logs and diagnostic reports** hold paths, counts and results, never configuration contents, and never a character's content ID.
 
 The archive format is documented in [docs/backup-format.md](docs/backup-format.md). Backups open in any ZIP tool.
 

@@ -24,12 +24,13 @@ These are the working rules for agents in this repo. XIV Vault (Apache-2.0) back
 
 XIV Vault is trusted with configuration people spent years building. Never break these rules.
 
-- **Allowlist only.** Back up and restore `pluginConfigs/`, `dalamudConfig.json`, `dalamudVfs.db` and optionally `dalamudUI.ini`. Never `installedPlugins/`, `runtime/`, `addon/`, logs, caches or binaries. Never archive the whole XIVLauncher folder.
+- **Allowlist only.** Back up and restore `pluginConfigs/`, `dalamudConfig.json`, `dalamudVfs.db` and optionally `dalamudUI.ini`, and from the game's settings folder `FFXIV.cfg`, `MACROSYS.dat`, `FFXIV_CHARA_*.dat` and the `.DAT` files directly inside each `FFXIV_CHR*` folder. Never `installedPlugins/`, `runtime/`, `addon/`, logs, caches, binaries, chat logs or screenshots. Never archive the whole XIVLauncher folder or the game's settings folder. `BackupAllowlist.TryClassify` is the one place that decides.
 - **Atomic backups.** Write `*.zip.tmp`, verify it, then rename. Retention runs only after a backup is verified and renamed.
-- **Restore is guarded.** Validate the manifest, schema and every hash; refuse while XIVLauncher or FFXIV runs; always take a pre-restore snapshot; extract to a temp folder, never over the XIVLauncher folder; write only allowlisted paths; never delete files the backup doesn't contain.
+- **Restore is guarded.** Validate the manifest, schema and every hash; refuse while XIVLauncher or FFXIV runs; always take a pre-restore snapshot; extract to a temp folder, never over the XIVLauncher folder; write only allowlisted paths, and each character's files only to the folder with the same name; never delete files the backup doesn't contain.
 - **Reject unsafe archives:** `..`, rooted or drive paths, entries outside `payload/`, files missing from the manifest, checksum mismatches.
 - **Never execute anything from a backup.**
 - **Never log or report configuration contents.** Logs and the diagnostic report hold paths, counts, versions and results only.
+- **Never show a content ID.** A character folder's name (`FFXIV_CHR` and a number) identifies the character. Count characters instead; anything that shows or logs a path goes through `BackupAllowlist.ForDisplay`.
 - The safety snapshot and hash verification are not settings. Don't add a way to turn them off.
 - **Updates never interrupt work.** An update installs only when the user chooses it, never while a backup or restore runs or another copy is open, and never at startup. The update check is the only network call; it sends nothing about the user or their backups. No silent installs, no telemetry.
 
