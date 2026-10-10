@@ -4,6 +4,8 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-10
+
 ### Added
 
 - Game settings. Backups also hold the game's own settings from `Documents\My Games\FINAL FANTASY XIV - A Realm Reborn`: each character's HUD layout, hotbars, keybinds, macros and gear sets, the shared macros, appearance saves, and system settings (`FFXIV.cfg`). Chat logs, screenshots and old copies stay out. A restore puts each character's settings back in that character's own folder, works on a PC where the game has never started, and refuses while the game runs.
@@ -66,7 +68,8 @@ First release.
 - Installer: `xiv-vault-setup-win-x64.exe` installs the desktop app for the current user and keeps it up to date from GitHub releases. Updates install only when chosen in Settings, wait for running backups, restores and scheduled backups, and the check can be turned off. Uninstalling removes the scheduled backup task.
 - Self-contained Windows x64 builds: `xiv-vault-setup-win-x64.exe`, plus portable `xiv-vault-desktop-win-x64.zip` and `xiv-vault-cli-win-x64.zip`.
 
-[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.1...v0.1.2
