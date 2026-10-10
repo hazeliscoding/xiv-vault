@@ -99,6 +99,7 @@ An independent review of the restore and validation code found failure modes; th
 ## Decisions (2026-10-10, before 1.0)
 
 - **A failed scheduled backup shows a Windows notification.** Scheduled backups run without a window, so today a failing schedule is only visible when someone opens the app. A backup tool that can fail unnoticed isn't safe to trust.
+- **Steam Deck support comes after 1.0.** XIVLauncher.Core, native or Flatpak, keeps the same Dalamud files in `~/.xlcore` and the game's settings in `~/.xlcore/ffxivConfig`, so the backup format and commands need no change and nothing 1.0 makes stable depends on it. It needs Linux builds, a systemd timer for scheduling, and a real Deck to prove the running-game check sees FFXIV under Wine.
 
 ## M0: Bootstrap
 
@@ -215,6 +216,7 @@ Released as 0.4.0 on 2026-10-10. A real 0.3.0 install updated itself to it from 
 
 - XIVLauncher layouts and folders that users report, fixed in patch releases as they come in.
 - Light theme.
+- Steam Deck and Linux, with XIVLauncher.Core: restore a Windows backup onto a Deck.
 
 ## Not planned
 
