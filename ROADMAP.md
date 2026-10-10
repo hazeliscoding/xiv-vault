@@ -91,6 +91,11 @@ An independent review of the restore and validation code found failure modes; th
 - **Everything Windows runs is signed.** Both exes are signed right after publishing, so the zips and the update packages carry signed copies; `vpk pack` then signs Setup and its own files and skips what is already signed. The build fails if a signature doesn't verify.
 - **SmartScreen still warns** about a newly signed Setup until downloads build reputation. It then names the publisher instead of "Unknown publisher".
 
+## Decisions (2026-10-10, naming the game choices)
+
+- **Character settings and system settings,** as the game's own menus call them (Character Configuration, System Configuration). Character settings are each character's folder with the shared macros and appearance saves; system settings are `FFXIV.cfg`. "Game settings" covers both: the switch in Settings and the Diagnostics group use it.
+- **The same names everywhere:** `--character-settings` and `--system-settings` for `xiv-vault restore`, `characterSettings` and `systemSettings` in the manifest's `contents`, and the restore review's choices. Format version 2 was not released yet, so its fields changed with them.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
