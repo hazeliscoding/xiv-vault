@@ -195,7 +195,7 @@ Released as 0.2.0 on 2026-10-08. A real 0.1.2 install updated itself to it from 
 
 **Done when:** a tag build publishes a signed Setup and signed zips, tests back up a fake game folder beside a fake XIVLauncher folder and restore it, the chat log, running-game, content-ID and partial-failure cases fail safely, and on the author's setup a restore brings back the HUD layout, hotbars and macros in game.
 
-Released as 0.4.0 on 2026-10-10.
+Released as 0.4.0 on 2026-10-10. A real 0.3.0 install updated itself to it from GitHub.
 
 ## M11: 1.0
 
