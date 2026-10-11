@@ -2,8 +2,8 @@
   Writes the winget manifests for a published release into artifacts/winget, in the folder layout
   microsoft/winget-pkgs uses, and validates them:
 
-    HazelGranados.XIVVault      the app, installed with Setup
-    HazelGranados.XIVVault.CLI  the command line, from the portable zip
+    hazeliscoding.XIVVault      the app, installed with Setup
+    hazeliscoding.XIVVault.CLI  the command line, from the portable zip
 
   Hashes come from the release's SHA256SUMS, so nothing is downloaded but that file.
 
@@ -33,7 +33,7 @@ foreach ($line in Get-Content $sumsFile) {
 Remove-Item $sumsFile
 
 $download = "https://github.com/$repo/releases/download/$tag"
-$out = Join-Path $PSScriptRoot "../artifacts/winget/manifests/h/HazelGranados/XIVVault"
+$out = Join-Path $PSScriptRoot "../artifacts/winget/manifests/h/hazeliscoding/XIVVault"
 
 function Write-Manifest($folder, $file, $text) {
     New-Item -ItemType Directory -Force $folder | Out-Null
@@ -101,7 +101,7 @@ Description: |-
 
 # The app updates itself from GitHub releases. Running Setup over it closes every running copy,
 # which could interrupt a backup or restore, so `winget upgrade --all` leaves it alone.
-Write-Package 'HazelGranados.XIVVault' (Join-Path $out $Version) @"
+Write-Package 'hazeliscoding.XIVVault' (Join-Path $out $Version) @"
 InstallerType: exe
 Scope: user
 InstallModes:
@@ -131,7 +131,7 @@ ShortDescription: Back up and restore your XIVLauncher and Dalamud plugin settin
 $description
 "@
 
-Write-Package 'HazelGranados.XIVVault.CLI' (Join-Path $out "CLI/$Version") @"
+Write-Package 'hazeliscoding.XIVVault.CLI' (Join-Path $out "CLI/$Version") @"
 InstallerType: zip
 NestedInstallerType: portable
 NestedInstallerFiles:
