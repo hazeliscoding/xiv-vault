@@ -208,7 +208,8 @@ Released as 0.4.0 on 2026-10-10. A real 0.3.0 install updated itself to it from 
 - [ ] Real 0.1.0 archives kept as test files, which every later version must validate and restore.
 - [ ] The stable parts written down: backup format, CLI commands and options, JSON output, exit codes, and what a major version may change.
 - [ ] A release checklist that installs the previous release and updates it before a draft is published.
-- [ ] Every screen checked with Narrator.
+- [ ] An accessibility check of every screen: Narrator, the keyboard alone, and WCAG AA contrast.
+- [ ] An Impeccable UI audit of every screen, with fixes that keep to the approved mockup.
 
 **Done when:** every item above is checked, the last two releases updated cleanly from the one before, and no data-loss issue is open.
 
