@@ -94,9 +94,10 @@ ManifestVersion: $schema
 $description = @"
 Description: |-
   Move to a new PC without losing your Dalamud setup. XIV Vault backs up the portable part of your
-  XIVLauncher / Dalamud configuration (plugin settings, Dalamud settings, the plugin database) into a
-  plain ZIP in a folder you choose, such as OneDrive, Dropbox, a NAS or an external drive. Every backup
-  is hash-verified, and every restore takes a safety backup first.
+  XIVLauncher / Dalamud configuration (plugin settings, Dalamud settings, the plugin database) and the
+  game's own settings (HUD layout, hotbars, keybinds, macros, gear sets) into a plain ZIP in a folder
+  you choose, such as OneDrive, Dropbox, a NAS or an external drive. Every backup is hash-verified, and
+  every restore takes a safety backup first.
 "@
 
 # The app updates itself from GitHub releases. Running Setup over it closes every running copy,
@@ -127,7 +128,7 @@ Installers:
 "@ @"
 PackageName: XIV Vault
 Moniker: xiv-vault
-ShortDescription: Back up and restore your XIVLauncher and Dalamud plugin settings.
+ShortDescription: Back up and restore your Dalamud plugin settings and FFXIV game settings.
 $description
 "@
 
@@ -146,7 +147,7 @@ Installers:
 "@ @"
 PackageName: XIV Vault CLI
 Moniker: xiv-vault-cli
-ShortDescription: Command line for XIV Vault, which backs up and restores your XIVLauncher and Dalamud plugin settings.
+ShortDescription: Command line for XIV Vault, which backs up and restores your Dalamud plugin settings and FFXIV game settings.
 $description
 "@
 
