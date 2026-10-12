@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using XivVault.Core.Plugins;
@@ -51,10 +52,21 @@ public class PluginPackageTests : IDisposable
             }
         });
 
+    // Raw keys before the typical manifest's own: a repeat, a lone surrogate escape, or a key that must come first.
+    private static FakePluginPackage WithLeadingKeys(string keys) =>
+        new FakePluginPackage().Manifest("{" + keys + "," + FakePluginPackage.TypicalManifest().ToJsonString()[1..]).Dll();
+
     private static byte[] ExpectedManifest(byte[] packaged, bool testing, string installedFromUrl)
     {
         using var document = JsonDocument.Parse(packaged);
         return PluginManifestFile.ForInstall(document.RootElement, PluginId, testing, installedFromUrl, "stable", 15);
+    }
+
+    // A volume can have 8.3 names turned off, and then nothing reads as another name.
+    private bool MakesShortNames()
+    {
+        File.WriteAllText(Path.Combine(_env.Root, "ShortNameProbe.txt"), "");
+        return File.Exists(Path.Combine(_env.Root, "SHORTN~1.TXT"));
     }
 
     [Theory]
@@ -155,6 +167,27 @@ public class PluginPackageTests : IDisposable
     }
 
     [Theory]
+    [InlineData("TESTPL~1.JSO")]
+    [InlineData("TESTPL~1.JSO/inner/file.txt")]
+    public void An_entry_Windows_reads_as_another_by_its_short_name_is_refused(string name)
+    {
+        Assert.SkipUnless(MakesShortNames(), "This volume makes no 8.3 short names.");
+
+        AssertRefused(FakePluginPackage.Typical().Entry(name, "alias"));
+    }
+
+    [Theory]
+    [InlineData(255, PluginInstallOutcome.Installed)]
+    [InlineData(256, PluginInstallOutcome.PackageRefused)]
+    public void A_name_longer_than_Windows_allows_is_refused(int length, PluginInstallOutcome expected)
+    {
+        var package = FakePluginPackage.Typical().Entry("Assets/" + new string('a', length - 4) + ".txt", "long");
+
+        Assert.Equal(expected, Stage(package));
+        Assert.Equal(expected == PluginInstallOutcome.Installed, Path.Exists(Staging));
+    }
+
+    [Theory]
     [InlineData(0, PluginInstallOutcome.Installed)]
     [InlineData(-1, PluginInstallOutcome.PackageRefused)]
     public void The_entry_cap_counts_every_entry(int slack, PluginInstallOutcome expected)
@@ -242,6 +275,28 @@ public class PluginPackageTests : IDisposable
     public void A_manifest_Dalamud_would_refuse_or_fail_to_load_is_refused(string field, string json)
     {
         AssertRefused(WithManifestValue(field, json));
+    }
+
+    // Newtonsoft fails before it reaches the typical manifest's keys, its ApplicableVersion "any" among them.
+    [Theory]
+    [InlineData(""" "ApplicableVersion": "x" """)]
+    [InlineData(""" "$ref": "1" """)]
+    [InlineData(""" "$values": [] """)]
+    [InlineData(""" "$id": "1", "$ref": "1" """)]
+    [InlineData(""" "$type": null """)]
+    public void A_manifest_Newtonsoft_cannot_read_is_refused(string keys)
+    {
+        AssertRefused(WithLeadingKeys(keys));
+    }
+
+    [Theory]
+    [InlineData(""" "Changelog\ud800": "Not the changelog" """)]
+    [InlineData(""" "\udc00": 1, "$ref": "1" """)]
+    public void A_key_with_a_lone_surrogate_is_dropped_as_Newtonsoft_drops_it(string keys)
+    {
+        Assert.Equal(PluginInstallOutcome.Installed, Stage(WithLeadingKeys(keys)));
+        var typical = Encoding.UTF8.GetBytes(FakePluginPackage.TypicalManifest().ToJsonString());
+        Assert.Equal(ExpectedManifest(typical, false, "OFFICIAL"), File.ReadAllBytes(Path.Combine(Staging, "TestPlugin.json")));
     }
 
     [Theory]

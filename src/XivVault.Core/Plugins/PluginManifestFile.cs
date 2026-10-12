@@ -73,9 +73,12 @@ internal static class PluginManifestFile
     /// The bytes Dalamud's installer writes as a plugin's manifest, from the manifest packaged in the
     /// plugin, with the backup's ID instead of a new one.
     /// </summary>
-    public static byte[] ForInstall(JsonElement packaged, Guid workingPluginId, bool testing, string installedFromUrl, string? dip17Channel, int apiLevel)
+    public static byte[] ForInstall(JsonElement packaged, Guid workingPluginId, bool testing, string installedFromUrl, string? dip17Channel, int apiLevel) =>
+        ForInstall(Read(packaged, apiLevel), workingPluginId, testing, installedFromUrl, dip17Channel);
+
+    // Takes, and changes, what Read returned, so Stage reads a package's manifest once.
+    internal static byte[] ForInstall(Dictionary<string, object?> values, Guid workingPluginId, bool testing, string installedFromUrl, string? dip17Channel)
     {
-        var values = Read(packaged, apiLevel);
         values["WorkingPluginId"] = workingPluginId;
         if (testing)
         {
@@ -105,11 +108,23 @@ internal static class PluginManifestFile
 
         var values = Fields.ToDictionary(field => field.Name, field => field.Default);
         values["DalamudApiLevel"] = apiLevel;
+        var first = true;
         foreach (var property in packaged.EnumerateObject())
         {
+            var key = Key(property);
+
+            // Newtonsoft reads these at the start of an object as its own metadata, and fails on many of their
+            // values; no plugin's manifest starts with one.
+            if (first && key is "$id" or "$type" or "$ref" or "$values")
+            {
+                throw Unreadable();
+            }
+
+            first = false;
+
             // Newtonsoft matches a key exactly, then without case; no two of these names differ only by
             // case, so one lookup without case finds the same field. A repeated key is read again and wins.
-            var index = Array.FindIndex(Fields, field => string.Equals(field.Name, property.Name, StringComparison.OrdinalIgnoreCase));
+            var index = Array.FindIndex(Fields, field => string.Equals(field.Name, key, StringComparison.OrdinalIgnoreCase));
             if (index < 0)
             {
                 continue;
@@ -173,10 +188,11 @@ internal static class PluginManifestFile
             _ => throw Unreadable(),
         },
 
-        // Newtonsoft adds a repeated list to the one it already read.
+        // Newtonsoft adds a repeated list to the one it already read. In place: a manifest can repeat a key
+        // tens of thousands of times, and copying the list each time would take seconds.
         Kind.Strings => value.ValueKind switch
         {
-            JsonValueKind.Array => (current as List<string?> ?? []).Concat(value.EnumerateArray().Select(ReadString)).ToList(),
+            JsonValueKind.Array => Append(current as List<string?> ?? [], value),
             JsonValueKind.Null => null,
             JsonValueKind.String when Text(value) is "" => null,
             _ => throw Unreadable(),
@@ -184,11 +200,24 @@ internal static class PluginManifestFile
         Kind.GameVersion => value.ValueKind switch
         {
             JsonValueKind.Null => null,
-            JsonValueKind.String => Text(value),
+            JsonValueKind.String when IsGameVersion(Text(value)) => Text(value),
             _ => throw Unreadable(),
         },
         _ => ReadString(value),
     };
+
+    private static List<string?> Append(List<string?> list, JsonElement array)
+    {
+        list.AddRange(array.EnumerateArray().Select(ReadString));
+        return list;
+    }
+
+    // Dalamud's GameVersion.Parse: "any" in any case, or 1 to 5 whole numbers, none negative. It reads them in
+    // the game's culture, which can only change the sign characters it accepts.
+    private static bool IsGameVersion(string text) =>
+        text.Equals("any", StringComparison.OrdinalIgnoreCase)
+        || (text.Split('.') is { Length: <= 5 } parts
+            && parts.All(part => int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) && number >= 0));
 
     private static string? ReadString(JsonElement value) => value.ValueKind switch
     {
@@ -200,8 +229,22 @@ internal static class PluginManifestFile
         _ => throw Unreadable(),
     };
 
-    // shortcut: System.Text.Json can't read a lone surrogate escape, which Newtonsoft writes as U+FFFD,
-    // so such a manifest is refused; unescape it by hand if a plugin's manifest ever carries one.
+    // A key holding a lone surrogate escape, which System.Text.Json can't read, comes back null. Newtonsoft
+    // reads the escape as U+FFFD, which no field's name holds, so it drops the key too.
+    private static string? Key(JsonProperty property)
+    {
+        try
+        {
+            return property.Name;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    // shortcut: System.Text.Json can't read a lone surrogate escape, which Newtonsoft reads as U+FFFD, so a
+    // value holding one is refused; unescape it by hand if a plugin's manifest ever carries one.
     private static string Text(JsonElement value)
     {
         try

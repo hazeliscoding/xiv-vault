@@ -72,7 +72,9 @@ internal static class PluginPackage
         foreach (var entry in zip.Entries)
         {
             var path = entry.FullName.Replace('\\', '/');
-            if (!ArchivePaths.IsSafe(path))
+
+            // IsSafe caps the whole path, but Windows also refuses a file or folder name over 255 characters.
+            if (!ArchivePaths.IsSafe(path) || path.Split('/').Any(segment => segment.Length > 255))
             {
                 return false;
             }
@@ -101,21 +103,25 @@ internal static class PluginPackage
             return false;
         }
 
-        var api = dalamudVersion.Major;
-        using var packaged = ReadManifest(manifestEntry);
-        if (!IsInstallable(PluginManifestFile.Read(packaged.RootElement, api), plan, dalamudVersion))
+        var packaged = ReadManifest(manifestEntry, dalamudVersion.Major);
+        if (!IsInstallable(packaged, plan, dalamudVersion))
         {
             return false;
         }
 
         var manifest = PluginManifestFile.ForInstall(
-            packaged.RootElement, plan.Plugin.WorkingPluginId, plan.UseTesting, plan.RepositoryUrl ?? "OFFICIAL", plan.Entry.Dip17Channel, api);
+            packaged, plan.Plugin.WorkingPluginId, plan.UseTesting, plan.RepositoryUrl ?? "OFFICIAL", plan.Entry.Dip17Channel);
 
         // Nothing is ever run: every file is only copied, counting what is read since a zip's recorded sizes can lie.
         long total = 0;
         foreach (var (path, entry) in files)
         {
             var target = ArchivePaths.ResolveUnder(stagingFolder, path);
+            if (IsTaken(target))
+            {
+                return false;
+            }
+
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
             using (var input = entry.Open())
             using (var output = new FileStream(target, FileMode.CreateNew, FileAccess.Write))
@@ -133,7 +139,7 @@ internal static class PluginPackage
     }
 
     // As Dalamud reads it: File.ReadAllText's encoding detection, then JSON as Newtonsoft accepts it.
-    private static JsonDocument ReadManifest(ZipArchiveEntry entry)
+    private static Dictionary<string, object?> ReadManifest(ZipArchiveEntry entry, int apiLevel)
     {
         using var bytes = new MemoryStream();
         long size = 0;
@@ -144,7 +150,22 @@ internal static class PluginPackage
 
         bytes.Position = 0;
         using var reader = new StreamReader(bytes, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-        return JsonDocument.Parse(reader.ReadToEnd(), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+        using var document = JsonDocument.Parse(reader.ReadToEnd(), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+        return PluginManifestFile.Read(document.RootElement, apiLevel);
+    }
+
+    // The work folder is new, so only another entry can be in the way, under a name Windows also reads as this
+    // one or one of its folders: an 8.3 short name such as TESTPL~1.JSO. Nothing exists inside a file, so of
+    // the folders only the nearest one that exists can be a file.
+    private static bool IsTaken(string target)
+    {
+        var folder = Path.GetDirectoryName(target);
+        while (folder is not null && !Path.Exists(folder))
+        {
+            folder = Path.GetDirectoryName(folder);
+        }
+
+        return Path.Exists(target) || File.Exists(folder);
     }
 
     // Dalamud's installer checks the name, version and ID; the rest it only finds out when the plugin fails to load.

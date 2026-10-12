@@ -284,8 +284,25 @@ public class PluginManifestFileTests
     [InlineData("""{ "Tags": "Utility" }""")]
     [InlineData("""{ "Tags": [["nested"]] }""")]
     [InlineData("""{ "ApplicableVersion": 7 }""")]
+    [InlineData("""{ "ApplicableVersion": "x" }""")]
+    [InlineData("""{ "ApplicableVersion": "" }""")]
+    [InlineData("""{ "ApplicableVersion": " any" }""")]
+    [InlineData("""{ "ApplicableVersion": "-3" }""")]
+    [InlineData("""{ "ApplicableVersion": "1.2.3.4.5.6" }""")]
     public void A_value_Dalamud_cannot_convert_is_refused(string packaged)
     {
         Assert.Throws<InvalidDataException>(() => ForInstall(packaged, PluginId));
+    }
+
+    [Theory]
+    [InlineData("aNy")]
+    [InlineData("0")]
+    [InlineData(" 1.+2.-0 ")]
+    [InlineData("2025.01.01.0000.0000")]
+    public void Game_versions_Dalamud_reads_are_written_as_any(string version)
+    {
+        var manifest = ForInstall($$"""{ "ApplicableVersion": "{{version}}" }""", PluginId);
+
+        Assert.Equal("any", Field(manifest, "ApplicableVersion").GetString());
     }
 }
