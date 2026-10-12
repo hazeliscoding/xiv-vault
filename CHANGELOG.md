@@ -6,6 +6,7 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ### Added
 
+- A website, [hazeliscoding.github.io/xiv-vault](https://hazeliscoding.github.io/xiv-vault/), with a user guide for every task. It loads nothing from other sites and has no analytics.
 - A Windows notification when a scheduled backup fails, from the app's task and the CLI's alike. It says only that the backup failed, never a path or the error, since it can appear on a stream. Turn it off under XIV Vault in Windows' notification settings.
 - `docs/cli.md`, a reference for every command, option, exit code and JSON field, with what stays the same from 1.0 on.
 
