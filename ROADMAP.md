@@ -141,6 +141,21 @@ An independent review of the restore and validation code found failure modes; th
 - **Narrow windows adapt with container queries,** below the mockup's 1100 pixels only: Schedule stacks its side column under the settings, and a backup row leaves out the plugin count, then the size. At the mockup's size every screen looks as approved.
 - **Focus has somewhere to go** when the control holding it disappears: `FocusFallback.IsTarget` marks Back Up Now and each restore step's main action.
 
+## Decisions (2026-10-11, Linux and the Steam Deck)
+
+Researched from XIVLauncher.Core's, Dalamud's and Wine's source, the XIVLauncher FAQ, and the Flatpak, Velopack and systemd documentation.
+
+- **Where XIVLauncher.Core keeps its files:** everything is in `~/.xlcore`, natively, as the Flatpak and through XLM on the Deck, with no `dalamudUserData` folder. The game's settings are in `~/.xlcore/ffxivConfig` unless `GameConfigPath` in `launcher.ini` points elsewhere; Proton and Lutris keep them in their prefix's `My Games`. `secrets.json` (passwords in plain text on the Deck), `accounts.json` and `wineprefix/` stay outside the allowlist, and `launcher.ini` is only read for that one path.
+- **The running-game check reads `/proc`.** Wine names the game's process after its exe (`ffxiv_dx11.exe`) and Linux truncates XIVLauncher.Core's name to `XIVLauncher.Cor`, so today's names match nothing there and the check would pass silently. It is rewritten, with tests that prove a restore refuses, before anything ships for Linux. Only process names are read, never command lines, which carry login arguments.
+- **Shipping:** a Velopack AppImage that updates only when the user chooses, as on Windows, and a tarball for systems where the AppImage won't start. Both run outside a sandbox, so XIV Vault can see the game. Not on Flathub: its sandbox hides other processes, so a restore couldn't check that FFXIV is closed.
+- **Scheduling and notifications:** a systemd user timer with `Persistent=true` takes the place of the Task Scheduler task, and failures notify through `org.freedesktop.Notifications` over D-Bus (Tmds.DBus already ships with Avalonia). Notifications may not show in Game Mode, so the app's own last-run result stays the reliable signal.
+- **Default backup folder:** `~/Documents/XIV Vault`, the XDG documents folder, and the app says plainly that it stays on this device. On first run it lists the Dropbox, OneDrive (abraunegg), Nextcloud and Syncthing folders it finds, and a Deck's microSD card, for the user to pick. It never picks one itself, because an installed sync app doesn't prove the folder syncs. On a Deck it says that a reset or Clear local user data erases the home folder.
+- **Online-only files on Linux:** Nextcloud's `.nextcloud` stubs, and anything on a network or FUSE mount (rclone, GVfs, kio-fuse, SMB, NFS) found in `/proc/self/mountinfo`, count as online-only without reading them.
+- **Restoring across systems:** file names are matched without case and restored onto the existing file's spelling, and an archive holding two names that differ only by case is refused. The review warns that Dalamud's dev-plugin paths, `dalamudVfs.db` and plugin settings that store paths (such as Penumbra's mod folder) may point at the other system.
+- **The Steam Deck leads with Wi-Fi transfer** (the owner's call: not every Deck owner runs a sync app or knows where files live). The PC sends a backup and the Deck receives it: same network only, no server or relay, a short pairing code that also encrypts the transfer, and the Deck listens only while its Receive screen is open. The PC only connects outward, so Windows Firewall doesn't ask. A received backup is validated like any other, then restored through the wizard. Folder backups, schedules and the microSD card stay. The transfer changes the "only network call is the update check" promise, so the README's safety model and the website say exactly what it does.
+- **Hosted download links are not planned:** they would upload backups, which can hold plugins' tokens, to a server someone has to run.
+- **Linux comes first (M12), then the Deck launch (M13).** Both are proven on the owner's Steam Deck.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
@@ -257,11 +272,35 @@ Released as 0.4.0 on 2026-10-10. A real 0.3.0 install updated itself to it from 
 
 Released as 1.0.0 on 2026-10-11. A real 0.4.0 install updated itself to the draft through `XIV_VAULT_UPDATE_SOURCE`, then backed up and ran its scheduled task successfully, before the draft was published.
 
+## M12: Linux (1.1)
+
+- [ ] Find XIVLauncher.Core: `~/.xlcore`, the Steam Flatpak's `.xlcore`, Lutris and Proton prefixes, and the game settings folder named in `launcher.ini`.
+- [ ] The running-game check on Linux, from `/proc/*/comm`, with tests that prove a restore refuses while the game or XIVLauncher.Core runs.
+- [ ] Case-safe restores, and the cross-system warnings in the restore review.
+- [ ] `BackupAllowlist.ForDisplay` hides character folder names in `/home/...` and `Z:\...` paths too.
+- [ ] Scheduled backups through a systemd user timer, and failure notifications over D-Bus.
+- [ ] The Documents default, the first-run choice of detected sync folders and the microSD card, and online-only detection from mounts and Nextcloud stubs.
+- [ ] Linux versions of the small Windows pieces: show a file in the file manager, the reduce-motion setting, `~` paths in the UI, and the same-drive warning.
+- [ ] `release.yml` builds the Velopack AppImage, the tarball and the CLI for linux-x64 with checksums, and CI runs the tests on Linux too.
+- [ ] README, user guide and website cover Linux.
+- [ ] On the owner's Steam Deck in Desktop Mode: the AppImage (or the tarball) runs, the game's real process names match, the timer runs after sleep and in Game Mode, and a Windows backup restores with the HUD and hotbars back in game. Whether a Windows `FFXIV.cfg` suits the Deck is checked there too.
+
+**Done when:** a Linux build backs up and restores on the owner's Steam Deck in Desktop Mode, refuses to restore while the game runs, and runs its scheduled backup; tests cover the Linux locator, the process check and case handling.
+
+## M13: Steam Deck (1.2)
+
+- [ ] Wi-Fi transfer: Send on Windows and Linux, Receive on the Deck and Linux. Same network only, a pairing code that also encrypts, listening only while Receive is open, and tests that refuse a wrong code or a changed file.
+- [ ] On a Deck, the first screen leads with Receive from my PC; folder backups stay one step away.
+- [ ] Usable in Game Mode as a non-Steam game: controller focus, touch and the on-screen keyboard.
+- [ ] The README's safety model, the user guide and the website say exactly what the transfer sends and when XIV Vault listens.
+- [ ] On the owner's Steam Deck in Game Mode: receive a backup from the Windows PC over Wi-Fi and restore it.
+
+**Done when:** in Game Mode on the owner's Steam Deck, a backup sent from the Windows PC arrives over Wi-Fi and restores, and the safety model describes the transfer.
+
 ## Later
 
 - XIVLauncher layouts and folders that users report, fixed in patch releases as they come in.
 - Light theme.
-- Steam Deck and Linux, with XIVLauncher.Core: restore a Windows backup onto a Deck.
 
 ## Not planned
 
@@ -271,3 +310,5 @@ Released as 1.0.0 on 2026-10-11. A real 0.4.0 install updated itself to the draf
 - Accounts, telemetry, a web dashboard.
 - A Windows service or tray daemon.
 - Plugin-specific backup adapters, or a Dalamud plugin version of XIV Vault.
+- A Flathub build: its sandbox hides the game's processes, so a restore couldn't refuse while FFXIV runs.
+- Hosted download links, or any server that holds backups.
