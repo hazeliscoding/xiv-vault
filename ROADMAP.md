@@ -111,6 +111,13 @@ An independent review of the restore and validation code found failure modes; th
 - **A disclaimer** says XIV Vault is not affiliated with Square Enix or with goatcorp's XIVLauncher and Dalamud.
 - **The site signs off with "Made with ♥ by hazeliscoding",** linking to the repository.
 
+## Decisions (2026-10-11, failure notifications)
+
+- **Core calls WinRT directly** for the notification, through about 80 lines of function-pointer interop, instead of targeting `net10.0-windows`. Microsoft's projection would add about 25 MB to each exe and make the projects Windows-only, which the Linux work would have to undo. The interfaces and their method order were read from Windows' own metadata.
+- **XIV Vault registers its own app ID,** `hazeliscoding.XIVVault`, under `HKCU\Software\Classes\AppUserModelId` with its name and icon, so Setup, portable copies and the CLI notify alike without a Start menu shortcut. The icon is written next to the config, since a single-file exe has no file to point at.
+- **Only failures notify,** with fixed words and no path or error text, because a notification can appear on a stream. A backup skipped because the game stayed open doesn't notify; Schedule shows it.
+- **A notification never fails the run.** The result is recorded first, and an error showing it is only logged.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
@@ -214,7 +221,7 @@ Released as 0.4.0 on 2026-10-10. A real 0.3.0 install updated itself to it from 
 
 ## M11: 1.0
 
-- [ ] A Windows notification when a scheduled backup fails.
+- [x] A Windows notification when a scheduled backup fails. (Checked on the author's PC: a failing scheduled run from the app and from the CLI each showed one.)
 - [ ] Real 0.1.0 archives kept as test files, which every later version must validate and restore.
 - [ ] The stable parts written down: backup format, CLI commands and options, JSON output, exit codes, and what a major version may change.
 - [ ] A release checklist that installs the previous release and updates it before a draft is published.
