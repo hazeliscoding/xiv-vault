@@ -517,15 +517,14 @@ public class RestorePluginInstallTests
     [Fact]
     public async Task Failed_and_refused_downloads_leave_nothing_behind()
     {
-        var web = new FakeWebDownloader();
-        var interrupted = new InterruptedDownloads(web);
-        using var host = new TestHost(configure: services => services.AddSingleton<IWebDownloader>(interrupted));
+        using var host = new TestHost();
         var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit, Orchestrion, Moodles, Lifestream, Tippy]));
         var root = NewPc(host);
-        var repository = new FakePluginRepository(web, Path.Combine(host.Environment.Root, "web"));
+        var repository = Repository(host);
         repository.Add(Wotsit.Name);
-        web.Bodies.Remove(repository.Add(Orchestrion.Name));
-        interrupted.Url = repository.Add(Moodles.Name);
+        host.Downloads.Bodies.Remove(repository.Add(Orchestrion.Name));
+        var moodles = repository.Add(Moodles.Name);
+        host.Downloads.Interruptions[moodles] = host.Downloads.Bodies[moodles].Length / 2;
         repository.Add(Lifestream.Name, package: FakePluginRepository.Package(Lifestream.Name, version: "9.9.9.9"));
         repository.Add(Tippy.Name);
 
@@ -1017,25 +1016,6 @@ public class RestorePluginInstallTests
         Assert.Null(withoutLauncher.Plugins);
         Assert.Null(withoutSettings.Plugins);
         Assert.NotNull((await host.Restores.PreviewAsync(settingsOnly, cancellationToken: Ct)).Plugins);
-    }
-
-    /// <summary>Writes half of one URL's body, then fails the way a dropped connection does.</summary>
-    private sealed class InterruptedDownloads(FakeWebDownloader inner) : IWebDownloader
-    {
-        public string? Url { get; set; }
-
-        public void Download(string url, string accept, Stream destination, long maxBytes, CancellationToken cancellationToken)
-        {
-            if (url != Url)
-            {
-                inner.Download(url, accept, destination, maxBytes, cancellationToken);
-                return;
-            }
-
-            var body = inner.Bodies[url];
-            destination.Write(body, 0, body.Length / 2);
-            throw new WebDownloadException("the download was interrupted");
-        }
     }
 
     /// <summary>Records how each request is made, and whether an earlier plugin's zip was still in the work folder then.</summary>
