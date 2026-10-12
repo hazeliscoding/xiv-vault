@@ -41,6 +41,7 @@ XIV Vault is trusted with configuration people spent years building. Never break
 - `dotnet run --project src/XivVault.Cli -- <command>` runs the CLI; `dotnet run --project src/XivVault.Desktop` runs the app.
 - `dotnet run scripts/make-icons.cs` rebuilds `docs/brand/xiv-vault.ico` from `docs/brand/app-icon.svg`.
 - `dotnet tool restore` installs `vpk`, which `release.yml` uses to build Setup and the update packages. `XIV_VAULT_UPDATE_SOURCE` points an installed copy at a local release folder to try an update.
+- `bash scripts/stage-site.sh` puts the screenshots and the demo into `site/assets/generated` (gitignored) so the website can be previewed; `pages.yml` runs it on deploy. The site loads nothing from other sites, and its Content-Security-Policy stays.
 - Releases follow the checklist in `docs/releasing.md`; never publish a draft before step 3 passes.
 - `./scripts/make-winget-manifests.ps1 -Version <x.y.z>` writes and validates the winget manifests for a published release into `artifacts/winget`.
 
@@ -51,6 +52,6 @@ XIV Vault is trusted with configuration people spent years building. Never break
 - **The 1.0 promise is in `docs/cli.md`.** Never rename or remove a command, option, `config set` key, JSON field or exit code, or change what a listed JSON value means; add new ones instead. `CliContractTests` pins the JSON fields and exit codes, and `docs/cli.md` changes with them.
 - **Tests first for Core.** Every safety rule above has a test that proves it fails safely.
 - **`tests/XivVault.Tests/Fixtures` holds archives made by published releases.** They stand for backups people already have: never regenerate or edit them, and never weaken `CompatibilityTests` to make a change pass.
-- **Docs:** short and concise. Prefer editing `ROADMAP.md` over new planning documents.
+- **Docs:** short and concise. Prefer editing `ROADMAP.md` over new planning documents. A change to behavior or a label updates `site/guide.html` in the same change, and the site keeps to the README's facts.
 - **Code comments** explain why, not what: a non-obvious constraint, a workaround and its cause, or a line that keeps the safety contract. No boilerplate XML docs, no commented-out code.
 - **UI copy:** calm, short, declarative. No exclamation marks or emoji. Explain things without assuming the user knows what `%APPDATA%` is.

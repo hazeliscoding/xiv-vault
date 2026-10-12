@@ -2,7 +2,7 @@
 
 **Move to a new PC without losing your Dalamud setup.** XIV Vault backs up the portable part of your XIVLauncher / Dalamud configuration (plugin settings, Dalamud settings, the plugin database) and the game's own settings (HUD layout, hotbars, keybinds, macros, gear sets) into a plain ZIP in a folder you choose, such as OneDrive, Dropbox, a NAS or an external drive. On a fresh PC you install XIVLauncher, open XIV Vault and restore.
 
-XIV Vault is a Windows desktop app and a command-line tool built on one engine. Every backup is hash-verified, and every restore takes a safety backup first.
+XIV Vault is a Windows desktop app and a command-line tool built on one engine. Every backup is hash-verified, and every restore takes a safety backup first. The [website](https://hazeliscoding.github.io/xiv-vault/) has a [user guide](https://hazeliscoding.github.io/xiv-vault/guide.html) for every task.
 
 ![XIV Vault backing up a Dalamud setup, then restoring it with a safety backup first](docs/screenshots/demo.gif)
 
