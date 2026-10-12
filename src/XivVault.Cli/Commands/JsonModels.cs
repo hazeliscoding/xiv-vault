@@ -1,3 +1,4 @@
+using System.Text.Json;
 using XivVault.Core;
 using XivVault.Core.Backup;
 using XivVault.Core.Configuration;
@@ -75,7 +76,7 @@ internal static class JsonModels
     public static ScheduleJson From(ScheduleStatus status) => new(
         status.Installed,
         status.InstalledSettings is { } settings ? Frequency(settings.Frequency) : null,
-        status.InstalledSettings is { Frequency: ScheduleFrequency.Weekly } weekly ? weekly.Days.Select(day => day.ToString()).ToList() : [],
+        status.InstalledSettings is { Frequency: ScheduleFrequency.Weekly } weekly ? weekly.Days.Select(day => JsonNamingPolicy.CamelCase.ConvertName(day.ToString())).ToList() : [],
         status.InstalledSettings is { Frequency: not ScheduleFrequency.AtLogon } timed ? timed.Time : null,
         status.NextRunLocal,
         status.LastRun is { } last ? new LastRunJson(last.AtUtc, Result(last.Result), last.Message, last.BackupFile) : null);
