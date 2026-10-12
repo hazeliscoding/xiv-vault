@@ -1,3 +1,4 @@
+using System.Text;
 using XivVault.Core.Plugins;
 using XivVault.Tests.Support;
 
@@ -105,6 +106,18 @@ public class InstalledPluginScannerTests : IDisposable
     }
 
     [Fact]
+    public void A_lone_folder_is_installed_whatever_its_name()
+    {
+        // Dalamud deletes folders without a version name while it sorts the versions, and .NET doesn't sort just one.
+        WritePlugin("Splatoon", "latest", Manifest(SplatoonId));
+
+        var installed = Scan();
+
+        Assert.Equal(PluginFolderState.Installed, installed.StateOf("Splatoon"));
+        Assert.Equal([SplatoonId], installed.Ids);
+    }
+
+    [Fact]
     public void A_valid_lower_version_under_a_broken_highest_one_is_in_the_way()
     {
         // Dalamud deletes every lower version, then the highest one because it can't load it.
@@ -151,7 +164,7 @@ public class InstalledPluginScannerTests : IDisposable
     [InlineData("a null manifest")]
     [InlineData("a manifest that is a list")]
     [InlineData("an empty version folder")]
-    [InlineData("no version folder")]
+    [InlineData("a broken version folder beside one without a version name")]
     [InlineData("files only")]
     public void A_folder_Dalamud_would_not_load_is_in_the_way(string problem)
     {
@@ -178,8 +191,9 @@ public class InstalledPluginScannerTests : IDisposable
             case "an empty version folder":
                 Directory.CreateDirectory(Path.Combine(Plugins, "Splatoon", "1.0.0.0"));
                 break;
-            case "no version folder":
+            case "a broken version folder beside one without a version name":
                 WritePlugin("Splatoon", "latest", Manifest(SplatoonId));
+                WritePlugin("Splatoon", "1.0.0.0", manifest: null);
                 break;
             case "files only":
                 Directory.CreateDirectory(Path.Combine(Plugins, "Splatoon"));
@@ -197,9 +211,7 @@ public class InstalledPluginScannerTests : IDisposable
     [Theory]
     [InlineData("""{ "InternalName": "Splatoon" }""")]
     [InlineData("""{ "WorkingPluginId": "00000000-0000-0000-0000-000000000000" }""")]
-    [InlineData("""{ "WorkingPluginId": "not-a-guid" }""")]
-    [InlineData("""{ "WorkingPluginId": 42 }""")]
-    public void An_installed_plugin_without_a_usable_ID_adds_no_ID(string manifest)
+    public void An_installed_plugin_without_an_ID_adds_no_ID(string manifest)
     {
         WritePlugin("Splatoon", "1.0.0.0", manifest);
 
@@ -207,6 +219,37 @@ public class InstalledPluginScannerTests : IDisposable
 
         Assert.Equal(PluginFolderState.Installed, installed.StateOf("Splatoon"));
         Assert.Empty(installed.Ids);
+    }
+
+    [Theory]
+    [InlineData("\"not-a-guid\"")]
+    [InlineData("\"\"")]
+    [InlineData("42")]
+    [InlineData("null")]
+    public void An_ID_that_isn_t_a_GUID_is_in_the_way(string id)
+    {
+        // Dalamud reads the ID into a Guid, so the manifest fails to load and the plugin is skipped.
+        WritePlugin("Splatoon", "1.0.0.0", $$"""{ "WorkingPluginId": {{id}} }""");
+
+        var installed = Scan();
+
+        Assert.Equal(PluginFolderState.InTheWay, installed.StateOf("Splatoon"));
+        Assert.Empty(installed.Ids);
+    }
+
+    [Fact]
+    public void A_manifest_that_isn_t_UTF8_is_in_the_way_and_the_rest_are_read()
+    {
+        // A bad byte in the ID, which is read; Dalamud can't read that ID either.
+        WritePlugin("Splatoon", "1.0.0.0", Manifest(SplatoonId));
+        var artisan = WritePlugin("Artisan", "1.0.0.0", manifest: null);
+        File.WriteAllText(Path.Combine(artisan, "Artisan.json"), """{ "WorkingPluginId": "é" }""", Encoding.Latin1);
+
+        var installed = Scan();
+
+        Assert.Equal(PluginFolderState.InTheWay, installed.StateOf("Artisan"));
+        Assert.Equal(PluginFolderState.Installed, installed.StateOf("Splatoon"));
+        Assert.Equal([SplatoonId], installed.Ids);
     }
 
     [Fact]
@@ -245,6 +288,18 @@ public class InstalledPluginScannerTests : IDisposable
         Assert.Equal(PluginFolderState.Link, installed.StateOf("Splatoon"));
         Assert.Empty(installed.Ids);
         Assert.False(installed.IsLink);
+    }
+
+    [Fact]
+    public void A_link_to_an_empty_plugin_folder_is_a_link()
+    {
+        // An empty folder can be installed into, but never through a link.
+        var elsewhere = Path.Combine(_env.Root, "Elsewhere", "Splatoon");
+        Directory.CreateDirectory(elsewhere);
+        Directory.CreateDirectory(Plugins);
+        RestoreHardeningTests.CreateJunction(Path.Combine(Plugins, "Splatoon"), elsewhere);
+
+        Assert.Equal(PluginFolderState.Link, Scan().StateOf("Splatoon"));
     }
 
     [Fact]

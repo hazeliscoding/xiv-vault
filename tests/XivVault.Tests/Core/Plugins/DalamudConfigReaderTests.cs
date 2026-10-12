@@ -311,6 +311,16 @@ public class DalamudConfigReaderTests
     [InlineData("null")]
     public void Returns_null_for_a_file_that_isn_t_a_config(string json) => Assert.Null(Read(json));
 
+    [Theory]
+    [InlineData("""{ "DefaultProfile": { "Plugins": [ { "InternalName": "Café", "WorkingPluginId": "0f3c6a52-5d0e-4c3b-9a35-1d2e7b8c9a01" } ] } }""")]
+    [InlineData("""{ "ThirdRepoList": [ { "Url": "https://café.example.com/repo.json", "IsEnabled": true } ] }""")]
+    [InlineData("""{ "Café": true }""")]
+    public void Returns_null_for_a_file_that_isn_t_UTF8(string json)
+    {
+        // Saved as Latin-1, so the é isn't UTF-8, which only shows when that string or name is read.
+        Assert.Null(DalamudConfigReader.ReadPluginSettings(new MemoryStream(Encoding.Latin1.GetBytes(json))));
+    }
+
     [Fact]
     public void Reads_a_file_and_returns_null_when_it_is_missing()
     {

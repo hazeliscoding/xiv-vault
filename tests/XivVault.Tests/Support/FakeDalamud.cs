@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Text;
 
 namespace XivVault.Tests.Support;
 
@@ -27,12 +28,12 @@ public static class FakeDalamud
         return hooks;
     }
 
-    public static void WriteBanList(string rootPath, string json, string assetVersion = "444")
+    public static void WriteBanList(string rootPath, string json, string assetVersion = "444", Encoding? encoding = null)
     {
         var assets = Path.Combine(rootPath, "dalamudAssets");
         var uiRes = Path.Combine(assets, assetVersion, "UIRes");
         Directory.CreateDirectory(uiRes);
         File.WriteAllText(Path.Combine(assets, "asset.ver"), assetVersion);
-        File.WriteAllText(Path.Combine(uiRes, "bannedplugin.json"), json);
+        File.WriteAllText(Path.Combine(uiRes, "bannedplugin.json"), json, encoding ?? new UTF8Encoding());
     }
 }

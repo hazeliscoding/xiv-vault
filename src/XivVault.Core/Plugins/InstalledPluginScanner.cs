@@ -44,8 +44,10 @@ internal static class InstalledPluginScanner
     }
 
     // As Dalamud decides at its next start (PluginManager.CleanupPlugins, then LoadAllPlugins): a ".broken" marker
-    // deletes the plugin, every version folder below the highest is deleted, and the highest loads only when it holds
-    // <Name>.dll and a non-empty <Name>.json that isn't scheduled for deletion. Otherwise Dalamud deletes or ignores it.
+    // deletes the plugin, and only the highest version folder is kept. Folders without a version name are deleted while
+    // they are sorted, and .NET doesn't sort a lone folder, so that one is kept whatever its name. The kept folder loads
+    // only when it holds <Name>.dll and a non-empty <Name>.json that isn't scheduled for deletion. Otherwise Dalamud
+    // deletes or ignores it.
     private static (PluginFolderState? State, Guid? Id) Classify(DirectoryInfo folder)
     {
         try
@@ -61,14 +63,16 @@ internal static class InstalledPluginScanner
                 return (null, null);
             }
 
-            var highest = File.Exists(Path.Combine(folder.FullName, ".broken"))
-                ? null
-                : folder.EnumerateDirectories().Where(version => Version.TryParse(version.Name, out _)).MaxBy(version => Version.Parse(version.Name));
-            var id = highest is null ? null : LoadableId(highest, folder.Name);
+            var versions = File.Exists(Path.Combine(folder.FullName, ".broken")) ? [] : folder.GetDirectories();
+            var kept = versions.Length == 1
+                ? versions[0]
+                : versions.Where(version => Version.TryParse(version.Name, out _)).MaxBy(version => Version.Parse(version.Name));
+            var id = kept is null ? null : LoadableId(kept, folder.Name);
             return id is null ? (PluginFolderState.InTheWay, null) : (PluginFolderState.Installed, id);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
         {
+            // InvalidOperationException is a string in the manifest that isn't UTF-8.
             return (PluginFolderState.InTheWay, null);
         }
     }
@@ -96,6 +100,12 @@ internal static class InstalledPluginScanner
             return null;
         }
 
-        return DalamudConfigReader.ReadWorkingPluginId(root) ?? Guid.Empty;
+        if (!DalamudConfigReader.TryGetProperty(root, "WorkingPluginId", out var workingPluginId))
+        {
+            return Guid.Empty;
+        }
+
+        // Dalamud reads the ID into a Guid, so any other value fails the whole manifest and the plugin isn't loaded.
+        return workingPluginId.ValueKind == JsonValueKind.String && Guid.TryParse(workingPluginId.GetString(), out var id) ? id : null;
     }
 }

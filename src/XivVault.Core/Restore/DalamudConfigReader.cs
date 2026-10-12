@@ -113,8 +113,9 @@ public static class DalamudConfigReader
             var doPluginTest = TryGetProperty(root, "DoPluginTest", out var test) && test.ValueKind == JsonValueKind.True;
             return new DalamudPluginSettings(plugins, repositories, doPluginTest, testingOptIns);
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException)
         {
+            // InvalidOperationException is invalid UTF-8, which only shows when a string or name is read.
             return null;
         }
     }

@@ -21,9 +21,14 @@ public class DalamudInstallTests : IDisposable
     [Fact]
     public void Reads_the_version_of_the_Dalamud_prepared_last()
     {
-        // Switching back from a beta track can make an older version the one prepared last.
-        FakeDalamud.InstallDalamud(Root, new Version(15, 0, 3, 6), versionJsonWrittenUtc: Earlier);
-        FakeDalamud.InstallDalamud(Root, new Version(15, 0, 3, 5), versionJsonWrittenUtc: Later);
+        // Switching back from a beta track makes the older release the one prepared last, though the beta was
+        // downloaded after it and Dalamud has since written into the beta's folder.
+        var release = FakeDalamud.InstallDalamud(Root, new Version(15, 0, 3, 5), versionJsonWrittenUtc: Later);
+        var beta = FakeDalamud.InstallDalamud(Root, new Version(15, 0, 3, 6), versionJsonWrittenUtc: Earlier);
+        File.SetLastWriteTimeUtc(Path.Combine(release, "Dalamud.dll"), Earlier);
+        Directory.SetLastWriteTimeUtc(release, Earlier);
+        File.SetLastWriteTimeUtc(Path.Combine(beta, "Dalamud.dll"), Later);
+        Directory.SetLastWriteTimeUtc(beta, Later);
 
         Assert.Equal(new Version(15, 0, 3, 5), DalamudInstall.FindVersion(Root));
     }
@@ -147,6 +152,14 @@ public class DalamudInstallTests : IDisposable
     public void A_list_that_can_t_be_read_bans_nothing(string json)
     {
         FakeDalamud.WriteBanList(Root, json);
+
+        Assert.Same(DalamudBanList.Empty, DalamudInstall.LoadBanList(Root));
+    }
+
+    [Fact]
+    public void A_list_that_isn_t_UTF8_bans_nothing()
+    {
+        FakeDalamud.WriteBanList(Root, """[ { "Name": "Café", "AssemblyVersion": null, "Reason": "x" } ]""", encoding: Encoding.Latin1);
 
         Assert.Same(DalamudBanList.Empty, DalamudInstall.LoadBanList(Root));
     }

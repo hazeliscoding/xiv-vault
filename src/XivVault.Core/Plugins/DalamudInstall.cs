@@ -76,8 +76,9 @@ internal static class DalamudInstall
                 where name is not null
                 select (name!, Version.TryParse(DalamudConfigReader.ReadString(entry, "AssemblyVersion"), out var version) ? version : null));
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
         {
+            // InvalidOperationException is a string that isn't UTF-8.
             return DalamudBanList.Empty;
         }
     }
