@@ -105,4 +105,4 @@ Restore re-checks every hash after extracting to a temp folder, so an archive ch
 
 ## Compatibility
 
-Version 1 archives will stay restorable by later versions. Version 1 is version 2 without `payload/game/`, `contents.characterSettings`, `contents.systemSettings` and `statistics.characterCount`; a version 1 manifest that lacks them reads as having no game settings. XIV Vault 0.3 and earlier refuse version 2 archives as "made by a newer XIV Vault". A future format will get a new `schemaVersion`, and this document will describe it.
+Every archive any version of XIV Vault made stays restorable by every later version, major versions included. Tests restore archives made by the published 0.1.0 to prove it for version 1. Version 1 is version 2 without `payload/game/`, `contents.characterSettings`, `contents.systemSettings` and `statistics.characterCount`; a version 1 manifest that lacks them reads as having no game settings. XIV Vault 0.3 and earlier refuse version 2 archives as "made by a newer XIV Vault". A future format will get a new `schemaVersion`, and this document will describe it.

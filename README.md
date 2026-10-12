@@ -64,18 +64,7 @@ xiv-vault version
 
 `config set` takes `destination`, `retention`, `include-ui`, `include-game` (the game's own settings, on by default), `compression` (`fast`, `balanced`, `maximum`) and `source` (the XIVLauncher folder, or `auto`). Add `--verbose` to any command to see each step.
 
-Exit codes are stable, so scripts can rely on them:
-
-| Code | Meaning |
-|---|---|
-| 0 | Success |
-| 1 | Unexpected failure |
-| 2 | Invalid arguments or configuration |
-| 3 | XIVLauncher not found |
-| 4 | Backup validation failure |
-| 5 | Restore validation failure |
-| 6 | XIVLauncher or FFXIV is running |
-| 7 | Backup folder unavailable |
+Exit codes are stable, so scripts can rely on them. [docs/cli.md](docs/cli.md) lists every command, option, exit code and JSON field, and what stays the same from one version to the next.
 
 ## Scheduling
 
@@ -146,6 +135,14 @@ The files are copied byte for byte; XIV Vault never looks inside them. Each char
 - **Logs and diagnostic reports** hold paths, counts and results, never configuration contents, and never a character's content ID.
 
 The archive format is documented in [docs/backup-format.md](docs/backup-format.md). Backups open in any ZIP tool.
+
+## Stability
+
+From 1.0 on:
+
+- Every backup made by any version of XIV Vault restores in every later version, major versions included.
+- Your settings and your schedule carry over through every update.
+- The command line keeps its commands, options, exit codes and JSON fields until the next major version. [docs/cli.md](docs/cli.md) has the details and says what a major version may change.
 
 ## Limitations
 

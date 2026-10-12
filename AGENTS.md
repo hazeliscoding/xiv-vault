@@ -47,6 +47,7 @@ XIV Vault is trusted with configuration people spent years building. Never break
 
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `chore:`, `test:`, `ci:`, `build:`, `refactor:`), atomic, with a scope when it helps (`feat(restore): …`).
 - **No AI attribution** in commits or PRs: no `Co-Authored-By` trailers, no "Generated with" lines, no session links.
+- **The 1.0 promise is in `docs/cli.md`.** Never rename or remove a command, option, `config set` key, JSON field or exit code, or change what a listed JSON value means; add new ones instead. `CliContractTests` pins the JSON fields and exit codes, and `docs/cli.md` changes with them.
 - **Tests first for Core.** Every safety rule above has a test that proves it fails safely.
 - **`tests/XivVault.Tests/Fixtures` holds archives made by published releases.** They stand for backups people already have: never regenerate or edit them, and never weaken `CompatibilityTests` to make a change pass.
 - **Docs:** short and concise. Prefer editing `ROADMAP.md` over new planning documents.

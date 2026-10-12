@@ -7,6 +7,11 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 ### Added
 
 - A Windows notification when a scheduled backup fails, from the app's task and the CLI's alike. It says only that the backup failed, never a path or the error, since it can appear on a stream. Turn it off under XIV Vault in Windows' notification settings.
+- `docs/cli.md`, a reference for every command, option, exit code and JSON field, with what stays the same from 1.0 on.
+
+### Changed
+
+- `schedule status --json` writes days in lowercase (`"sunday"`), as `config show --json` and every other JSON value do.
 
 ## [0.4.0] - 2026-10-10
 
