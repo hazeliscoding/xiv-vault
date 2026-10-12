@@ -171,7 +171,7 @@ Requires the .NET 10 SDK. [docs/architecture.md](docs/architecture.md) explains 
 
 ## How XIV Vault is made
 
-I work as a software developer, and I write XIV Vault's specs myself, including its safety model. An AI coding agent, Anthropic's Claude Code, implements them. Every rule in the safety model has a test that proves it, and CI runs the full test suite on every change. I check releases on my own PC before they ship.
+I work as a software developer, and I write XIV Vault's specs myself, including its safety model. An AI coding agent, Anthropic's Claude Code, implements them, and I review what it writes. Every rule in the safety model has a test that proves it, and CI runs the full test suite on every change. I check releases on my own PC before they ship.
 
 ## License
 
