@@ -191,6 +191,7 @@ Settled after reading Dalamud 15.0.3.6's source and checking the owner's install
 - **The network promise:** requests go to `kamori.goats.dev` for the plugin list and downloads, which redirect to `raw.githubusercontent.com`, and to ticked custom repositories, made as Dalamud's installer makes them, with an XIV Vault user agent. Nothing about the user, their characters or their backups is sent; those hosts see which plugins are downloaded, as they do for Dalamud's installer. When no plugin is missing, nothing is requested.
 - **Reading beyond the allowlist:** to tell what is installed and which Dalamud will run, XIV Vault reads folder names and manifests under `installedPlugins\`, the version of `Dalamud.dll` under `addon\Hooks\`, and Dalamud's ban list in `dalamudAssets\`. This amends 2026-10-04's "Nothing else is ever read"; backups still hold only the allowlist.
 - **Logs** hold counts and fixed reasons. Plugin names appear on screen, never in logs or the diagnostic report, and repository URLs and plugin IDs never appear at all.
+- **On the command line,** `restore --install-plugins` and `--custom-repository <HOST>` stay out of `--help` in every version while installs are in beta, and stable versions refuse both with exit code 2. Spectre.Console.Cli's hidden `cli` developer command still names them, which is accepted. A host, matched without case, ticks every repository the backup turns on there, and the review shows how many. Plugins that don't install leave the exit code at 0, since the settings are restored.
 
 ## M0: Bootstrap
 
@@ -324,7 +325,7 @@ Released as 1.0.0 on 2026-10-11. A real 0.4.0 install updated itself to the draf
 - [ ] The release checklist covers betas: the previous release still updates to the draft first, and winget is skipped.
 - [ ] Tests prove the switch decides whether prereleases are offered.
 - [ ] README, user guide and website say what the beta channel is and who it's for. AGENTS.md and the beta release notes say what plugin installs download, from where, and that nothing about the user is sent; the README and website describe installs once they leave beta.
-- [ ] README, `docs/`, both website pages and the unreleased changelog are read for AI-writing patterns (the humanizer skill) and rewritten where they show, keeping every fact, command and label. Released changelog entries, the roadmap's records and AGENTS.md stay as they are.
+- [x] README, `docs/`, both website pages and the unreleased changelog are read for AI-writing patterns (the humanizer skill) and rewritten where they show, keeping every fact, command and label. Released changelog entries, the roadmap's records and AGENTS.md stay as they are.
 - [ ] The app's and the CLI's own wording gets the same pass, with the desktop step, so screenshots and tests are redone once.
 - [ ] On the owner's PC with `%APPDATA%\XIVLauncher` renamed aside: XIVLauncher set up fresh, the restore installs the plugins, and in game they load with their settings and collections, with no manifest errors in `dalamud.log`. Then the original folder is renamed back.
 
