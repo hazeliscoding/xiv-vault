@@ -33,6 +33,19 @@ public class HttpWebDownloaderTests
         Assert.Equal(Start, request.RequestUri!.AbsoluteUri);
         Assert.Equal($"XIV-Vault/{XivVaultInfo.Version} (+https://github.com/hazeliscoding/xiv-vault)", request.Headers.UserAgent.ToString());
         Assert.Equal("application/zip", request.Headers.Accept.ToString());
+        Assert.Equal(["Accept", "User-Agent"], request.Headers.Select(header => header.Key).Order());
+    }
+
+    [Fact]
+    public void Asks_for_a_fresh_plugin_list()
+    {
+        var server = new FakeServer(Ok("[]"));
+        using var downloader = Create(server);
+
+        downloader.Download("https://plugins.example.com/Plugin/PluginMaster", "application/json", new MemoryStream(), 100, Ct);
+
+        var request = Assert.Single(server.Requests);
+        Assert.Equal("application/json", request.Headers.Accept.ToString());
         Assert.Equal("no-cache", request.Headers.CacheControl?.ToString());
         Assert.Equal(["Accept", "Cache-Control", "User-Agent"], request.Headers.Select(header => header.Key).Order());
     }
@@ -229,6 +242,20 @@ public class HttpWebDownloaderTests
         Assert.Equal(3, server.Requests.Count);
     }
 
+    [Fact]
+    public void Finishes_a_slow_download_as_long_as_no_gap_reaches_the_timeout()
+    {
+        // Twenty reads 30 ms apart take twice the timeout in all, so only a timeout per read lets this finish.
+        var server = new FakeServer(_ => Respond(new Body(new byte[5], times: 20, pause: TimeSpan.FromMilliseconds(30))));
+        using var downloader = Create(server, TimeSpan.FromMilliseconds(300));
+        var destination = new MemoryStream();
+
+        downloader.Download(Start, "application/zip", destination, 100, Ct);
+
+        Assert.Equal(100, destination.Length);
+        Assert.Single(server.Requests);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -268,7 +295,7 @@ public class HttpWebDownloaderTests
     public void A_retry_writes_the_destination_again_from_where_it_started()
     {
         var server = new FakeServer(
-            _ => Respond(new Body("stale"u8.ToArray(), error: new IOException("The response ended prematurely."))),
+            _ => Respond(new Body("stale-and-longer"u8.ToArray(), error: new IOException("The response ended prematurely."))),
             Ok("fresh"));
         using var downloader = Create(server);
         var destination = new MemoryStream();
@@ -309,12 +336,15 @@ public class HttpWebDownloaderTests
         }
     }
 
-    [Fact]
-    public void Connects_to_ipv4_addresses_before_ipv6_ones_keeping_the_dns_order()
+    [Theory]
+    [InlineData("2001:db8::1 192.0.2.1 2001:db8::2 192.0.2.2", "192.0.2.1 2001:db8::1 192.0.2.2 2001:db8::2")]
+    [InlineData("192.0.2.1 192.0.2.2 192.0.2.3 2001:db8::1", "192.0.2.1 2001:db8::1 192.0.2.2 192.0.2.3")]
+    [InlineData("2001:db8::1 2001:db8::2 192.0.2.1", "192.0.2.1 2001:db8::1 2001:db8::2")]
+    public void Connects_to_ipv4_and_ipv6_addresses_in_turn_starting_with_ipv4_keeping_the_dns_order(string dns, string expected)
     {
-        IPAddress[] addresses = [IPAddress.Parse("2001:db8::1"), IPAddress.Parse("192.0.2.1"), IPAddress.Parse("2001:db8::2"), IPAddress.Parse("192.0.2.2")];
+        var addresses = HttpWebDownloader.Interleave(dns.Split(' ').Select(IPAddress.Parse));
 
-        Assert.Equal([addresses[1], addresses[3], addresses[0], addresses[2]], HttpWebDownloader.IPv4First(addresses));
+        Assert.Equal(expected, string.Join(' ', addresses));
     }
 
     [Fact]
@@ -393,10 +423,10 @@ public class HttpWebDownloaderTests
     }
 
     /// <summary>
-    /// A response body that sends its bytes in one read, as many times as asked, then stops sending
-    /// until it is cancelled (calling <c>stalled</c> first), fails, or ends.
+    /// A response body that sends its bytes in one read after waiting <c>pause</c>, as many times as asked,
+    /// then stops sending until it is cancelled (calling <c>stalled</c> first), fails, or ends.
     /// </summary>
-    private sealed class Body(byte[] bytes, int times = 1, Exception? error = null, bool stalls = false, Action? stalled = null) : Stream
+    private sealed class Body(byte[] bytes, int times = 1, Exception? error = null, bool stalls = false, Action? stalled = null, TimeSpan pause = default) : Stream
     {
         private int _sent;
 
@@ -421,6 +451,9 @@ public class HttpWebDownloaderTests
             Reads++;
             if (_sent < times)
             {
+                // Sleeps rather than awaits, so a busy thread pool in a full test run can't stretch the pause.
+                Thread.Sleep(pause);
+                cancellationToken.ThrowIfCancellationRequested();
                 _sent++;
                 var count = Math.Min(bytes.Length, buffer.Length);
                 bytes.AsMemory(0, count).CopyTo(buffer);

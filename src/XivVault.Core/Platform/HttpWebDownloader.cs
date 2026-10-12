@@ -4,8 +4,9 @@ using System.Net.Sockets;
 namespace XivVault.Core.Platform;
 
 /// <summary>
-/// Downloads plugin lists and plugins over HTTPS. Every failure is a <see cref="WebDownloadException"/>
-/// with a fixed reason: the exceptions underneath name the host and port, so none is passed on.
+/// Downloads plugin lists and plugins over HTTPS. A network failure becomes a <see cref="WebDownloadException"/>
+/// with a fixed reason, since the exceptions underneath name the host and port. An error writing the destination,
+/// such as a full disk, reaches the caller unchanged, so callers catch everything for each plugin.
 /// </summary>
 public sealed class HttpWebDownloader : IWebDownloader, IDisposable
 {
@@ -61,8 +62,14 @@ public sealed class HttpWebDownloader : IWebDownloader, IDisposable
         ConnectCallback = ConnectAsync,
     };
 
-    internal static IEnumerable<IPAddress> IPv4First(IEnumerable<IPAddress> addresses) =>
-        addresses.OrderBy(address => address.AddressFamily != AddressFamily.InterNetwork);
+    // Alternates the families, IPv4 first (RFC 8305 section 4): a broken IPv6 never delays the first
+    // attempt, and a blackholed IPv4 costs one address timeout before IPv6 is tried.
+    internal static IEnumerable<IPAddress> Interleave(IEnumerable<IPAddress> addresses) =>
+        addresses
+            .GroupBy(address => address.AddressFamily == AddressFamily.InterNetwork ? 0 : 1)
+            .SelectMany(family => family.Select((address, place) => (address, turn: (place * 2) + family.Key)))
+            .OrderBy(entry => entry.turn)
+            .Select(entry => entry.address);
 
     private async Task DownloadAsync(Uri uri, string accept, Stream destination, long maxBytes, CancellationToken cancellationToken)
     {
@@ -96,7 +103,13 @@ public sealed class HttpWebDownloader : IWebDownloader, IDisposable
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
             request.Headers.TryAddWithoutValidation("User-Agent", UserAgent);
             request.Headers.TryAddWithoutValidation("Accept", accept);
-            request.Headers.TryAddWithoutValidation("Cache-Control", "no-cache");
+
+            // As Dalamud's installer does: only a plugin list, which callers ask for as JSON, bypasses caches.
+            if (accept == "application/json")
+            {
+                request.Headers.TryAddWithoutValidation("Cache-Control", "no-cache");
+            }
+
             HttpResponseMessage response;
             try
             {
@@ -201,7 +214,7 @@ public sealed class HttpWebDownloader : IWebDownloader, IDisposable
     {
         var addresses = await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken).ConfigureAwait(false);
         Exception? last = null;
-        foreach (var address in IPv4First(addresses))
+        foreach (var address in Interleave(addresses))
         {
             Socket? socket = null;
             try

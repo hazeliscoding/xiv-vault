@@ -10,6 +10,9 @@ public sealed class FakeWebDownloader : IWebDownloader
 {
     public Dictionary<string, byte[]> Bodies { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>URLs whose download writes this many bytes of the body and then fails, as a lost connection does.</summary>
+    public Dictionary<string, int> Interruptions { get; } = new(StringComparer.Ordinal);
+
     /// <summary>Every URL asked for, in order.</summary>
     public List<string> Requests { get; } = [];
 
@@ -27,8 +30,16 @@ public sealed class FakeWebDownloader : IWebDownloader
             throw new WebDownloadException("the server answered 404");
         }
 
+        // The real downloader streams the body, so a failure can leave part of it in the destination.
+        if (Interruptions.TryGetValue(url, out var written))
+        {
+            destination.Write(body, 0, written);
+            throw new WebDownloadException("the download was interrupted");
+        }
+
         if (body.Length > maxBytes)
         {
+            destination.Write(body, 0, (int)maxBytes);
             throw new WebDownloadException("the download is larger than XIV Vault accepts");
         }
 
