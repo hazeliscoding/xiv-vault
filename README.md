@@ -169,6 +169,10 @@ dotnet run --project src/XivVault.Cli -- status
 
 Requires the .NET 10 SDK. [docs/architecture.md](docs/architecture.md) explains how the code fits together, and [ROADMAP.md](ROADMAP.md) records what is planned and the decisions behind it.
 
+## How XIV Vault is made
+
+XIV Vault is written with an AI coding agent, Anthropic's Claude Code. I decide what XIV Vault does and how it protects your settings, and I check releases on my own PC; the agent writes most of the code, tests and documentation. Every rule in the safety model has a test that proves it, and every change has to pass the full test suite before it ships.
+
 ## License
 
 [Apache-2.0](LICENSE). Bundled fonts and icons are listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). XIV Vault is not affiliated with Square Enix, XIVLauncher or Dalamud.
