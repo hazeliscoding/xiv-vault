@@ -209,7 +209,7 @@
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:CurrentItem">
                       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Classes="body t2" Text="{Binding Label}" />
+                        <TextBlock Classes="body t2" Text="{Binding Label}" TextWrapping="Wrap" />
                         <TextBlock Grid.Column="1" Classes="data t3" FontSize="11" Text="{Binding Meta}" VerticalAlignment="Center" />
                       </Grid>
                     </DataTemplate>

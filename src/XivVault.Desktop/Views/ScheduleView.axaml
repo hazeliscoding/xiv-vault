@@ -5,11 +5,34 @@
              xmlns:v="using:XivVault.Desktop.Views"
              x:Class="XivVault.Desktop.Views.ScheduleView"
              x:DataType="vm:ScheduleViewModel">
-  <Grid>
+  <Grid Container.Name="schedule" Container.Sizing="Width">
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="*" MaxWidth="880" />
     </Grid.ColumnDefinitions>
-    <Grid ColumnDefinitions="*,260" ColumnSpacing="16">
+    <Grid.Styles>
+      <Style Selector="Grid#Columns">
+        <Setter Property="ColumnSpacing" Value="16" />
+      </Style>
+      <Style Selector="StackPanel#Side">
+        <Setter Property="Grid.Column" Value="1" />
+        <Setter Property="Width" Value="260" />
+        <Setter Property="Margin" Value="0,52,0,0" />
+      </Style>
+      <!-- Too narrow for both columns: the next backup and the note move under the settings. -->
+      <ContainerQuery Name="schedule" Query="max-width:760">
+        <Style Selector="Grid#Columns">
+          <Setter Property="ColumnSpacing" Value="0" />
+          <Setter Property="RowSpacing" Value="16" />
+        </Style>
+        <Style Selector="StackPanel#Side">
+          <Setter Property="Grid.Column" Value="0" />
+          <Setter Property="Grid.Row" Value="1" />
+          <Setter Property="Width" Value="NaN" />
+          <Setter Property="Margin" Value="0" />
+        </Style>
+      </ContainerQuery>
+    </Grid.Styles>
+    <Grid x:Name="Columns" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
       <StackPanel Spacing="16">
         <StackPanel Spacing="4">
           <TextBlock Classes="page-title" Text="Schedule" />
@@ -54,7 +77,7 @@
             </Grid>
             <Grid ColumnDefinitions="150,*" ColumnSpacing="12" IsVisible="{Binding HasTime}">
               <TextBlock Classes="strong" Text="At" VerticalAlignment="Center" />
-              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+              <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <ComboBox Width="140" ItemsSource="{Binding TimeOptions}" SelectedItem="{Binding SelectedTime}"
                           IsEnabled="{Binding AutoEnabled}" AutomationProperties.Name="Time of day">
                   <ComboBox.SelectionBoxItemTemplate>
@@ -66,14 +89,14 @@
                     </DataTemplate>
                   </ComboBox.SelectionBoxItemTemplate>
                 </ComboBox>
-                <TextBlock Classes="compact t3" TextWrapping="Wrap" MaxWidth="260" VerticalAlignment="Center"
+                <TextBlock Grid.Column="1" Classes="compact t3" TextWrapping="Wrap" MaxWidth="260" HorizontalAlignment="Left" VerticalAlignment="Center"
                            Text="Skipped while FFXIV is running, then retried after it closes." />
-              </StackPanel>
+              </Grid>
             </Grid>
             <Border Classes="divider" />
             <Grid ColumnDefinitions="150,*" ColumnSpacing="12">
               <TextBlock Classes="strong" Text="Keep latest" VerticalAlignment="Center" />
-              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+              <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <Border BorderBrush="{StaticResource Border2}" BorderThickness="1" CornerRadius="4" Background="{StaticResource Bg3}" VerticalAlignment="Center">
                   <StackPanel Orientation="Horizontal">
                     <c:XvButton Classes="ghost icon" Icon="Minus" Command="{Binding RetentionDownCommand}" AutomationProperties.Name="Keep fewer backups" ToolTip.Tip="Fewer" />
@@ -81,8 +104,8 @@
                     <c:XvButton Classes="ghost icon" Icon="Plus" Command="{Binding RetentionUpCommand}" AutomationProperties.Name="Keep more backups" ToolTip.Tip="More" />
                   </StackPanel>
                 </Border>
-                <TextBlock Classes="compact t3" TextWrapping="Wrap" MaxWidth="260" VerticalAlignment="Center" Text="{Binding RetentionHint}" />
-              </StackPanel>
+                <TextBlock Grid.Column="1" Classes="compact t3" TextWrapping="Wrap" MaxWidth="260" HorizontalAlignment="Left" VerticalAlignment="Center" Text="{Binding RetentionHint}" />
+              </Grid>
             </Grid>
             <Grid ColumnDefinitions="150,*" ColumnSpacing="12">
               <TextBlock Classes="strong" Text="Destination" VerticalAlignment="Center" />
@@ -98,7 +121,7 @@
         </Border>
       </StackPanel>
 
-      <StackPanel Grid.Column="1" Spacing="12" Margin="0,52,0,0">
+      <StackPanel x:Name="Side" Spacing="12">
         <Border Classes="card" Padding="16,14">
           <StackPanel Spacing="14">
             <StackPanel Spacing="3">

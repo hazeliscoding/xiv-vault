@@ -22,7 +22,21 @@
       <c:Banner Tone="Critical" Title="Something went wrong" Description="{Binding ErrorMessage}"
                 IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
-      <ItemsControl ItemsSource="{Binding Rows}" AutomationProperties.Name="Backups">
+      <ItemsControl ItemsSource="{Binding Rows}" AutomationProperties.Name="Backups" Container.Name="rows" Container.Sizing="Width">
+        <ItemsControl.Styles>
+          <!-- A narrow window drops the plugin count, then the size, so a row's actions stay in view.
+               Inspect and the row's spoken name still give both. -->
+          <ContainerQuery Name="rows" Query="max-width:800">
+            <Style Selector="TextBlock.plugin-count">
+              <Setter Property="IsVisible" Value="False" />
+            </Style>
+          </ContainerQuery>
+          <ContainerQuery Name="rows" Query="max-width:700">
+            <Style Selector="TextBlock.size">
+              <Setter Property="IsVisible" Value="False" />
+            </Style>
+          </ContainerQuery>
+        </ItemsControl.Styles>
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
@@ -32,11 +46,11 @@
                     CornerRadius="6" ClipToBounds="True">
               <StackPanel>
                 <Border Classes="hover" Height="44" Padding="14,0,8,0" AutomationProperties.Name="{Binding AccessibleName}">
-                  <Grid ColumnDefinitions="96,78,70,120,*,Auto,Auto" ColumnSpacing="14">
+                  <Grid ColumnDefinitions="96,78,Auto,Auto,*,Auto,Auto" ColumnSpacing="14">
                     <TextBlock Classes="strong" Text="{Binding Day}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Classes="data t2" Text="{Binding Time}" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="2" Classes="data t2" Text="{Binding Size}" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="3" Classes="compact t2" Text="{Binding PluginConfigsLabel}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Classes="data t2 size" MinWidth="70" Text="{Binding Size}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="3" Classes="compact t2 plugin-count" MinWidth="120" Text="{Binding PluginConfigsLabel}" VerticalAlignment="Center" />
                     <Grid Grid.Column="4" ColumnDefinitions="Auto,*" ColumnSpacing="6" VerticalAlignment="Center">
                       <Border Classes="type-mark" RenderTransform="rotate(45deg)" Margin="0,1,0,0"
                               Background="{Binding TypeTone, Converter={x:Static c:ToneConverters.Main}}" />
