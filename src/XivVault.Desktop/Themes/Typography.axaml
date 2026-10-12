@@ -81,9 +81,6 @@
   <Style Selector="TextBlock.t3">
     <Setter Property="Foreground" Value="{StaticResource Text3}" />
   </Style>
-  <Style Selector="TextBlock.t4">
-    <Setter Property="Foreground" Value="{StaticResource Text4}" />
-  </Style>
   <Style Selector="TextBlock.accent">
     <Setter Property="Foreground" Value="{StaticResource AccentText}" />
   </Style>
