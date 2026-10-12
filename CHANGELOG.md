@@ -4,6 +4,10 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-11
+
+XIV Vault 1.0 is safe to trust and stable to build on: every backup any version made restores in every later version, and the command line keeps its commands, options, JSON fields and exit codes through 1.x ([docs/cli.md](docs/cli.md)).
+
 ### Added
 
 - A website, [hazeliscoding.github.io/xiv-vault](https://hazeliscoding.github.io/xiv-vault/), with a user guide for every task. It loads nothing from other sites and has no analytics.
@@ -88,7 +92,8 @@ First release.
 - Installer: `xiv-vault-setup-win-x64.exe` installs the desktop app for the current user and keeps it up to date from GitHub releases. Updates install only when chosen in Settings, wait for running backups, restores and scheduled backups, and the check can be turned off. Uninstalling removes the scheduled backup task.
 - Self-contained Windows x64 builds: `xiv-vault-setup-win-x64.exe`, plus portable `xiv-vault-desktop-win-x64.zip` and `xiv-vault-cli-win-x64.zip`.
 
-[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.4.0...v1.0.0
 [0.4.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.1.2...v0.2.0
