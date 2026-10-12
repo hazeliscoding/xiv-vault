@@ -154,7 +154,14 @@ Researched from XIVLauncher.Core's, Dalamud's and Wine's source, the XIVLauncher
 - **Restoring across systems:** file names are matched without case and restored onto the existing file's spelling, and an archive holding two names that differ only by case is refused. The review warns that Dalamud's dev-plugin paths, `dalamudVfs.db` and plugin settings that store paths (such as Penumbra's mod folder) may point at the other system.
 - **The Steam Deck leads with Wi-Fi transfer** (the owner's call: not every Deck owner runs a sync app or knows where files live). The PC sends a backup and the Deck receives it: same network only, no server or relay, a short pairing code that also encrypts the transfer, and the Deck listens only while its Receive screen is open. The PC only connects outward, so Windows Firewall doesn't ask. A received backup is validated like any other, then restored through the wizard. Folder backups, schedules and the microSD card stay. The transfer changes the "only network call is the update check" promise, so the README's safety model and the website say exactly what it does.
 - **Hosted download links are not planned:** they would upload backups, which can hold plugins' tokens, to a server someone has to run.
-- **Linux comes first (M12), then the Deck launch (M13).** Both are proven on the owner's Steam Deck.
+- **Linux comes first (M13), then the Deck launch (M14).** Both are proven on the owner's Steam Deck, and Linux first ships through the beta channel (M12).
+
+## Decisions (2026-10-11, a beta channel)
+
+- **Betas are opt-in GitHub prereleases** on the same update feed, tagged `vX.Y.Z-beta.N`. A **Get beta versions** switch in Settings, off by default, makes the update check offer them too. Copies with the switch off, including every version released so far, never see a beta. Turning it off never downgrades: the beta stays until a newer stable release arrives.
+- **Stable stays stable:** a beta is never the latest release, so the website's download button, winget and installed copies without the switch keep to stable releases. Portable copies and the CLI have no updater and don't change.
+- **Betas keep the same promise:** anything a beta writes, every later version restores. So a beta never ships an unfinished backup format; a format change goes out only once it is final.
+- **The switch ships first,** in a stable 1.1, because people can only opt in from a version that has it. Linux then ships as 1.2 betas until the check on the owner's Deck passes.
 
 ## M0: Bootstrap
 
@@ -272,7 +279,18 @@ Released as 0.4.0 on 2026-10-10. A real 0.3.0 install updated itself to it from 
 
 Released as 1.0.0 on 2026-10-11. A real 0.4.0 install updated itself to the draft through `XIV_VAULT_UPDATE_SOURCE`, then backed up and ran its scheduled task successfully, before the draft was published.
 
-## M12: Linux (1.1)
+## M12: Beta channel (1.1)
+
+- [ ] **Get beta versions** under Updates in Settings, off by default. On, the update check also offers GitHub prereleases; off, it never downgrades.
+- [ ] Settings and the sidebar say when the installed version is a beta.
+- [ ] `release.yml`: a `vX.Y.Z-beta.N` tag builds a signed prerelease, with a delta from the previous release, that never becomes the latest release.
+- [ ] The release checklist covers betas: the previous release still updates to the draft first, and winget is skipped.
+- [ ] README, user guide and website say what the beta channel is and who it's for.
+- [ ] Tests prove the switch decides whether prereleases are offered.
+
+**Done when:** 1.1.0 is released with the switch, a beta tag builds a prerelease that isn't the latest release, and the tests cover the switch.
+
+## M13: Linux (1.2)
 
 - [ ] Find XIVLauncher.Core: `~/.xlcore`, the Steam Flatpak's `.xlcore`, Lutris and Proton prefixes, and the game settings folder named in `launcher.ini`.
 - [ ] The running-game check on Linux, from `/proc/*/comm`, with tests that prove a restore refuses while the game or XIVLauncher.Core runs.
@@ -283,11 +301,12 @@ Released as 1.0.0 on 2026-10-11. A real 0.4.0 install updated itself to the draf
 - [ ] Linux versions of the small Windows pieces: show a file in the file manager, the reduce-motion setting, `~` paths in the UI, and the same-drive warning.
 - [ ] `release.yml` builds the Velopack AppImage, the tarball and the CLI for linux-x64 with checksums, and CI runs the tests on Linux too.
 - [ ] README, user guide and website cover Linux.
+- [ ] Linux ships as `1.2.0-beta.N` releases. The first beta reaches an installed copy with **Get beta versions** on, and not one with it off.
 - [ ] On the owner's Steam Deck in Desktop Mode: the AppImage (or the tarball) runs, the game's real process names match, the timer runs after sleep and in Game Mode, and a Windows backup restores with the HUD and hotbars back in game. Whether a Windows `FFXIV.cfg` suits the Deck is checked there too.
 
-**Done when:** a Linux build backs up and restores on the owner's Steam Deck in Desktop Mode, refuses to restore while the game runs, and runs its scheduled backup; tests cover the Linux locator, the process check and case handling.
+**Done when:** a Linux build backs up and restores on the owner's Steam Deck in Desktop Mode, refuses to restore while the game runs, and runs its scheduled backup; tests cover the Linux locator, the process check and case handling; and 1.2.0 is released as stable.
 
-## M13: Steam Deck (1.2)
+## M14: Steam Deck (1.3)
 
 - [ ] Wi-Fi transfer: Send on Windows and Linux, Receive on the Deck and Linux. Same network only, a pairing code that also encrypts, listening only while Receive is open, and tests that refuse a wrong code or a changed file.
 - [ ] On a Deck, the first screen leads with Receive from my PC; folder backups stay one step away.
