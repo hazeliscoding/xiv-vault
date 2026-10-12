@@ -48,6 +48,7 @@ XIV Vault is trusted with configuration people spent years building. Never break
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `chore:`, `test:`, `ci:`, `build:`, `refactor:`), atomic, with a scope when it helps (`feat(restore): …`).
 - **No AI attribution** in commits or PRs: no `Co-Authored-By` trailers, no "Generated with" lines, no session links.
 - **Tests first for Core.** Every safety rule above has a test that proves it fails safely.
+- **`tests/XivVault.Tests/Fixtures` holds archives made by published releases.** They stand for backups people already have: never regenerate or edit them, and never weaken `CompatibilityTests` to make a change pass.
 - **Docs:** short and concise. Prefer editing `ROADMAP.md` over new planning documents.
 - **Code comments** explain why, not what: a non-obvious constraint, a workaround and its cause, or a line that keeps the safety contract. No boilerplate XML docs, no commented-out code.
 - **UI copy:** calm, short, declarative. No exclamation marks or emoji. Explain things without assuming the user knows what `%APPDATA%` is.
