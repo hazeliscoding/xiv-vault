@@ -140,9 +140,16 @@ public class PluginInstallerTests : IDisposable
 
         // An antivirus scan holds the staged manifest, which is written last, and lets go of it a moment later.
         using var held = File.Open(Path.Combine(prepared.Staged.Single().Folder, Wotsit.Name + ".json"), FileMode.Open, FileAccess.Read, FileShare.None);
-        using var release = new Timer(state => held.Dispose(), null, TimeSpan.FromMilliseconds(150), Timeout.InfiniteTimeSpan);
+        // Its own thread, so a thread pool kept busy by other tests can't hold the file past the last attempt.
+        var release = new Thread(() =>
+        {
+            Thread.Sleep(150);
+            held.Dispose();
+        });
+        release.Start();
 
         var report = installer.Place(prepared, null);
+        release.Join();
 
         Assert.Equal([Wotsit.Name], report.Installed);
         Assert.True(File.Exists(Path.Combine(InstalledPlugins, Wotsit.Name, "1.0.0.0", Wotsit.Name + ".json")));
