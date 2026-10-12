@@ -205,7 +205,7 @@ An independent review of the restore and validation code found failure modes; th
 - [x] Release 0.1.1: the first update installed copies take from GitHub, and the first delta package. (A real 0.1.0 install updated itself through the 738 KB delta, and its scheduled task kept working.)
 - [x] Issue templates: a bug report that asks for the Diagnostics report and whether settings were lost (label those `data-loss`), and a feature request.
 - [x] Winget manifests for Setup and the CLI, written from a published release by `scripts/make-winget-manifests.ps1`. The app is pinned from `winget upgrade --all`, since it updates itself and Setup closes running copies.
-- [ ] Both packages submitted to microsoft/winget-pkgs and merged, as `hazeliscoding.XIVVault` and `hazeliscoding.XIVVault.CLI`. (Renamed from `HazelGranados.*` on 2026-10-10, before either was merged, so the identifier follows the GitHub username as Prompuff's does. Publisher stays Hazel Granados, the name in Apps & Features and on the signature.)
+- [ ] Both packages submitted to microsoft/winget-pkgs and merged, as `hazeliscoding.XIVVault` and `hazeliscoding.XIVVault.CLI`. (Renamed from `HazelGranados.*` on 2026-10-10, before either was merged, so the identifier follows the GitHub username as Prompuff's does. Publisher stays Hazel Granados, the name in Apps & Features and on the signature. The CLI was merged at 0.4.0, and #450876 submits 1.0.0; the app's #447085 now submits 1.0.0 and waits for a moderator.)
 
 **Done when:** a 0.1.0 install updates itself to 0.1.1 from GitHub, and `winget install` works for both.
 
@@ -254,6 +254,8 @@ Released as 0.4.0 on 2026-10-10. A real 0.3.0 install updated itself to it from 
 - [x] The user guide on the website, organized by task and checked against the app's screens. (`site/guide.html`: thirteen tasks from installing to uninstalling, with the screenshots the README uses.)
 
 **Done when:** every item above is checked, the last two releases updated cleanly from the one before, and no data-loss issue is open.
+
+Released as 1.0.0 on 2026-10-11. A real 0.4.0 install updated itself to the draft through `XIV_VAULT_UPDATE_SOURCE`, then backed up and ran its scheduled task successfully, before the draft was published.
 
 ## Later
 
