@@ -101,6 +101,16 @@ An independent review of the restore and validation code found failure modes; th
 - **A failed scheduled backup shows a Windows notification.** Scheduled backups run without a window, so today a failing schedule is only visible when someone opens the app. A backup tool that can fail unnoticed isn't safe to trust.
 - **Steam Deck support comes after 1.0.** XIVLauncher.Core, native or Flatpak, keeps the same Dalamud files in `~/.xlcore` and the game's settings in `~/.xlcore/ffxivConfig`, so the backup format and commands need no change and nothing 1.0 makes stable depends on it. It needs Linux builds, a systemd timer for scheduling, and a real Deck to prove the running-game check sees FFXIV under Wine.
 
+## Decisions (2026-10-11, website and user guide)
+
+- **1.0 launches with a website and a user guide:** a static site in `site/` on GitHub Pages at hazeliscoding.github.io/xiv-vault. Plain HTML and CSS, nothing loaded from another site, and no analytics or trackers, as on Prompuff's site.
+- **Shaped like XIVLauncher's own page, not copied from it.** goatcorp.github.io is one column of short sections, each answering a question someone has: download, why, install, Steam Deck, plugins, help, safety, plugin API, disclaimer. XIV Vault's site follows that pattern with its own brand, words and screenshots.
+- **Written for the plugin and modding community and open-source developers, not as a sales pitch.** It has Prompuff's level of craft without the product-page pitch. It says plainly what XIV Vault reads and never reads, how a restore stays safe, the backup format, the CLI with its JSON output and exit codes, and the license. A section for plugin developers explains what a backup and restore do to their plugin's files in `pluginConfigs`.
+- **The user guide is a page of the website,** organized by task and checked against the app's screens: the first backup, a schedule, a restore on a new PC, restoring some plugins, and the CLI.
+- **Screenshots come from `tools/XivVault.Screenshots`,** so no real path or content ID reaches the site.
+- **A disclaimer** says XIV Vault is not affiliated with Square Enix or with goatcorp's XIVLauncher and Dalamud.
+- **The site signs off with "Made with ♥ by hazeliscoding",** linking to the repository.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
@@ -210,6 +220,8 @@ Released as 0.4.0 on 2026-10-10. A real 0.3.0 install updated itself to it from 
 - [ ] A release checklist that installs the previous release and updates it before a draft is published.
 - [ ] An accessibility check of every screen: Narrator, the keyboard alone, and WCAG AA contrast.
 - [ ] An Impeccable UI audit of every screen, with fixes that keep to the approved mockup.
+- [ ] The website in `site/`, deployed to GitHub Pages: download, what it backs up, install, a new PC, safety, plugin developers, help and the disclaimer, signed "Made with ♥ by hazeliscoding".
+- [ ] The user guide on the website, organized by task and checked against the app's screens.
 
 **Done when:** every item above is checked, the last two releases updated cleanly from the one before, and no data-loss issue is open.
 
