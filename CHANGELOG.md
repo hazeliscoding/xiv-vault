@@ -21,6 +21,7 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 - A confirmation keeps the keyboard and screen readers inside it, starts on the safe choice, and gives focus back when it closes.
 - Focus no longer drops out of the window when Back Up Now runs or the restore wizard moves on a step, so the next Tab doesn't start again at the top.
 - Screen readers hear which page is open, the name of every list, and a backup starting and finishing.
+- In a narrow window, Schedule no longer cuts off Saturday, Sunday and its hints: the next backup moves under the settings. Backups keeps Reveal and Delete in view by leaving out the plugin count, then the size, which Inspect still shows.
 
 ## [0.4.0] - 2026-10-10
 

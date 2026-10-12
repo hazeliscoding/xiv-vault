@@ -131,6 +131,7 @@ An independent review of the restore and validation code found failure modes; th
 - **Text3 is lighter than the mockup,** `#838F9E` instead of `#5F6B7A`, which read at 3:1 where WCAG AA asks 4.5:1 for text. It keeps the hue and stays dimmer than Text2. Field and select borders take the old Text3 so empty fields reach 3:1, and the dash beside something not chosen uses Text3 instead of Text4. Text4 is no longer used for text.
 - **The check is automated where it can be.** `XivVault.Screenshots --a11y` tabs through every screen it renders, checks that focus shows, that the arrow keys reach every list item, and that everything Narrator reads has a name. Contrast was measured from the tokens. A person still listens with Narrator before the item is ticked.
 - **A confirmation is modal for the keyboard too:** the page behind it is disabled while it's open, it starts on the safe choice, and focus goes back where it was.
+- **Narrow windows adapt with container queries,** below the mockup's 1100 pixels only: Schedule stacks its side column under the settings, and a backup row leaves out the plugin count, then the size. At the mockup's size every screen looks as approved.
 - **Focus has somewhere to go** when the control holding it disappears: `FocusFallback.IsTarget` marks Back Up Now and each restore step's main action.
 
 ## M0: Bootstrap
@@ -241,7 +242,7 @@ Released as 0.4.0 on 2026-10-10. A real 0.3.0 install updated itself to it from 
 - [x] The stable parts written down: backup format, CLI commands and options, JSON output, exit codes, and what a major version may change. (`docs/cli.md`, the README's Stability section and `docs/backup-format.md`; `CliContractTests` pins the JSON fields and exit codes.)
 - [x] A release checklist that installs the previous release and updates it before a draft is published. (`docs/releasing.md`: the installed previous release updates from the draft's files through `XIV_VAULT_UPDATE_SOURCE`, then backs up and runs its scheduled task.)
 - [ ] An accessibility check of every screen: Narrator, the keyboard alone, and WCAG AA contrast. (Contrast, keyboard and the automation tree Narrator reads are checked and fixed, and `--a11y` finds no problems on any screen. Left: listening to the app with Narrator itself.)
-- [ ] An Impeccable UI audit of every screen, with fixes that keep to the approved mockup.
+- [x] An Impeccable UI audit of every screen, with fixes that keep to the approved mockup. (14/20 before fixes, held back by adaptivity: at the smallest window Schedule cut off days and hints and Backups cut off row actions. Both now adapt below the mockup's size and look as before at it.)
 - [ ] The website in `site/`, deployed to GitHub Pages: download, what it backs up, install, a new PC, safety, plugin developers, help and the disclaimer, signed "Made with ♥ by hazeliscoding".
 - [ ] The user guide on the website, organized by task and checked against the app's screens.
 
