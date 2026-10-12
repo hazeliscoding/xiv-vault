@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Start with **Diagnostics** in the app, or `xiv-vault doctor`. It checks XIVLauncher, Dalamud, the backup folder and scheduling, and says what to do next. **Copy Diagnostic Report** (or `xiv-vault doctor --report`) gives you text to attach to an issue. It holds paths, versions and results, never configuration contents, and your Windows user folder is shown as `%USERPROFILE%`.
+Start with **Diagnostics** in the app, or `xiv-vault doctor`. It checks XIVLauncher, Dalamud, the backup folder, scheduling and game settings, and says what to do next. **Copy Diagnostic Report** (or `xiv-vault doctor --report`) gives you text to attach to an issue. It holds paths, versions and results, never configuration contents, and your Windows user folder is shown as `%USERPROFILE%`.
 
 ## "XIVLauncher not found"
 

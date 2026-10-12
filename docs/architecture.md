@@ -42,12 +42,12 @@ Both front ends call `services.AddXivVaultCore()` and resolve the same services 
 | `ArchiveValidator` | Decides whether an archive can be trusted: manifest, schema, paths, allowlist, every hash. |
 | `BackupCatalog` | Lists archives in a folder from their manifests, or by name while they are online only; verifies the latest one, or any one on request, and caches the result; downloads and deletes them. |
 | `RetentionService` | Keeps the newest N regular backups and the newest 3 pre-restore snapshots, separately. Damaged archives are neither counted nor deleted. Online-only archives are never downloaded: they don't count, and are deleted unopened once N verified backups are newer. |
-| `RestoreService` | Preview, safety checks and the restore itself, of everything or of a `RestoreSelection`: some plugins, and Dalamud settings as one choice. |
+| `RestoreService` | Preview, safety checks and the restore itself, of everything or of a `RestoreSelection`: some plugins, Dalamud settings as one choice, and the character settings and system settings as one choice each. |
 | `GameProcessGuard` | Detects XIVLauncher and FFXIV processes. |
 | `WindowsTaskScheduler`, `ScheduleService` | The `XIV Vault Scheduled Backup` task through `schtasks /xml`, kept in step with the saved preferences. |
 | `ScheduledBackupRunner` | What the task runs: waits for FFXIV, backs up, records the result. |
 | `StatusService` | The protection summary the Overview and `xiv-vault status` show. |
-| `DiagnosticsService` | The four health-check groups and the shareable report. |
+| `DiagnosticsService` | The five health-check groups and the shareable report. |
 
 `OperationLock` is a named mutex per data folder. Backups, restores and retention take it, so the scheduled task and the app never work on the backup folder at the same time.
 
