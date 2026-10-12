@@ -60,7 +60,7 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
         IProgress<RestoreProgress>? progress,
         CancellationToken cancellationToken)
     {
-        var settings = IfReadable(() => DalamudConfigReader.ReadPluginSettings(configPath), null) ?? new DalamudPluginSettings([], [], false, new HashSet<string>());
+        var settings = DalamudConfigReader.ReadPluginSettings(configPath) ?? new DalamudPluginSettings([], [], false, new HashSet<string>());
         var chosen = settings.Plugins
             .Where(plugin => installs(plugin.InternalName))
             .DistinctBy(plugin => plugin.InternalName, StringComparer.Ordinal)
@@ -119,7 +119,7 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
             logger.LogWarning("{Count} custom plugin list(s) couldn't be read", unavailable);
         }
 
-        var bans = IfReadable(() => DalamudInstall.LoadBanList(rootPath), DalamudBanList.Empty);
+        var bans = DalamudInstall.LoadBanList(rootPath);
         var plan = InstallPlanner.Plan(missing, installed, dalamud, official, custom, bans, settings.DoPluginTest, settings.TestingOptIns);
         foreach (var skipped in plan.Skipped)
         {
@@ -260,23 +260,10 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
         {
             return InstalledPluginScanner.Scan(rootPath);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // A folder that can't be listed, or a manifest that isn't UTF-8 (see IfReadable).
+            // installedPlugins can't be listed.
             return null;
-        }
-    }
-
-    // System.Text.Json parses text that isn't UTF-8 and throws only when a value is read, so such a file counts as unreadable.
-    private static T IfReadable<T>(Func<T> read, T unreadable)
-    {
-        try
-        {
-            return read();
-        }
-        catch (InvalidOperationException)
-        {
-            return unreadable;
         }
     }
 
