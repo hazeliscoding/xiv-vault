@@ -1,10 +1,11 @@
 using System.Text.Json;
+using XivVault.Core.Plugins;
 
 namespace XivVault.Core.Restore;
 
 /// <summary>
-/// Reads the one fact the restore review shows from dalamudConfig.json: how many custom plugin
-/// repositories it lists. Nothing else is read, and nothing read here is ever logged.
+/// Reads what restores need from dalamudConfig.json: how many custom plugin repositories it lists,
+/// and the plugins to install. Nothing else is read, and nothing read here is ever logged.
 /// </summary>
 public static class DalamudConfigReader
 {
@@ -44,6 +45,14 @@ public static class DalamudConfigReader
             return null;
         }
     }
+
+    /// <summary>
+    /// The plugins to install and how to install them, or null when the file isn't a readable Dalamud
+    /// configuration. Reads plugin names, IDs, custom repository URLs and testing choices, nothing else.
+    /// </summary>
+    public static DalamudPluginSettings? ReadPluginSettings(Stream json) => throw new NotImplementedException();
+
+    public static DalamudPluginSettings? ReadPluginSettings(string path) => throw new NotImplementedException();
 
     public static int? CountCustomRepositories(string path)
     {
