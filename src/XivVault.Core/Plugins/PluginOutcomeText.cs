@@ -7,7 +7,7 @@ public static class PluginOutcomeText
     {
         PluginInstallOutcome.Installed => "installed",
         PluginInstallOutcome.AlreadyInstalled => "already installed",
-        PluginInstallOutcome.InTheWay => "an unfinished or removed copy is in the way: start the game once, then restore again",
+        PluginInstallOutcome.InTheWay => "a damaged or removed copy is in the way: start the game once and restore again, or install it from /xlplugins",
         PluginInstallOutcome.IdInUse => "another installed plugin uses its ID",
         PluginInstallOutcome.NotOffered => "not in the official repository or a custom repository you chose",
         PluginInstallOutcome.RepositoryUnavailable => "its repository couldn't be reached or read",

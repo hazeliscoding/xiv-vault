@@ -27,8 +27,9 @@ public enum PluginFolderState
     Installed,
 
     /// <summary>
-    /// Something Dalamud removes at its next start is there: a copy without a manifest, one removed
-    /// in the game, or one marked broken. XIV Vault never writes over it.
+    /// A copy Dalamud won't load is there: one without its DLL or manifest, one removed in the game, one
+    /// marked broken, or one whose manifest Dalamud can't read. Dalamud removes all but the last at its
+    /// next start; its own installer replaces any of them. XIV Vault never writes over one.
     /// </summary>
     InTheWay,
 
