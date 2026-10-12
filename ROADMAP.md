@@ -111,6 +111,13 @@ An independent review of the restore and validation code found failure modes; th
 - **A disclaimer** says XIV Vault is not affiliated with Square Enix or with goatcorp's XIVLauncher and Dalamud.
 - **The site signs off with "Made with ♥ by hazeliscoding",** linking to the repository.
 
+## Decisions (2026-10-11, building the website)
+
+- **The site inherits the app's world:** its tokens, dark ground, IBM Plex and the diamond mark. No `PRODUCT.md` or `DESIGN.md`; the website decisions above are the brief.
+- **The first screen is the demo:** the headline, Download for Windows and the guide, then the README's backup-and-restore tour as a looping video at about the app's own size. It stays still for people who ask for less motion and has a pause button.
+- **What it backs up is shown as the two folders,** item by item, with what is never touched, because that is what the modding community asks first.
+- **Screenshots, the demo and the social preview come from `docs/screenshots` at deploy time** (`scripts/stage-site.sh`), so the site never shows older pictures than the README. Only the fonts are copied into `site/`, as Latin WOFF2 subsets of the app's own.
+
 ## Decisions (2026-10-11, failure notifications)
 
 - **Core calls WinRT directly** for the notification, through about 80 lines of function-pointer interop, instead of targeting `net10.0-windows`. Microsoft's projection would add about 25 MB to each exe and make the projects Windows-only, which the Linux work would have to undo. The interfaces and their method order were read from Windows' own metadata.
@@ -243,8 +250,8 @@ Released as 0.4.0 on 2026-10-10. A real 0.3.0 install updated itself to it from 
 - [x] A release checklist that installs the previous release and updates it before a draft is published. (`docs/releasing.md`: the installed previous release updates from the draft's files through `XIV_VAULT_UPDATE_SOURCE`, then backs up and runs its scheduled task.)
 - [x] An accessibility check of every screen: Narrator, the keyboard alone, and WCAG AA contrast. (Contrast, keyboard and the automation tree Narrator reads are checked and fixed, `--a11y` finds no problems on any screen, and the author listened through with Narrator.)
 - [x] An Impeccable UI audit of every screen, with fixes that keep to the approved mockup. (14/20 before fixes, held back by adaptivity: at the smallest window Schedule cut off days and hints and Backups cut off row actions. Both now adapt below the mockup's size and look as before at it.)
-- [ ] The website in `site/`, deployed to GitHub Pages: download, what it backs up, install, a new PC, safety, plugin developers, help and the disclaimer, signed "Made with ♥ by hazeliscoding".
-- [ ] The user guide on the website, organized by task and checked against the app's screens.
+- [ ] The website in `site/`, deployed to GitHub Pages: download, what it backs up, install, a new PC, safety, plugin developers, help and the disclaimer, signed "Made with ♥ by hazeliscoding". (Built and reviewed; it deploys with the push at the end of this milestone, once Pages is turned on for the repository.)
+- [x] The user guide on the website, organized by task and checked against the app's screens. (`site/guide.html`: thirteen tasks from installing to uninstalling, with the screenshots the README uses.)
 
 **Done when:** every item above is checked, the last two releases updated cleanly from the one before, and no data-loss issue is open.
 
