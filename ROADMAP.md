@@ -232,7 +232,7 @@ Released as 0.4.0 on 2026-10-10. A real 0.3.0 install updated itself to it from 
 - [x] A Windows notification when a scheduled backup fails. (Checked on the author's PC: a failing scheduled run from the app and from the CLI each showed one.)
 - [x] Real 0.1.0 archives kept as test files, which every later version must validate and restore. (A manual backup with the UI layout and the safety snapshot from restoring it, made by the published 0.1.0 CLI from a fake XIVLauncher folder, in `tests/XivVault.Tests/Fixtures/0.1.0`.)
 - [x] The stable parts written down: backup format, CLI commands and options, JSON output, exit codes, and what a major version may change. (`docs/cli.md`, the README's Stability section and `docs/backup-format.md`; `CliContractTests` pins the JSON fields and exit codes.)
-- [ ] A release checklist that installs the previous release and updates it before a draft is published.
+- [x] A release checklist that installs the previous release and updates it before a draft is published. (`docs/releasing.md`: the installed previous release updates from the draft's files through `XIV_VAULT_UPDATE_SOURCE`, then backs up and runs its scheduled task.)
 - [ ] An accessibility check of every screen: Narrator, the keyboard alone, and WCAG AA contrast.
 - [ ] An Impeccable UI audit of every screen, with fixes that keep to the approved mockup.
 - [ ] The website in `site/`, deployed to GitHub Pages: download, what it backs up, install, a new PC, safety, plugin developers, help and the disclaimer, signed "Made with ♥ by hazeliscoding".
