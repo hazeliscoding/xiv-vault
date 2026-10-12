@@ -173,6 +173,23 @@ Researched from XIVLauncher.Core's, Dalamud's and Wine's source, the XIVLauncher
 - **Proven on the owner's PC** with the XIVLauncher folder renamed aside so it looks like a new PC, then renamed back, and then on the tester's laptop.
 - **It comes before the beta channel:** plugin installs become M12 (1.1), the beta channel M13 (1.2), Linux M14 (1.3) and the Steam Deck M15 (1.4).
 
+## Decisions (2026-10-12, how plugins are installed)
+
+Settled after reading Dalamud 15.0.3.6's source and checking the owner's install, read-only.
+
+- **Built now,** although XIVLauncher's main branch has an unreleased Backup tab (January 2026) that zips plugin files with the settings. XIV Vault installs current versions instead of copying files that stop loading after an API bump, keeps nothing executable in backups, and keeps its guarded restore. goatcorp gets a heads-up before 1.1.
+- **The ID is what makes it work.** On/off states, collections and Dalamud's copies of plugin settings are keyed by each plugin's ID, so XIV Vault writes the backup's ID into the manifest it installs. Dalamud's own reinstall makes a new ID, which is why collections break across PCs today (goatcorp/Dalamud#1992).
+- **Which plugins:** every plugin in the default collection and the saved collections, minus dev plugins and empty or shared IDs. When a name has several IDs, the default collection's wins, then the most recently added. The list can include plugins deleted in game, so the review names them.
+- **Installs follow the restore's choices:** only when Dalamud settings are restored, never for a plugin left out in the review, and **Install missing plugins** is a choice of its own, on in the app. The CLI installs only with `--install-plugins`, so a scripted restore never starts downloading unasked. Restoring a Pre-Restore safety backup installs nothing, and plugins a restore installed stay when it is undone.
+- **Left alone:** a plugin with any version folder on the PC, even under another ID, and `dalamudConfig.json`, which is restored as it was and never edited. Nothing is deleted, and Dalamud's `.broken` markers are never written.
+- **Checked as Dalamud checks, and more:** the package's name and version match the repository, the API level equals the installed Dalamud's (read from `Dalamud.dll`'s version, which is never loaded), the plugin isn't on Dalamud's ban list, and testing builds install only where the restored settings opted that plugin in. Stricter: the name must be one safe folder name, package paths follow the archive path rules, and size and file-count caps apply.
+- **Downloads come first.** Every plugin is downloaded and checked in a work folder before any file changes, so cancelling or losing the network changes nothing. Then the settings are restored, then each plugin's folder is written, its manifest last. A plugin that fails is listed with its reason and the rest continue; restoring again installs only what is still missing.
+- **When Dalamud isn't downloaded yet,** because XIVLauncher was closed too soon on a new PC, no plugins are installed, and the restore says to open XIVLauncher, let it finish, close it and restore again.
+- **Custom repositories:** only those enabled in the backup, shown by host with Dalamud's own warning and unticked to start, over HTTPS only. An official plugin name always wins, and a name offered by two ticked repositories is skipped.
+- **The network promise:** requests go to `kamori.goats.dev` for the plugin list and downloads, which redirect to `raw.githubusercontent.com`, and to ticked custom repositories, made as Dalamud's installer makes them, with an XIV Vault user agent. Nothing about the user, their characters or their backups is sent; those hosts see which plugins are downloaded, as they do for Dalamud's installer. When no plugin is missing, nothing is requested.
+- **Reading beyond the allowlist:** to tell what is installed and which Dalamud will run, XIV Vault reads folder names and manifests under `installedPlugins\`, the version of `Dalamud.dll` under `addon\Hooks\`, and Dalamud's ban list in `dalamudAssets\`. This amends 2026-10-04's "Nothing else is ever read"; backups still hold only the allowlist.
+- **Logs** hold counts and fixed reasons. Plugin names appear on screen, never in logs or the diagnostic report, and repository URLs and plugin IDs never appear at all.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
