@@ -17,7 +17,11 @@ public sealed partial class NavItemViewModel(AppPage page, string label, string 
     public string Icon { get; } = icon;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SpokenName))]
     public partial bool IsActive { get; set; }
+
+    /// <summary>What screen readers say, since a button can't show which page is open.</summary>
+    public string SpokenName => IsActive ? Label + ", current page" : Label;
 }
 
 public sealed partial class MainWindowViewModel : ObservableObject

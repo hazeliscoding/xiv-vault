@@ -54,9 +54,6 @@
     <Style Selector="^:pressed">
       <Setter Property="RenderTransform" Value="translateY(0.5px)" />
     </Style>
-    <Style Selector="^:focus-visible /template/ Border#PART_Border">
-      <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
-    </Style>
     <Style Selector="^:disabled">
       <Setter Property="Opacity" Value="0.45" />
       <Setter Property="Cursor" Value="No" />
@@ -72,6 +69,10 @@
 
     <Style Selector="^.secondary /template/ Border#PART_Border">
       <Setter Property="BoxShadow" Value="{StaticResource HighlightInset}" />
+    </Style>
+    <!-- After .secondary, whose inset highlight would otherwise replace the focus ring. -->
+    <Style Selector="^:focus-visible /template/ Border#PART_Border">
+      <Setter Property="BoxShadow" Value="{StaticResource FocusRing}" />
     </Style>
 
     <Style Selector="^.primary">
@@ -426,7 +427,7 @@
             <Panel Width="14" VerticalAlignment="Center">
               <c:Icon Name="PART_Check" Kind="Check" Size="13" StrokeWidth="2.2" Foreground="{StaticResource Healthy}"
                       HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="False" />
-              <TextBlock Name="PART_Dash" FontFamily="{StaticResource MonoFont}" Text="–" Foreground="{StaticResource Text4}" HorizontalAlignment="Center" />
+              <TextBlock Name="PART_Dash" FontFamily="{StaticResource MonoFont}" Text="–" Foreground="{StaticResource Text3}" HorizontalAlignment="Center" />
             </Panel>
             <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" />
           </StackPanel>

@@ -12,7 +12,8 @@
   <StackPanel Spacing="16">
     <StackPanel Spacing="4">
       <TextBlock Classes="page-title" Text="XIV Vault" />
-      <TextBlock Classes="body t2" Text="{Binding Subtitle}" />
+      <!-- Announced as it changes, so screen readers hear a backup start and finish. -->
+      <TextBlock Classes="body t2" Text="{Binding Subtitle}" AutomationProperties.LiveSetting="Polite" />
     </StackPanel>
 
     <c:Banner Tone="Critical" Title="The backup could not be completed" Description="{Binding ErrorMessage}"
@@ -65,7 +66,7 @@
         </StackPanel>
         <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center" Margin="24,0,0,0">
           <Border Classes="glow" HorizontalAlignment="Center">
-            <c:XvButton Classes="primary lg" Icon="ArchiveRestore" Content="Back Up Now" Command="{Binding BackUpNowCommand}" />
+            <c:XvButton Classes="primary lg" Icon="ArchiveRestore" Content="Back Up Now" Command="{Binding BackUpNowCommand}" c:FocusFallback.IsTarget="True" />
           </Border>
           <c:XvButton Classes="secondary lg" Icon="RotateCcw" Content="Restore Backup" HorizontalAlignment="Center"
                       Command="{Binding RestoreCommand}" />
@@ -80,7 +81,7 @@
         <c:AetherRing Size="56" VerticalAlignment="Center" />
         <StackPanel Grid.Column="1" Spacing="8" Margin="22,0" VerticalAlignment="Center">
           <TextBlock Classes="micro accent" Text="BACKING UP" />
-          <TextBlock Classes="section-title" Text="{Binding StageLabel}" />
+          <TextBlock Classes="section-title" Text="{Binding StageLabel}" AutomationProperties.LiveSetting="Polite" />
           <ProgressBar Classes="thin" Value="{Binding Percent}" Maximum="100" />
           <TextBlock Classes="data t3" Text="{Binding PercentLabel}" />
         </StackPanel>
@@ -98,7 +99,7 @@
           <TextBlock Classes="body t2" TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left" Text="{Binding EmptyDescription}" />
         </StackPanel>
         <Border Grid.Column="1" Classes="glow" VerticalAlignment="Center" Margin="24,0,0,0">
-          <c:XvButton Classes="primary lg" Icon="ArchiveRestore" Content="Back Up Now" Command="{Binding BackUpNowCommand}" />
+          <c:XvButton Classes="primary lg" Icon="ArchiveRestore" Content="Back Up Now" Command="{Binding BackUpNowCommand}" c:FocusFallback.IsTarget="True" />
         </Border>
       </Grid>
     </Border>
@@ -143,7 +144,7 @@
     <c:Banner Tone="Warning" Title="{Binding Subtitle}" IsVisible="{Binding ShowAttention}" />
 
     <!-- Status row -->
-    <ItemsControl ItemsSource="{Binding StatusRow}" Margin="4,0">
+    <ItemsControl ItemsSource="{Binding StatusRow}" Margin="4,0" AutomationProperties.Name="Status">
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate><WrapPanel ItemSpacing="22" LineSpacing="6" /></ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
@@ -204,7 +205,7 @@
         <c:EmptyState Title="No backups recorded" Description="The first backup will appear here with its size and verification result." />
       </Border>
       <Border Classes="card" ClipToBounds="True" IsVisible="{Binding HasRecent}">
-        <ItemsControl Classes="rows" ItemsSource="{Binding Recent}">
+        <ItemsControl Classes="rows" ItemsSource="{Binding Recent}" AutomationProperties.Name="Recent backups">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:BackupRowViewModel">
               <Border Classes="row enter" Height="36" Padding="14,0" AutomationProperties.Name="{Binding AccessibleName}">

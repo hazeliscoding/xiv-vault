@@ -798,3 +798,20 @@ public class ScheduleViewModelTests
         Assert.Equal("Paused", schedule.NextLabel);
     }
 }
+
+public class NavItemViewModelTests
+{
+    [Fact]
+    public void Screen_readers_hear_which_page_is_open()
+    {
+        var item = new NavItemViewModel(AppPage.Backups, "Backups", "Archive");
+        var changed = new List<string?>();
+        item.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        Assert.Equal("Backups", item.SpokenName);
+        item.IsActive = true;
+
+        Assert.Equal("Backups, current page", item.SpokenName);
+        Assert.Contains(nameof(NavItemViewModel.SpokenName), changed);
+    }
+}

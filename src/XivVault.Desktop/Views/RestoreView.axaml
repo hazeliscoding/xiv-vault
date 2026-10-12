@@ -109,7 +109,7 @@
                         IsVisible="{Binding !HasChoices}" />
           </StackPanel>
           <c:XvButton Grid.Column="1" Classes="primary" IconRight="ChevronRight" Content="{Binding ContinueLabel}"
-                      Command="{Binding ContinueCommand}" IsLoading="{Binding IsLoading}" />
+                      Command="{Binding ContinueCommand}" IsLoading="{Binding IsLoading}" c:FocusFallback.IsTarget="True" />
         </Grid>
       </StackPanel>
 
@@ -133,7 +133,7 @@
                   <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Panel Width="14">
                       <c:Icon Kind="Check" Size="13" StrokeWidth="2.2" Foreground="{StaticResource Healthy}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding AnyPluginChosen}" />
-                      <TextBlock FontFamily="{StaticResource MonoFont}" Text="–" Classes="t4" HorizontalAlignment="Center" IsVisible="{Binding !AnyPluginChosen}" />
+                      <TextBlock FontFamily="{StaticResource MonoFont}" Text="–" Classes="t3" HorizontalAlignment="Center" IsVisible="{Binding !AnyPluginChosen}" />
                     </Panel>
                     <TextBlock Classes="body" Text="{Binding PluginsLabel}" Classes.t1="{Binding AnyPluginChosen}" Classes.t3="{Binding !AnyPluginChosen}" />
                   </StackPanel>
@@ -173,7 +173,7 @@
                 </Border>
                 <CheckBox Theme="{StaticResource ChoiceToggle}" Content="Dalamud settings" IsChecked="{Binding DalamudSettingsChosen}"
                           IsEnabled="{Binding HasDalamudSettings}" Margin="-4,-3" />
-                <ItemsControl ItemsSource="{Binding DalamudDetails}" Margin="22,0,0,0">
+                <ItemsControl ItemsSource="{Binding DalamudDetails}" Margin="22,0,0,0" AutomationProperties.Name="Dalamud settings">
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate>
                   </ItemsControl.ItemsPanel>
@@ -182,7 +182,7 @@
                       <StackPanel Orientation="Horizontal" Spacing="8">
                         <Panel Width="14">
                           <c:Icon Kind="Check" Size="13" StrokeWidth="2.2" Foreground="{StaticResource Healthy}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding Included}" />
-                          <TextBlock FontFamily="{StaticResource MonoFont}" Text="–" Classes="t4" HorizontalAlignment="Center" IsVisible="{Binding !Included}" />
+                          <TextBlock FontFamily="{StaticResource MonoFont}" Text="–" Classes="t3" HorizontalAlignment="Center" IsVisible="{Binding !Included}" />
                         </Panel>
                         <TextBlock Classes="body" Text="{Binding Label}" Classes.t1="{Binding Included}" Classes.t3="{Binding !Included}" />
                       </StackPanel>
@@ -202,7 +202,7 @@
             <Border Grid.Column="1" Classes="card" Padding="16,14">
               <StackPanel Spacing="10">
                 <TextBlock Classes="micro t3" Text="ON THIS PC RIGHT NOW" />
-                <ItemsControl ItemsSource="{Binding Current}">
+                <ItemsControl ItemsSource="{Binding Current}" AutomationProperties.Name="On this PC right now">
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate>
                   </ItemsControl.ItemsPanel>
@@ -226,7 +226,7 @@
           <TextBlock Grid.Column="1" Classes="compact t3" Text="{Binding ChoiceProblem}" VerticalAlignment="Center"
                      IsVisible="{Binding ChoiceProblem, Converter={x:Static ObjectConverters.IsNotNull}}" />
           <c:XvButton Grid.Column="2" Classes="primary" IconRight="ChevronRight" Content="Continue"
-                      Command="{Binding ContinueCommand}" IsLoading="{Binding IsLoading}" />
+                      Command="{Binding ContinueCommand}" IsLoading="{Binding IsLoading}" c:FocusFallback.IsTarget="True" />
         </Grid>
       </StackPanel>
 
@@ -238,7 +238,7 @@
               <c:Spinner Classes="spin" Width="12" Height="12" Foreground="{StaticResource Accent}" VerticalAlignment="Center" />
               <TextBlock Classes="body t2" Text="Running safety checks…" VerticalAlignment="Center" />
             </StackPanel>
-            <ItemsControl Classes="rows" ItemsSource="{Binding Checks}">
+            <ItemsControl Classes="rows" ItemsSource="{Binding Checks}" AutomationProperties.Name="Safety checks">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:CheckItem">
                   <Border Classes="row enter" Height="40" Padding="16,0">
@@ -259,7 +259,7 @@
                 IsVisible="{Binding IsRestoring}">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
             <c:AetherRing Size="40" VerticalAlignment="Center" />
-            <ItemsControl Grid.Column="1" ItemsSource="{Binding Stages}" VerticalAlignment="Center">
+            <ItemsControl Grid.Column="1" ItemsSource="{Binding Stages}" VerticalAlignment="Center" AutomationProperties.Name="Restore stages">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
@@ -293,7 +293,7 @@
           </Grid>
           <Border Grid.Column="2" Classes="glow">
             <c:XvButton Classes="primary" Icon="RotateCcw" Content="Restore Configuration"
-                        Command="{Binding RestoreNowCommand}" IsEnabled="{Binding CanRestore}" IsLoading="{Binding IsRestoring}" />
+                        Command="{Binding RestoreNowCommand}" IsEnabled="{Binding CanRestore}" IsLoading="{Binding IsRestoring}" c:FocusFallback.IsTarget="True" />
           </Border>
         </Grid>
       </StackPanel>
@@ -330,8 +330,8 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" Margin="0,6,0,0">
               <c:XvButton Classes="primary" Icon="ExternalLink" Content="Open XIVLauncher" Command="{Binding OpenLauncherCommand}"
-                          IsVisible="{Binding CanOpenLauncher}" />
-              <c:XvButton Classes="secondary" Icon="Archive" Content="View Backups" Command="{Binding ViewBackupsCommand}" />
+                          IsVisible="{Binding CanOpenLauncher}" c:FocusFallback.IsTarget="True" />
+              <c:XvButton Classes="secondary" Icon="Archive" Content="View Backups" Command="{Binding ViewBackupsCommand}" c:FocusFallback.IsTarget="True" />
             </StackPanel>
           </StackPanel>
         </Border>

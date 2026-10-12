@@ -1,13 +1,17 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using XivVault.Desktop.ViewModels;
 
 namespace XivVault.Desktop.Views;
 
-/// <summary>Window chrome only: caption buttons, Escape for the modal, scroll reset between pages.</summary>
+/// <summary>Window chrome only: caption buttons, the modal's Escape and focus, scroll reset between pages.</summary>
 public partial class MainWindow : Window
 {
+    private IInputElement? _focusBeforeDialog;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -36,6 +40,27 @@ public partial class MainWindow : Window
 
     private void OnScrimPressed(object? sender, PointerPressedEventArgs e) =>
         (DataContext as MainWindowViewModel)?.Dialogs.Active?.Close(false);
+
+    // The confirmation's safe choice takes focus when it opens, so a stray Enter never confirms,
+    // and focus goes back to where it was once the page behind is enabled again.
+    private void OnDialogOpened(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        _focusBeforeDialog = FocusManager?.GetFocusedElement();
+        (sender as Control)?.Focus(NavigationMethod.Tab);
+    }
+
+    private void OnDialogClosed(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        var previous = _focusBeforeDialog as Control;
+        _focusBeforeDialog = null;
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (previous is { IsEffectivelyVisible: true } && TopLevel.GetTopLevel(previous) == this)
+            {
+                previous.Focus(NavigationMethod.Tab);
+            }
+        });
+    }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {

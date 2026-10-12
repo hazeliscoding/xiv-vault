@@ -22,7 +22,7 @@
       <c:Banner Tone="Critical" Title="Something went wrong" Description="{Binding ErrorMessage}"
                 IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
-      <ItemsControl ItemsSource="{Binding Rows}">
+      <ItemsControl ItemsSource="{Binding Rows}" AutomationProperties.Name="Backups">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
@@ -67,7 +67,7 @@
                       <TextBlock Classes="micro t3">
                         <Run Text="PLUGIN CONFIGURATIONS · " /><Run Text="{Binding PluginCountText}" />
                       </TextBlock>
-                      <ItemsControl ItemsSource="{Binding ChipItems}">
+                      <ItemsControl ItemsSource="{Binding ChipItems}" AutomationProperties.Name="Plugin configurations">
                         <ItemsControl.ItemsPanel>
                           <ItemsPanelTemplate><WrapPanel ItemSpacing="4" LineSpacing="4" /></ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>

@@ -17,7 +17,7 @@
         </StackPanel>
         <StackPanel Grid.Column="1" Spacing="5" HorizontalAlignment="Right" VerticalAlignment="Bottom">
           <c:XvButton Classes="secondary" Icon="{Binding CopyIcon}" Content="{Binding CopyLabel}" HorizontalAlignment="Right"
-                      Command="{Binding CopyReportCommand}" />
+                      Command="{Binding CopyReportCommand}" AutomationProperties.LiveSetting="Polite" />
           <TextBlock Classes="compact t3" FontSize="11" HorizontalAlignment="Right"
                      Text="Paths, versions and results only. Plugin configuration contents are never included." />
         </StackPanel>
@@ -29,7 +29,7 @@
         </c:Banner.Actions>
       </c:Banner>
 
-      <ItemsControl ItemsSource="{Binding Groups}">
+      <ItemsControl ItemsSource="{Binding Groups}" AutomationProperties.Name="Checks">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><UniformGrid Columns="2" ColumnSpacing="12" RowSpacing="12" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
@@ -44,7 +44,7 @@
                     <c:StatusBadge Grid.Column="2" Classes="sm" Tone="{Binding Tone}" Label="{Binding StatusLabel}" />
                   </Grid>
                 </Border>
-                <ItemsControl ItemsSource="{Binding Rows}">
+                <ItemsControl ItemsSource="{Binding Rows}" AutomationProperties.Name="{Binding Title}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:DiagnosticRow">
                       <Border MinHeight="34" Padding="14,6" BorderBrush="{StaticResource Border1}"

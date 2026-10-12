@@ -39,7 +39,7 @@
             </Grid>
             <Grid ColumnDefinitions="150,*" ColumnSpacing="12" IsVisible="{Binding IsWeekly}">
               <TextBlock Classes="strong" Text="On" VerticalAlignment="Center" />
-              <ItemsControl Grid.Column="1" ItemsSource="{Binding Weekdays}" IsEnabled="{Binding AutoEnabled}">
+              <ItemsControl Grid.Column="1" ItemsSource="{Binding Weekdays}" IsEnabled="{Binding AutoEnabled}" AutomationProperties.Name="Days">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
