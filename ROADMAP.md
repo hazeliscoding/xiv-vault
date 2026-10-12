@@ -309,7 +309,7 @@ Released as 1.0.0 on 2026-10-11. A real 0.4.0 install updated itself to the draf
 
 ## M12: Plugin installs in beta, and the beta channel (1.1)
 
-- [ ] Core reads the plugin list from Dalamud's settings: internal names, IDs and on/off states from the default collection and saved collections, nothing else.
+- [ ] Core reads the plugin list from Dalamud's settings: internal names and IDs from the default collection and saved collections, nothing else. On/off states need no reading: they come back with the restored settings file, which matches each plugin by its ID.
 - [ ] Core installs each missing plugin's current version from its repository, checked as Dalamud checks it (name, version, API level, no paths outside the plugin's folder), into `installedPlugins\<Name>\<version>\` with its old ID. A plugin that is already installed is left alone.
 - [ ] Custom-repository plugins install only from repositories the user ticks in the review.
 - [ ] Desktop: the review step says which plugins will be installed and from where, and **Restore complete** lists what was installed and what to install from `/xlplugins`. The CLI's restore does the same, with its options and JSON fields added, never changed.
