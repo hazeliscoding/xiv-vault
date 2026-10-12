@@ -29,19 +29,19 @@ public class RestorePluginInstallTests
 
     private static readonly Version Dalamud = new(15, 0, 3, 6);
 
-    private static readonly (string Name, Guid Id) Wotsit = ("Wotsit", Guid.Parse("1d0b8f5e-0a8c-4c39-9f3a-2b7c0f6a1e01"));
-    private static readonly (string Name, Guid Id) Orchestrion = ("Orchestrion", Guid.Parse("2e1c9a6f-1b9d-4d4a-8a4b-3c8d1a7b2f02"));
+    internal static readonly (string Name, Guid Id) Wotsit = ("Wotsit", Guid.Parse("1d0b8f5e-0a8c-4c39-9f3a-2b7c0f6a1e01"));
+    internal static readonly (string Name, Guid Id) Orchestrion = ("Orchestrion", Guid.Parse("2e1c9a6f-1b9d-4d4a-8a4b-3c8d1a7b2f02"));
     private static readonly (string Name, Guid Id) SimpleTweaks = ("SimpleTweaksPlugin", Guid.Parse("3f2dab70-2cae-4e5b-9b5c-4d9e2b8c3a03"));
-    private static readonly (string Name, Guid Id) Moodles = ("Moodles", Guid.Parse("4a3ebc81-3dbf-4f6c-8c6d-5eaf3c9d4b04"));
-    private static readonly (string Name, Guid Id) Lifestream = ("Lifestream", Guid.Parse("5b4fcd92-4ec0-4a7d-9d7e-6fb04dae5c05"));
-    private static readonly (string Name, Guid Id) Tippy = ("Tippy", Guid.Parse("6c50dea3-5fd1-4b8e-8e8f-70c15ebf6d06"));
+    internal static readonly (string Name, Guid Id) Moodles = ("Moodles", Guid.Parse("4a3ebc81-3dbf-4f6c-8c6d-5eaf3c9d4b04"));
+    internal static readonly (string Name, Guid Id) Lifestream = ("Lifestream", Guid.Parse("5b4fcd92-4ec0-4a7d-9d7e-6fb04dae5c05"));
+    internal static readonly (string Name, Guid Id) Tippy = ("Tippy", Guid.Parse("6c50dea3-5fd1-4b8e-8e8f-70c15ebf6d06"));
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private static FakePluginRepository Repository(TestHost host) => new(host.Downloads, Path.Combine(host.Environment.Root, "web"));
+    internal static FakePluginRepository Repository(TestHost host) => new(host.Downloads, Path.Combine(host.Environment.Root, "web"));
 
     /// <summary>Backs up another PC whose Dalamud settings are <paramref name="config"/>.</summary>
-    private static Task<string> BackUpOldPcAsync(TestHost host, string config, IEnumerable<string>? pluginConfigs = null) =>
+    internal static Task<string> BackUpOldPcAsync(TestHost host, string config, IEnumerable<string>? pluginConfigs = null) =>
         BackUpOldPcAsync(host, Encoding.UTF8.GetBytes(config), pluginConfigs);
 
     private static async Task<string> BackUpOldPcAsync(TestHost host, byte[] config, IEnumerable<string>? pluginConfigs = null)
@@ -56,7 +56,7 @@ public class RestorePluginInstallTests
     private static byte[] NotUtf8(string text) => [.. Encoding.UTF8.GetBytes(text).Select(value => value == (byte)'#' ? (byte)0xFF : value)];
 
     /// <summary>A new PC where XIVLauncher has run once and, unless told otherwise, has finished downloading Dalamud.</summary>
-    private static string NewPc(TestHost host, bool dalamudReady = true, string folder = "XIVLauncher")
+    internal static string NewPc(TestHost host, bool dalamudReady = true, string folder = "XIVLauncher")
     {
         var root = Path.Combine(host.Environment.RoamingAppData, folder);
         Directory.CreateDirectory(root);
@@ -70,7 +70,7 @@ public class RestorePluginInstallTests
     }
 
     /// <summary>A plugin Dalamud would load: its DLL and a manifest with its ID.</summary>
-    private static void InstallLocally(string root, (string Name, Guid Id) plugin)
+    internal static void InstallLocally(string root, (string Name, Guid Id) plugin)
     {
         var folder = Path.Combine(root, "installedPlugins", plugin.Name, "0.9.0.0");
         Directory.CreateDirectory(folder);
@@ -189,6 +189,7 @@ public class RestorePluginInstallTests
         var result = await RestoreAsync(host, archive);
 
         Assert.Null(preview.Plugins);
+        Assert.Empty(preview.PluginsToInstall(RestoreSelection.Everything));
         Assert.Null(result.Plugins);
         Assert.Empty(host.Downloads.Requests);
         Assert.False(Directory.Exists(InstalledPlugins(root)));
@@ -321,6 +322,50 @@ public class RestorePluginInstallTests
             cancellationToken: Ct);
 
         Assert.Equal([Orchestrion.Name, Wotsit.Name], Report(result, chosen: 2).Installed.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void A_plugin_installs_with_the_Dalamud_settings_unless_its_own_settings_are_left_out()
+    {
+        string[] inBackup = [Wotsit.Name, Orchestrion.Name];
+        var wotsitOnly = RestoreSelection.Only(["wotsit"], dalamudSettings: true);
+
+        Assert.True(RestoreSelection.Everything.InstallsPlugin(Orchestrion.Name, inBackup));
+        Assert.True(wotsitOnly.InstallsPlugin(Wotsit.Name, inBackup));
+        Assert.False(wotsitOnly.InstallsPlugin("orchestrion", inBackup));
+
+        // The backup holds no settings for Moodles, so the review never offered it to leave out.
+        Assert.True(wotsitOnly.InstallsPlugin(Moodles.Name, inBackup));
+        Assert.False(RestoreSelection.Only([Wotsit.Name], dalamudSettings: false).InstallsPlugin(Wotsit.Name, inBackup));
+    }
+
+    public static TheoryData<string[]?, bool, string[]> Selections => new()
+    {
+        { null, true, [Moodles.Name, Orchestrion.Name, Wotsit.Name] },
+        { ["wotsit"], true, [Moodles.Name, Wotsit.Name] },
+        { [], true, [Moodles.Name] },
+        { [Wotsit.Name, Orchestrion.Name], false, [] },
+    };
+
+    [Theory]
+    [MemberData(nameof(Selections))]
+    public async Task The_preview_names_the_plugins_a_restore_installs(string[]? plugins, bool dalamudSettings, string[] expected)
+    {
+        using var host = new TestHost();
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit, Orchestrion, Moodles, Tippy]), pluginConfigs: [Wotsit.Name, Orchestrion.Name]);
+        InstallLocally(NewPc(host), Tippy);
+        var repository = Repository(host);
+        foreach (var plugin in new[] { Wotsit, Orchestrion, Moodles, Tippy })
+        {
+            repository.Add(plugin.Name);
+        }
+
+        var selection = plugins is null ? RestoreSelection.Everything : RestoreSelection.Only(plugins, dalamudSettings);
+        var preview = await host.Restores.PreviewAsync(archive, cancellationToken: Ct);
+        var result = await host.Restores.RestoreAsync(new RestoreRequest(archive) { InstallPlugins = true, Selection = selection }, cancellationToken: Ct);
+
+        Assert.Equal(expected, preview.PluginsToInstall(selection).Order(StringComparer.Ordinal));
+        Assert.Equal(expected, (result.Plugins?.Installed ?? []).Order(StringComparer.Ordinal));
     }
 
     [Fact]

@@ -6,6 +6,7 @@ using XivVault.Core;
 using XivVault.Core.Backup;
 using XivVault.Core.Configuration;
 using XivVault.Core.Platform;
+using XivVault.Core.Plugins;
 using XivVault.Core.Restore;
 
 namespace XivVault.Cli.Commands;
@@ -16,7 +17,8 @@ internal sealed class RestoreCommand(
     IBackupCatalog catalog,
     IRestoreService restores,
     PathDisplay paths,
-    TimeProvider clock) : XivVaultCommand<RestoreCommand.Settings>(output)
+    TimeProvider clock,
+    PluginInstalls pluginInstalls) : XivVaultCommand<RestoreCommand.Settings>(output)
 {
     internal sealed class Settings : GlobalSettings
     {
@@ -47,10 +49,37 @@ internal sealed class RestoreCommand(
         [CommandOption("--system-settings")]
         [Description("Restore the game's system settings (FFXIV.cfg): graphics, sound, display and more. They hold the resolution and monitor, which may not suit another PC.")]
         public bool SystemSettings { get; init; }
+
+        // Hidden while plugin installs are in beta: a stable version shows nothing about them.
+        [CommandOption("--install-plugins", IsHidden = true)]
+        [Description("Install the plugins this PC is missing. Beta versions only.")]
+        public bool InstallPlugins { get; init; }
+
+        [CommandOption("--custom-repository <HOST>", IsHidden = true)]
+        [Description("Also install plugins from this custom repository, named by its host as the review lists it. Repeat it to choose more.")]
+        public string[] CustomRepositories { get; init; } = [];
     }
 
     protected override async Task<int> RunAsync(Settings settings, CancellationToken cancellationToken)
     {
+        if ((settings.InstallPlugins || settings.CustomRepositories.Length > 0) && !pluginInstalls.Available)
+        {
+            throw new XivVaultException(XivVaultErrorKind.InvalidConfiguration, "Plugin installs are only in beta versions of XIV Vault.");
+        }
+
+        if (settings.CustomRepositories.Length > 0 && !settings.InstallPlugins)
+        {
+            throw new XivVaultException(XivVaultErrorKind.InvalidConfiguration, "Add --install-plugins to install plugins from a custom repository.");
+        }
+
+        var selection = settings.Plugins.Length > 0 || settings.DalamudSettings || settings.CharacterSettings || settings.SystemSettings
+            ? RestoreSelection.Only(settings.Plugins, settings.DalamudSettings, settings.CharacterSettings, settings.SystemSettings)
+            : RestoreSelection.Everything;
+        if (settings.InstallPlugins && !selection.DalamudSettings)
+        {
+            throw new XivVaultException(XivVaultErrorKind.InvalidConfiguration, "Plugins are installed only with Dalamud settings. Add --dalamud-settings to include them.");
+        }
+
         var source = settings.Source is null ? null : Path.GetFullPath(settings.Source);
         var record = Choose(settings.Backup);
         if (record.IsOnlineOnly)
@@ -64,9 +93,6 @@ internal sealed class RestoreCommand(
         }
 
         var preview = await restores.PreviewAsync(record.FilePath, source, cancellationToken);
-        var selection = settings.Plugins.Length > 0 || settings.DalamudSettings || settings.CharacterSettings || settings.SystemSettings
-            ? RestoreSelection.Only(settings.Plugins, settings.DalamudSettings, settings.CharacterSettings, settings.SystemSettings)
-            : RestoreSelection.Everything;
         var inBackup = preview.Backup.PluginNames;
         if (preview.ProblemWith(selection) is { } problem)
         {
@@ -76,6 +102,21 @@ internal sealed class RestoreCommand(
             }
 
             throw new XivVaultException(XivVaultErrorKind.InvalidConfiguration, problem);
+        }
+
+        // The restore installs only what the review lists, so nothing when the preview can't say what that is.
+        var installs = settings.InstallPlugins ? preview.Plugins : null;
+        var ticked = new HashSet<string>(settings.CustomRepositories, StringComparer.OrdinalIgnoreCase);
+        var hosts = installs?.CustomRepositories.Select(repository => repository.Host).Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? [];
+        var unknown = ticked.Except(hosts, StringComparer.OrdinalIgnoreCase).ToList();
+        if (installs is not null && unknown.Count > 0)
+        {
+            if (hosts.Count > 0)
+            {
+                Output.Detail($"Custom repositories this backup turns on: {Formatting.JoinWords(hosts)}");
+            }
+
+            throw new XivVaultException(XivVaultErrorKind.InvalidConfiguration, $"This backup's Dalamud settings don't turn on a custom repository at {Formatting.JoinWords(unknown)}.");
         }
 
         var now = clock.GetLocalNow().DateTime;
@@ -129,6 +170,36 @@ internal sealed class RestoreCommand(
             Item(contents.SystemSettings, contents.SystemSettings ? "System settings · FFXIV.cfg" : "System settings — not in this backup");
         }
 
+        if (settings.InstallPlugins && installs is null)
+        {
+            Output.Detail("This restore installs no plugins.");
+        }
+        else if (installs is { DalamudReady: false })
+        {
+            var notReady = PluginOutcomeText.Describe(PluginInstallOutcome.DalamudNotReady);
+            Item(false, char.ToUpperInvariant(notReady[0]) + notReady[1..]);
+        }
+        else if (installs is not null)
+        {
+            var toInstall = preview.PluginsToInstall(selection).Order(StringComparer.OrdinalIgnoreCase).ToList();
+            Item(toInstall.Count > 0, toInstall.Count > 0
+                ? $"{Formatting.Count(toInstall.Count, "missing plugin")} to install: {Formatting.JoinWords(toInstall)}"
+                : "No missing plugins to install");
+
+            // Nothing is requested from a repository when no plugin is missing.
+            if (toInstall.Count > 0 && installs.CustomRepositories.Count > 0)
+            {
+                foreach (var host in installs.CustomRepositories.GroupBy(repository => repository.Host, StringComparer.OrdinalIgnoreCase))
+                {
+                    var label = $"{Formatting.Count(host.Count(), "custom repository", "custom repositories")} at {host.Key}";
+                    Item(ticked.Contains(host.Key), ticked.Contains(host.Key) ? $"{label} · included" : $"{label} · add --custom-repository {host.Key} to include it");
+                }
+
+                // Dalamud's own words, from its custom repository settings.
+                Output.Warning("Dalamud warns: \"Plugins have full control over your PC, like any other program, and may cause harm or crashes. Please make absolutely sure that you only install plugins from developers you trust.\"");
+            }
+        }
+
         var undone = preview.ChangesUndoneBy(selection);
         if (undone.Any)
         {
@@ -171,11 +242,15 @@ internal sealed class RestoreCommand(
             }
         }
 
+        var request = new RestoreRequest(record.FilePath)
+        {
+            Source = source,
+            Selection = selection,
+            InstallPlugins = installs is not null,
+            CustomRepositories = installs?.CustomRepositories.Where(repository => ticked.Contains(repository.Host)).Select(repository => repository.Url).ToList() ?? [],
+        };
         var result = await Output.WithStatusAsync("Verifying backup integrity", update =>
-            restores.RestoreAsync(
-                new RestoreRequest(record.FilePath) { Source = source, Selection = selection },
-                new InlineProgress<RestoreProgress>(progress => update(progress.Message)),
-                cancellationToken));
+            restores.RestoreAsync(request, new InlineProgress<RestoreProgress>(progress => update(progress.Message)), cancellationToken));
 
         Output.Success("Restore complete");
         var restoredPlugins = result.PluginConfigCount > 0 || selection.Plugins is null
@@ -186,6 +261,26 @@ internal sealed class RestoreCommand(
             + (result.SystemSettingsRestored ? " · system settings restored" : "");
         Output.Detail(restoredPlugins + restoredSettings);
         Output.Detail($"Safety snapshot: {result.SafetySnapshot.FileName} in {paths.Friendly(Path.GetDirectoryName(result.SafetySnapshot.FilePath)!)}");
+        if (result.Plugins is { } report)
+        {
+            var installed = report.Installed.Order(StringComparer.OrdinalIgnoreCase).ToList();
+            Output.Detail($"{Formatting.Count(installed.Count, "plugin")} installed{(installed.Count > 0 ? ": " + Formatting.JoinWords(installed) : "")}");
+            if (report.AlreadyInstalled > 0)
+            {
+                Output.Detail($"{Formatting.Count(report.AlreadyInstalled, "plugin")} already installed");
+            }
+
+            if (report.NotInstalled.Count > 0)
+            {
+                Output.Warning($"{Formatting.Count(report.NotInstalled.Count, "plugin")} not installed. Install {(report.NotInstalled.Count == 1 ? "it" : "them")} from Dalamud's plugin installer in the game (/xlplugins):");
+                foreach (var plugin in report.NotInstalled.OrderBy(plugin => plugin.InternalName, StringComparer.OrdinalIgnoreCase))
+                {
+                    Output.Detail($"{plugin.InternalName}: {PluginOutcomeText.Describe(plugin.Outcome)}");
+                }
+            }
+        }
+
+        // The settings are restored, so plugins that didn't install never fail the command.
         return 0;
     }
 

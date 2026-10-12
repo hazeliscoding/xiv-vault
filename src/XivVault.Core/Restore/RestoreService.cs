@@ -393,7 +393,7 @@ public sealed class RestoreService : IRestoreService
             // network changes nothing.
             var dalamudConfig = staged.Find(file => file.Item == PortableItem.DalamudConfig);
             var plugins = installs && dalamudConfig is not null
-                ? _plugins.Prepare(dalamudConfig.StagedPath, target.RootPath, InstallsPlugin, request.CustomRepositories, Path.Combine(workRoot, "plugins"), progress, cancellationToken)
+                ? _plugins.Prepare(dalamudConfig.StagedPath, target.RootPath, name => selection.InstallsPlugin(name, backupPlugins), request.CustomRepositories, Path.Combine(workRoot, "plugins"), progress, cancellationToken)
                 : null;
 
             // A restore that requested nothing moves as one without installs does.
@@ -465,9 +465,6 @@ public sealed class RestoreService : IRestoreService
             _logger.LogInformation("Pre-restore snapshot {File} created", created.Record.FileName);
             return created;
         }
-
-        // A plugin left out in the review isn't installed. One the backup holds no settings for was never offered there.
-        bool InstallsPlugin(string plugin) => selection.IncludesPlugin(plugin) || !backupPlugins.Contains(plugin, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>

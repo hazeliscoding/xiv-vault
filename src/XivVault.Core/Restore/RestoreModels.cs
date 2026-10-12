@@ -63,6 +63,13 @@ public sealed class RestoreSelection
     public bool IncludesPlugin(string name) => Plugins is null || Plugins.Contains(name);
 
     /// <summary>
+    /// Whether a restore that installs plugins installs <paramref name="name"/>: only with the Dalamud settings, and never
+    /// when its settings are left out. A plugin <paramref name="backupPlugins"/> holds no settings for can't be left out, so it installs.
+    /// </summary>
+    public bool InstallsPlugin(string name, IReadOnlyCollection<string> backupPlugins) =>
+        DalamudSettings && (IncludesPlugin(name) || !backupPlugins.Contains(name, StringComparer.OrdinalIgnoreCase));
+
+    /// <summary>
     /// Why this choice can't be restored from a backup holding <paramref name="backupPlugins"/>, or
     /// null when it can. Core, the command line and the app all ask here, so they agree.
     /// </summary>
@@ -156,6 +163,16 @@ public sealed record RestorePreview(
     /// the XIVLauncher folder is missing or is XIVLauncherCN's.
     /// </summary>
     public PluginInstallPreview? Plugins { get; init; }
+
+    /// <summary>
+    /// The plugins in <see cref="PluginInstallPreview.Missing"/> that restoring <paramref name="selection"/> with
+    /// <see cref="RestoreRequest.InstallPlugins"/> installs. Front ends list these, so the review and the restore agree.
+    /// </summary>
+    public IReadOnlyList<string> PluginsToInstall(RestoreSelection selection)
+    {
+        var inBackup = Backup.PluginNames;
+        return Plugins?.Missing.Where(name => selection.InstallsPlugin(name, inBackup)).ToList() ?? [];
+    }
 
     /// <summary>True when restoring will roll back settings that changed after the backup was taken.</summary>
     public bool IsOlderThanCurrent => PluginsChangedSinceBackup.Count > 0 || DalamudConfigChangedSinceBackup;
