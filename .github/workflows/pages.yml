@@ -1,0 +1,70 @@
+name: Pages
+
+# Deploys site/, the website and user guide, to GitHub Pages. The screenshots and the demo come from
+# docs/screenshots at deploy time, so the site always matches the README. The site loads nothing from
+# other sites and has no analytics or trackers: its Content-Security-Policy enforces that in the browser,
+# and the check below stops a deploy that would break it.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'docs/screenshots/**'
+      - 'docs/brand/**'
+      - 'scripts/stage-site.sh'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. A newer push waits, so a deployment is never cut off halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Stage the screenshots and the demo
+        run: bash scripts/stage-site.sh
+      - name: Check that the site loads nothing from other sites
+        shell: bash
+        run: |
+          fail=0
+          # Anything the page loads (scripts, styles, images, media, fonts) must come from the site itself.
+          if grep -rnE --include='*.html' --include='*.css' --include='*.js' --include='*.svg' \
+            "\b(src|srcset|poster|data)=[\"']?(https?:)?//|url\(\s*[\"']?(https?:)?//|@import" site; then
+            fail=1
+          fi
+          # Links may point anywhere, but a <link> loads what it names; only rel="canonical" just states the address.
+          if grep -rnE --include='*.html' "<link [^>]*href=[\"']?(https?:)?//" site | grep -v 'rel="canonical"'; then
+            fail=1
+          fi
+          for page in site/*.html; do
+            if ! grep -q "default-src 'self'" "$page"; then
+              echo "$page has lost its Content-Security-Policy."
+              fail=1
+            fi
+          done
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::The site must load nothing from other sites."
+            exit 1
+          fi
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
