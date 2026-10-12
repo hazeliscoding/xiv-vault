@@ -323,6 +323,8 @@ Released as 1.0.0 on 2026-10-11. A real 0.4.0 install updated itself to the draf
 - [ ] The release checklist covers betas: the previous release still updates to the draft first, and winget is skipped.
 - [ ] Tests prove the switch decides whether prereleases are offered.
 - [ ] README, user guide and website say what the beta channel is and who it's for. AGENTS.md and the beta release notes say what plugin installs download, from where, and that nothing about the user is sent; the README and website describe installs once they leave beta.
+- [ ] README, `docs/`, both website pages and the unreleased changelog are read for AI-writing patterns (the humanizer skill) and rewritten where they show, keeping every fact, command and label. Released changelog entries, the roadmap's records and AGENTS.md stay as they are.
+- [ ] The app's and the CLI's own wording gets the same pass, with the desktop step, so screenshots and tests are redone once.
 - [ ] On the owner's PC with `%APPDATA%\XIVLauncher` renamed aside: XIVLauncher set up fresh, the restore installs the plugins, and in game they load with their settings and collections, with no manifest errors in `dalamud.log`. Then the original folder is renamed back.
 
 **Done when:** the owner's fresh-folder test passes; the tests cover the safety cases and the switch; a `1.1.0-beta.N` with plugin installs reaches an installed copy with **Get beta versions** on and not one with it off; the tester's clean-PC restore on that beta brings her plugins back; and 1.1.0 is released with the switch and plugin installs still off.
