@@ -183,3 +183,14 @@ There is one group for each `area`. Paths in `detail` start with `%USERPROFILE%`
 | `compression` | `fast`, `balanced`, `maximum` |
 | `doctor` `status` | `healthy`, `warning`, `error` |
 | `doctor` `area` | `xivLauncher`, `dalamud`, `gameSettings`, `backupDestination`, `scheduling` |
+
+## Beta-only options
+
+Beta versions of XIV Vault, such as `1.1.0-beta.1`, can also install the plugins listed in the restored Dalamud settings. Two `restore` options turn this on:
+
+- `--install-plugins` installs the plugins this PC doesn't have yet, from Dalamud's official repository. Plugins are installed only along with the Dalamud settings, so a selection without them, such as `--plugin <NAME>` alone, is refused. A plugin whose settings are in the backup but left out of the selection isn't installed.
+- `--custom-repository <HOST>` (repeatable, with `--install-plugins`) also installs from a custom repository that the backup's Dalamud settings turn on. Name it by its host, as the restore's review lists it. Naming a host includes every repository at that host.
+
+The review lists the plugins to install before anything changes. Afterwards, the restore names each plugin it couldn't install and why, so you can install it from `/xlplugins` in the game. If Dalamud hasn't finished downloading, the restore installs no plugins and says to open XIVLauncher, let it finish, close it and restore again. Plugins that aren't installed don't change the exit code.
+
+`--help` doesn't list either option, and stable versions refuse both with exit code 2. They aren't part of [What stays the same in 1.x](#what-stays-the-same-in-1x) until a stable version lists them.
