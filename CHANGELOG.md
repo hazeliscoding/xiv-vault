@@ -11,7 +11,16 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ### Changed
 
+- Small text, field borders and the dash beside something not chosen are easier to read: they now meet WCAG AA contrast.
+- Tab reaches the pages in the sidebar before the links at its bottom.
 - `schedule status --json` writes days in lowercase (`"sunday"`), as `config show --json` and every other JSON value do.
+
+### Fixed
+
+- Secondary buttons, such as Restore Backup and Choose Folder, show the focus ring.
+- A confirmation keeps the keyboard and screen readers inside it, starts on the safe choice, and gives focus back when it closes.
+- Focus no longer drops out of the window when Back Up Now runs or the restore wizard moves on a step, so the next Tab doesn't start again at the top.
+- Screen readers hear which page is open, the name of every list, and a backup starting and finishing.
 
 ## [0.4.0] - 2026-10-10
 
