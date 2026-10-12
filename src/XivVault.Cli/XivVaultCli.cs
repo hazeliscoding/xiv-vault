@@ -72,7 +72,7 @@ public static class XivVaultCli
                 .WithDescription("Show whether your Dalamud setup is protected.")
                 .WithExample("status", "--json");
             config.AddCommand<DoctorCommand>("doctor")
-                .WithDescription("Check XIVLauncher, Dalamud, the backup folder and scheduling.")
+                .WithDescription("Check XIVLauncher, Dalamud, the backup folder, scheduling and game settings.")
                 .WithExample("doctor", "--report");
             config.AddBranch("schedule", schedule =>
             {
