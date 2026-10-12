@@ -39,6 +39,13 @@ public sealed class FakeCommandRunner : ICommandRunner
     }
 }
 
+public sealed class FakeNotifier : INotifier
+{
+    public List<(string Title, string Message)> Shown { get; } = [];
+
+    public void Notify(string title, string message) => Shown.Add((title, message));
+}
+
 /// <summary>
 /// Files tests mark as online only. Nothing downloads them, so a test can fill one with junk:
 /// any code that reads it finds no valid archive.

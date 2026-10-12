@@ -51,7 +51,7 @@ Both front ends call `services.AddXivVaultCore()` and resolve the same services 
 
 `OperationLock` is a named mutex per data folder. Backups, restores and retention take it, so the scheduled task and the app never work on the backup folder at the same time.
 
-Platform access goes through small interfaces so tests can replace it: `IAppEnvironment` (folders and user), `IProcessInspector`, `ICommandRunner` (schtasks), `IFileAvailability` (whether a file is online only) and `TimeProvider`. `XIV_VAULT_DATA_DIR` redirects config, state and logs, which the smoke test uses.
+Platform access goes through small interfaces so tests can replace it: `IAppEnvironment` (folders and user), `IProcessInspector`, `ICommandRunner` (schtasks), `IFileAvailability` (whether a file is online only), `INotifier` (Windows notifications) and `TimeProvider`. `XIV_VAULT_DATA_DIR` redirects config, state and logs, which the smoke test uses.
 
 ## Backup flow
 

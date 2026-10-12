@@ -23,6 +23,7 @@ public sealed class DesktopTestHost : IDisposable
         services.AddSingleton<ICommandRunner>(Commands);
         services.AddSingleton<TimeProvider>(Clock);
         services.AddSingleton<IFileAvailability>(Files);
+        services.AddSingleton<INotifier>(Notifications);
         services.AddXivVaultDesktop();
 
         // Registered after the app's own, so these win.
@@ -45,6 +46,8 @@ public sealed class DesktopTestHost : IDisposable
     public FakeProcessInspector Processes { get; } = new();
 
     public FakeCommandRunner Commands { get; } = new();
+
+    public FakeNotifier Notifications { get; } = new();
 
     public FakeFileAvailability Files { get; } = new();
 

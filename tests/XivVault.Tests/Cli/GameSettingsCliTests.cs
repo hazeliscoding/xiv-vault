@@ -27,6 +27,7 @@ public class GameSettingsCliTests
                 services.AddSingleton<ICommandRunner>(host.Commands);
                 services.AddSingleton<TimeProvider>(host.Clock);
                 services.AddSingleton<IFileAvailability>(host.Files);
+                services.AddSingleton<INotifier>(host.Notifications);
             },
             console,
             TestContext.Current.CancellationToken);

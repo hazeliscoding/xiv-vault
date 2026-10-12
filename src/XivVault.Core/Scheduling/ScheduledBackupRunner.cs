@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using XivVault.Core.Backup;
+using XivVault.Core.Platform;
 using XivVault.Core.Restore;
 using XivVault.Core.State;
 
@@ -22,6 +23,7 @@ public sealed class ScheduledBackupRunner(
     IBackupService backups,
     GameProcessGuard guard,
     IStateStore stateStore,
+    INotifier notifier,
     TimeProvider clock,
     ILogger<ScheduledBackupRunner> logger)
 {
@@ -67,6 +69,12 @@ public sealed class ScheduledBackupRunner(
         var record = new ScheduledRunRecord(clock.GetUtcNow().UtcDateTime, result, message, backup?.Record.FileName);
         stateStore.Update(state => state with { LastScheduledRun = record });
         logger.LogInformation("Scheduled run finished: {Result}", result);
+        if (result == ScheduledRunResult.Failed)
+        {
+            // Fixed words only: a notification can show up on a stream, so no path or error text.
+            notifier.Notify("Scheduled backup failed", "Your settings were not backed up. Open XIV Vault to see what went wrong.");
+        }
+
         return new ScheduledRunOutcome(result, message, backup, error);
     }
 }

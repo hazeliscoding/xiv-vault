@@ -26,6 +26,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IProcessInspector, SystemProcessInspector>();
         services.TryAddSingleton<ICommandRunner, ProcessCommandRunner>();
         services.TryAddSingleton<IFileAvailability, WindowsFileAvailability>();
+        services.TryAddSingleton<INotifier, WindowsNotifier>();
 
         services.TryAddSingleton<IConfigStore, ConfigStore>();
         services.TryAddSingleton<IStateStore, StateStore>();

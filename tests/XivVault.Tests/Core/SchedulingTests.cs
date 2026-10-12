@@ -173,6 +173,7 @@ public class SchedulingTests
         Assert.Equal(ScheduledRunResult.Success, outcome.Result);
         Assert.Equal(XivVault.Core.Backup.BackupKind.Scheduled, outcome.Backup!.Manifest.BackupType);
         Assert.Equal(ScheduledRunResult.Success, host.State.Load().LastScheduledRun!.Result);
+        Assert.Empty(host.Notifications.Shown);
     }
 
     [Fact]
@@ -186,6 +187,7 @@ public class SchedulingTests
             host.Backups,
             host.Get<XivVault.Core.Restore.GameProcessGuard>(),
             host.State,
+            host.Notifications,
             TimeProvider.System,
             Microsoft.Extensions.Logging.Abstractions.NullLogger<ScheduledBackupRunner>.Instance);
 
@@ -194,6 +196,7 @@ public class SchedulingTests
         Assert.Equal(ScheduledRunResult.Skipped, outcome.Result);
         Assert.Empty(host.Catalog.List(host.BackupFolder));
         Assert.Equal(ScheduledRunResult.Skipped, host.State.Load().LastScheduledRun!.Result);
+        Assert.Empty(host.Notifications.Shown);
     }
 
     [Fact]
@@ -207,6 +210,7 @@ public class SchedulingTests
             host.Backups,
             host.Get<XivVault.Core.Restore.GameProcessGuard>(),
             host.State,
+            host.Notifications,
             TimeProvider.System,
             Microsoft.Extensions.Logging.Abstractions.NullLogger<ScheduledBackupRunner>.Instance);
 
@@ -228,5 +232,18 @@ public class SchedulingTests
         Assert.Equal(ScheduledRunResult.Failed, outcome.Result);
         Assert.Equal(XivVault.Core.XivVaultErrorKind.XivLauncherNotFound, outcome.Error);
         Assert.Equal(ScheduledRunResult.Failed, host.State.Load().LastScheduledRun!.Result);
+    }
+
+    [Fact]
+    public async Task Scheduled_run_failure_shows_one_notification_without_details()
+    {
+        using var host = new TestHost();
+
+        await host.Get<ScheduledBackupRunner>().RunAsync(cancellationToken: Ct);
+
+        // Fixed words only: a notification can appear on a stream, so no path or error text.
+        var (title, message) = Assert.Single(host.Notifications.Shown);
+        Assert.Equal("Scheduled backup failed", title);
+        Assert.Equal("Your settings were not backed up. Open XIV Vault to see what went wrong.", message);
     }
 }

@@ -23,6 +23,7 @@ public sealed class TestHost : IDisposable
         services.AddSingleton<ICommandRunner>(Commands);
         services.AddSingleton<TimeProvider>(Clock);
         services.AddSingleton<IFileAvailability>(Files);
+        services.AddSingleton<INotifier>(Notifications);
         configure?.Invoke(services);
         services.AddXivVaultCore();
         _provider = services.BuildServiceProvider();
@@ -33,6 +34,8 @@ public sealed class TestHost : IDisposable
     public FakeProcessInspector Processes { get; } = new();
 
     public FakeCommandRunner Commands { get; } = new();
+
+    public FakeNotifier Notifications { get; } = new();
 
     public FakeFileAvailability Files { get; } = new();
 

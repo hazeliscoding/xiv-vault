@@ -4,6 +4,10 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+### Added
+
+- A Windows notification when a scheduled backup fails, from the app's task and the CLI's alike. It says only that the backup failed, never a path or the error, since it can appear on a stream. Turn it off under XIV Vault in Windows' notification settings.
+
 ## [0.4.0] - 2026-10-10
 
 ### Added
