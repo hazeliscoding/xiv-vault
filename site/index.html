@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self'; media-src 'self'; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>XIV Vault: back up your Dalamud and FFXIV settings</title>
+  <meta name="description" content="A free, open-source Windows app that backs up your Dalamud plugin settings and FFXIV's own settings, and restores them safely on this PC or a new one.">
+  <link rel="canonical" href="https://hazeliscoding.github.io/xiv-vault/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="XIV Vault">
+  <meta property="og:title" content="XIV Vault: back up your Dalamud and FFXIV settings">
+  <meta property="og:description" content="Plugin settings, Dalamud's settings and the game's HUD, hotbars, keybinds and macros, in a plain ZIP in a folder you choose. Every restore takes a safety backup first.">
+  <meta property="og:url" content="https://hazeliscoding.github.io/xiv-vault/">
+  <meta property="og:image" content="https://hazeliscoding.github.io/xiv-vault/assets/generated/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0a0c12">
+  <link rel="icon" href="assets/generated/mark-dark.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/generated/app-icon-256.png" type="image/png" sizes="256x256">
+  <link rel="stylesheet" href="assets/site.css">
+  <script src="assets/site.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="./" aria-label="XIV Vault home">
+        <!-- The brand mark from docs/brand/mark-dark.svg. -->
+        <svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><defs><filter id="mark-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter></defs><rect x="18" y="18" width="28" height="28" rx="2" transform="rotate(45 32 32)" fill="none" stroke="#6C9EFF" stroke-width="4.5" opacity="0.45" filter="url(#mark-glow)"/><rect x="18" y="18" width="28" height="28" rx="2" transform="rotate(45 32 32)" fill="none" stroke="#6C9EFF" stroke-width="4.5"/></svg>
+        XIV Vault
+      </a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="guide.html">Guide</a>
+        <a class="wide" href="#plugin-developers">Plugin developers</a>
+        <a class="wide" href="#command-line">Command line</a>
+        <a href="https://github.com/hazeliscoding/xiv-vault">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4 M9 18c-4.51 2-5-2-7-2"/></svg>
+          GitHub
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap">
+        <h1 id="hero-title">Move to a new PC without losing your Dalamud setup.</h1>
+        <p class="lede">XIV Vault backs up your <strong>plugin settings</strong>, <strong>Dalamud's settings</strong> and the game's own <strong>HUD, hotbars, keybinds and macros</strong> into a plain ZIP in a folder you choose. On a fresh PC you install XIVLauncher, open XIV Vault and restore.</p>
+        <div class="actions">
+          <a class="button primary" href="https://github.com/hazeliscoding/xiv-vault/releases/latest/download/xiv-vault-setup-win-x64.exe">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3"/></svg>
+            Download for Windows
+          </a>
+          <a class="button" href="guide.html">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v14 M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+            Read the guide
+          </a>
+        </div>
+        <ul class="fine" aria-label="About this download">
+          <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Free and open source, Apache-2.0</li>
+          <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Signed by Hazel Granados</li>
+          <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>No account, no telemetry</li>
+          <li><a href="https://github.com/hazeliscoding/xiv-vault/releases/latest">All downloads and the command line</a></li>
+        </ul>
+
+        <figure class="demo">
+          <div class="demo-frame">
+            <video id="demo" muted loop playsinline preload="metadata" width="1100" height="720"
+                   poster="assets/generated/demo-poster.png"
+                   aria-label="XIV Vault backing up a Dalamud setup, then restoring a backup after a safety check and a safety backup">
+              <source src="assets/generated/demo.mp4" type="video/mp4">
+            </video>
+          </div>
+          <figcaption>
+            <span>A backup, then a restore that takes a safety backup first. The plugins and numbers are sample data.</span>
+            <button class="demo-toggle" type="button" data-demo-toggle hidden>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" data-icon-pause><path d="M15 4H17A1 1 0 0 1 18 5V19A1 1 0 0 1 17 20H15A1 1 0 0 1 14 19V5A1 1 0 0 1 15 4Z M7 4H9A1 1 0 0 1 10 5V19A1 1 0 0 1 9 20H7A1 1 0 0 1 6 19V5A1 1 0 0 1 7 4Z"/></svg>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" data-icon-play hidden><path d="M6 3l14 9-14 9V3Z"/></svg>
+              <span data-label>Pause</span>
+            </button>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="what" aria-labelledby="what-title">
+      <div class="wrap">
+        <h2 id="what-title">What does it back up?</h2>
+        <p class="section-intro">The settings you spent years building, and nothing else. XIV Vault reads only the items below, copies them byte for byte, and never looks inside them.</p>
+
+        <div class="folders">
+          <div class="folder">
+            <table>
+              <caption>
+                <span class="path"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                  %AppData%\XIVLauncher
+                  <small>XIVLauncher and Dalamud</small></span>
+              </caption>
+              <thead>
+                <tr><th scope="col">Item</th><th scope="col">In backups</th><th scope="col">What it is</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">pluginConfigs\</th>
+                  <td class="state in"><span class="mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Backed up</span></td>
+                  <td class="what">Every plugin's settings, with the plugin's own folders. Logs, caches and temporary files inside are left out.</td>
+                </tr>
+                <tr>
+                  <th scope="row">dalamudConfig.json</th>
+                  <td class="state in"><span class="mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Backed up</span></td>
+                  <td class="what">Dalamud's settings, including your custom plugin repositories.</td>
+                </tr>
+                <tr>
+                  <th scope="row">dalamudVfs.db</th>
+                  <td class="state in"><span class="mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Backed up</span></td>
+                  <td class="what">Dalamud's plugin database.</td>
+                </tr>
+                <tr>
+                  <th scope="row">dalamudUI.ini</th>
+                  <td class="state choice"><span class="mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>If you choose</span></td>
+                  <td class="what">Window positions and sizes. Off at first, because layouts rarely suit another monitor.</td>
+                </tr>
+                <tr class="out">
+                  <th scope="row">installedPlugins\</th>
+                  <td class="state out"><span class="mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>Never</span></td>
+                  <td class="what">The plugins themselves. Dalamud downloads them again, and they find their settings waiting.</td>
+                </tr>
+                <tr class="out">
+                  <th scope="row">runtime\, addon\, logs</th>
+                  <td class="state out"><span class="mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>Never</span></td>
+                  <td class="what">Dalamud's own program files, logs and caches.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="folder">
+            <table>
+              <caption>
+                <span class="path"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                  Documents\My Games\FINAL FANTASY XIV - A Realm Reborn
+                  <small>The game's settings</small></span>
+              </caption>
+              <thead>
+                <tr><th scope="col">Item</th><th scope="col">In backups</th><th scope="col">What it is</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">FFXIV_CHR…\*.DAT</th>
+                  <td class="state in"><span class="mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Backed up</span></td>
+                  <td class="what">Each character's HUD layout, hotbars, keybinds, macros, gear sets and log filters.</td>
+                </tr>
+                <tr>
+                  <th scope="row">MACROSYS.dat</th>
+                  <td class="state in"><span class="mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Backed up</span></td>
+                  <td class="what">Shared macros.</td>
+                </tr>
+                <tr>
+                  <th scope="row">FFXIV_CHARA_*.dat</th>
+                  <td class="state in"><span class="mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Backed up</span></td>
+                  <td class="what">Appearance saves from character creation and the aesthetician.</td>
+                </tr>
+                <tr>
+                  <th scope="row">FFXIV.cfg</th>
+                  <td class="state in"><span class="mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Backed up</span></td>
+                  <td class="what">Graphics, sound and display, including the resolution and monitor. You choose at restore whether it comes back.</td>
+                </tr>
+                <tr class="out">
+                  <th scope="row">log\, screenshots\</th>
+                  <td class="state out"><span class="mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>Never</span></td>
+                  <td class="what">Chat logs and screenshots, along with old copies of settings files.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p class="after-note">A character's folder is named by an ID that identifies the character, so XIV Vault counts characters and never shows or logs that ID. XIVLauncher's own settings and the game install are not backed up.</p>
+      </div>
+    </section>
+
+    <section class="section" id="install" aria-labelledby="install-title">
+      <div class="wrap">
+        <h2 id="install-title">How do I install it?</h2>
+        <ol class="steps">
+          <li><strong>Download Setup</strong>, <code>xiv-vault-setup-win-x64.exe</code>. It installs XIV Vault for your Windows user, with no administrator prompt, and adds it to the Start menu.</li>
+          <li><strong>Run it.</strong> Setup is signed by Hazel Granados. While a release is new, Windows SmartScreen may still ask you to confirm it: choose <span class="ui">More info</span>, then <span class="ui">Run anyway</span>.</li>
+          <li><strong>Open XIV Vault</strong> from the Start menu. It finds XIVLauncher on its own, and <span class="ui">Back Up Now</span> makes your first backup.</li>
+        </ol>
+        <p class="prose">No .NET install is needed. XIV Vault offers updates and installs them only when you choose. A portable copy and the command line are on the <a href="https://github.com/hazeliscoding/xiv-vault/releases/latest">release page</a>, with <code>SHA256SUMS</code> to check every download.</p>
+      </div>
+    </section>
+
+    <section class="section" id="new-pc" aria-labelledby="new-pc-title">
+      <div class="wrap">
+        <h2 id="new-pc-title">Setting up a new PC?</h2>
+        <div class="pair">
+          <ol class="steps">
+            <li><strong>Install XIVLauncher</strong> and start it once.</li>
+            <li><strong>Make your backups reachable:</strong> sign in to OneDrive or Dropbox, or plug in the drive. Backups that stay in the cloud are listed without being downloaded.</li>
+            <li><strong>Install XIV Vault</strong> and open <span class="ui">Restore</span>. Backups in <code>OneDrive\XIV Vault</code> are found on their own.</li>
+            <li><strong>Review and restore.</strong> Leave out a plugin or the system settings if they shouldn't come back, then choose <span class="ui">Restore Configuration</span>.</li>
+            <li><strong>Open XIVLauncher.</strong> Dalamud downloads your plugins again and they pick up their settings. The game finds your HUD, hotbars and macros when you log in.</li>
+          </ol>
+          <figure class="shot">
+            <a href="assets/generated/restore-2-review.png"><img src="assets/generated/restore-2-review.png" width="1100" height="720" loading="lazy" decoding="async"
+                 alt="The restore review: what the backup holds on the left, what is on this PC right now on the right, and a note that a safety backup comes first."><span class="sr-only"> (opens full size)</span></a>
+            <figcaption>The review shows what a restore would change before anything does.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="safety" aria-labelledby="safety-title">
+      <div class="wrap">
+        <h2 id="safety-title">Can I trust it with my settings?</h2>
+        <p class="section-intro">XIV Vault is built around what could go wrong. The <a href="https://github.com/hazeliscoding/xiv-vault#safety-model">full safety model</a> is in the README.</p>
+        <ul class="promises">
+          <li>
+            <h3><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Every backup is checked before it counts.</h3>
+            <p>Each archive is written under a temporary name, read back and checked against the SHA-256 of every file, then renamed. Old backups are removed only after a new one passes.</p>
+          </li>
+          <li>
+            <h3><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>A safety backup comes first.</h3>
+            <p>Every restore first saves what is on this PC now, so today's settings are one restore away. It holds everything a full restore would replace, even when you restore only some plugins.</p>
+          </li>
+          <li>
+            <h3><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Nothing changes while the game runs.</h3>
+            <p>A restore refuses while XIVLauncher or FFXIV is open, because the game rewrites its settings when you log out. A scheduled backup waits for the game to close.</p>
+          </li>
+          <li>
+            <h3><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Nothing is deleted or run.</h3>
+            <p>Files the backup doesn't hold stay where they are. Each character's settings go back to that character's folder only. Nothing in a backup is ever executed, and unsafe archives are refused.</p>
+          </li>
+          <li>
+            <h3><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Nothing about you leaves your PC.</h3>
+            <p>No accounts and no telemetry. The only network call is the update check, which reads the public release list from GitHub and can be turned off. Your sync client moves the backups, not XIV Vault.</p>
+          </li>
+          <li>
+            <h3><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Old backups keep working.</h3>
+            <p>Each backup is an ordinary ZIP: a <code>manifest.json</code> that lists every file with its SHA-256, and the files themselves under <code>payload/</code>. Any ZIP tool opens it, the <a href="https://github.com/hazeliscoding/xiv-vault/blob/main/docs/backup-format.md">format is documented</a>, and every backup any version made restores in every later version.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" id="build-on" aria-labelledby="build-on-title">
+      <div class="wrap">
+        <h2 id="build-on-title">Building plugins or tools?</h2>
+        <div class="builders">
+          <article class="builder" id="plugin-developers" aria-labelledby="plugin-developers-title">
+            <h3 id="plugin-developers-title">For plugin developers</h3>
+            <p>What XIV Vault does with your plugin's files, so you can tell your users what survives a move.</p>
+            <ul>
+              <li>It backs up <code>pluginConfigs\YourPlugin.json</code> and the <code>pluginConfigs\YourPlugin\</code> folder byte for byte, with every subfolder. In the ZIP they sit under <code>payload/pluginConfigs/</code>.</li>
+              <li>Folders named <code>logs</code>, <code>log</code>, <code>cache</code>, <code>caches</code>, <code>temp</code> or <code>tmp</code>, and files ending in <code>.tmp</code>, <code>.temp</code>, <code>.partial</code>, <code>.log</code> or <code>~</code>, are left out. Keep caches there and backups stay small.</li>
+              <li>Data you keep outside <code>pluginConfigs\</code> is not backed up.</li>
+              <li>A restore writes your files only while the game is closed, and never deletes files the backup doesn't hold.</li>
+              <li>People can restore just your plugin, from the restore review or with <code>--plugin</code>.</li>
+              <li>Anything in your config travels with the backup, including tokens or keys. Say so if your plugin stores them.</li>
+            </ul>
+            <p class="more"><a href="https://github.com/hazeliscoding/xiv-vault/blob/main/docs/backup-format.md">The backup format</a></p>
+          </article>
+
+          <article class="builder" id="command-line" aria-labelledby="command-line-title">
+            <h3 id="command-line-title">For scripts and tools</h3>
+            <p><code>xiv-vault</code> does everything the app does, from a terminal or a script.</p>
+            <div class="terminal" role="region" aria-label="Command line examples" tabindex="0">
+<pre><span class="prompt" aria-hidden="true">&gt; </span>xiv-vault backup --quiet
+<span class="prompt" aria-hidden="true">&gt; </span>xiv-vault status --json
+<span class="prompt" aria-hidden="true">&gt; </span>xiv-vault restore latest --plugin Artisan --yes
+<span class="prompt" aria-hidden="true">&gt; </span>xiv-vault schedule weekly --day Sunday --time 18:30</pre>
+            </div>
+            <ul>
+              <li>Commands, options, JSON fields and exit codes stay the same through every 1.x release.</li>
+              <li>Scheduled backups run as an ordinary Windows task, with no service in the background.</li>
+            </ul>
+            <p class="more"><a href="https://github.com/hazeliscoding/xiv-vault/blob/main/docs/cli.md">The command line reference</a></p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-label="More questions">
+      <div class="wrap answers">
+        <div>
+          <h2 id="steam-deck">Steam Deck and Linux?</h2>
+          <p>Not yet. XIVLauncher.Core keeps the same Dalamud and game files, so restoring a Windows backup onto a Deck is planned after 1.0.</p>
+        </div>
+        <div>
+          <h2 id="help">Something went wrong?</h2>
+          <p>Open <span class="ui">Diagnostics</span>, choose <span class="ui">Copy Diagnostic Report</span> and paste it into <a href="https://github.com/hazeliscoding/xiv-vault/issues/new/choose">a new issue</a>. The report holds paths, versions and results, never your settings. The <a href="https://github.com/hazeliscoding/xiv-vault/blob/main/docs/troubleshooting.md">troubleshooting guide</a> covers the common cases.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap disclaimer">
+      <p>XIV Vault is an independent, unofficial tool. It is not affiliated with or endorsed by Square Enix, or by XIVLauncher (goatcorp) and Dalamud.</p>
+      <p>FINAL FANTASY is a registered trademark of Square Enix Holdings Co., Ltd. FINAL FANTASY XIV © SQUARE ENIX.</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <a class="made" href="https://github.com/hazeliscoding/xiv-vault">
+        Made with
+        <svg class="icon heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+        <span class="sr-only">love</span>
+        by <strong>hazeliscoding</strong>
+      </a>
+      <ul class="footer-links">
+        <li><a href="guide.html">Guide</a></li>
+        <li><a href="https://github.com/hazeliscoding/xiv-vault/releases">Releases</a></li>
+        <li><a href="https://github.com/hazeliscoding/xiv-vault/blob/main/CHANGELOG.md">Changelog</a></li>
+        <li><a href="https://github.com/hazeliscoding/xiv-vault/blob/main/LICENSE">Apache-2.0</a></li>
+      </ul>
+    </div>
+  </footer>
+</body>
+</html>

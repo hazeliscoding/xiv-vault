@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "site/index.html"
+        ],
+        "createdAt": "2026-10-12T02:22:38.822Z",
+        "reason": "Agent: the .folder panels inset their text on the caption band and table cells (14 to 20px); the band runs edge to edge on purpose"
+      }
+    ]
+  }
+}
