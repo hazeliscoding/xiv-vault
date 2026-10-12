@@ -54,7 +54,7 @@ Every file the restore had changed was put back, so your configuration is as it 
 
 ## Plugins are missing after a restore
 
-XIV Vault restores plugin settings, not plugins, and Dalamud doesn't reinstall them on its own. Start the game, type `/xlplugins` in the chat to open Dalamud's plugin installer, and install them again: each one picks up its restored settings. Plugins from custom repositories appear once those repositories are back, and they are part of the restored Dalamud settings.
+XIV Vault restores plugin settings, not plugins, and Dalamud doesn't reinstall them on its own. Start the game, type `/xlplugins` in the chat to open Dalamud's plugin installer, and install them again: each one picks up its restored settings. Plugins from custom repositories appear once those repositories are back, and the repositories are part of the restored Dalamud settings.
 
 ## Updates
 

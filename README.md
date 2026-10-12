@@ -14,7 +14,7 @@ Download the latest release from [Releases](https://github.com/hazeliscoding/xiv
 - `xiv-vault-desktop-win-x64.zip`: the same app as a portable copy. Unzip it anywhere and run `XIV-Vault.exe`. A portable copy doesn't update itself.
 - `xiv-vault-cli-win-x64.zip`: the command line. Unzip `xiv-vault.exe` into a folder on your `PATH`. Keep it out of the app's folder: Windows sees `xiv-vault.exe` and `XIV-Vault.exe` as the same name.
 
-All three are self-contained: no .NET install is needed. Check downloads against `SHA256SUMS` on the release page. Setup and both programs are code-signed, with Hazel Granados as the publisher. While a release is new, Windows SmartScreen may still ask you to confirm Setup, until enough people have downloaded it. The `.nupkg` and `releases.win.json` files on each release are what installed copies download to update.
+All three are self-contained: no .NET install is needed. Check downloads against `SHA256SUMS` on the release page. Setup and both programs are code-signed, with Hazel Granados as the publisher. Windows SmartScreen may still ask you to confirm a new release's Setup until enough people have downloaded it. The `.nupkg` and `releases.win.json` files on each release are what installed copies download to update.
 
 ## Using the app
 
@@ -69,7 +69,7 @@ Exit codes are stable, so scripts can rely on them. [docs/cli.md](docs/cli.md) l
 
 ## Scheduling
 
-Turning on automatic backups creates one Windows scheduled task, **XIV Vault Scheduled Backup**, that runs as you with normal permissions. XIV Vault doesn't need to stay open, and there is no background service. If the PC was off at the scheduled time, the backup runs when it next starts. If FFXIV is running, the backup waits for the game to close (up to 6 hours) instead of copying files the game has open. If a scheduled backup fails, Windows shows a notification, and **Schedule** says what went wrong.
+Turning on automatic backups creates one Windows scheduled task, **XIV Vault Scheduled Backup**, that runs as you with normal permissions. XIV Vault doesn't need to stay open, and there is no background service. A backup missed because the PC was off runs when the PC next starts. If FFXIV is running, the backup waits for the game to close (up to 6 hours) instead of copying files the game has open. When a scheduled backup fails, Windows shows a notification, and **Schedule** says what went wrong.
 
 The task runs the program that set it up: `XIV-Vault.exe --scheduled-backup` (no window) or `xiv-vault backup --scheduled`. Updates keep the installed app in the same place, so the task keeps working, and uninstalling XIV Vault removes it. If you move a portable copy to another folder, set the schedule again; **Diagnostics** warns when the task points to a missing program.
 
@@ -85,11 +85,11 @@ An update waits while a backup or restore runs, or while a scheduled backup or a
 
 ## Where to keep backups
 
-A backup is only as safe as the place it lives. Good choices:
+A backup is no safer than the place you keep it. Good choices:
 
-- A folder synced by **OneDrive**, **Dropbox** or Google Drive. XIV Vault uses `%OneDrive%\XIV Vault` by default when OneDrive is set up. When backups are kept online only (OneDrive Files On-Demand), XIV Vault lists them without downloading them and downloads only the one you restore.
-- A **NAS** or network share.
-- An **external drive**, if you remember to plug it in.
+- A folder synced by OneDrive, Dropbox or Google Drive. XIV Vault uses `%OneDrive%\XIV Vault` by default when OneDrive is set up. When backups are kept online only (OneDrive Files On-Demand), XIV Vault lists them without downloading them and downloads only the one you restore.
+- A NAS or network share.
+- An external drive, if you remember to plug it in.
 
 A folder on the same drive as XIVLauncher protects against mistakes, but not against that drive failing. **Diagnostics** points this out. XIV Vault never talks to cloud services itself: it writes files, and your sync client does the rest.
 
