@@ -14,10 +14,10 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
 {
     internal const string OfficialRepository = "https://kamori.goats.dev/Plugin/PluginMaster";
 
-    // Downloads can take minutes, so they get most of the restore's progress bar.
+    // Downloads can take minutes, so once anything is requested they get most of the restore's progress bar.
     internal const double DownloadsEnd = 80;
     internal const double PlacingStart = 90;
-    private const double DownloadsStart = 35;
+    private const double DownloadsStart = 10;
     private const double PlacingEnd = 99;
 
     private const long MaxListBytes = 32 * 1024 * 1024;
@@ -40,33 +40,34 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
         return new PluginInstallPreview(
             settings.Plugins.Where(plugin => LocalOutcome(plugin, installed) is null).Select(plugin => plugin.InternalName).ToList(),
             settings.CustomRepositories
-                .Select(url => IsHttps(url, out var uri) ? new CustomRepository(url, uri.IdnHost) : null)
+                .Select(url => HttpsHost(url) is { } host ? new CustomRepository(url, host) : null)
                 .OfType<CustomRepository>()
                 .ToList(),
             DalamudInstall.FindVersion(rootPath) is not null);
     }
 
     /// <summary>
-    /// Downloads and checks, in <paramref name="workFolder"/>, each chosen plugin this PC is missing, changing
-    /// nothing outside it. Nothing is requested unless a plugin is missing and Dalamud is ready. Cancelling
-    /// throws <see cref="OperationCanceledException"/>, and nothing outside the work folder has changed then.
+    /// Downloads and checks, in <paramref name="workFolder"/>, each plugin the restore installs that this PC is
+    /// missing, changing nothing outside it. Nothing is requested unless a plugin is missing and Dalamud is ready.
+    /// Cancelling throws <see cref="OperationCanceledException"/>, and nothing outside the work folder has changed then.
     /// </summary>
     internal PreparedPlugins Prepare(
         string configPath,
         string rootPath,
-        RestoreSelection selection,
+        Func<string, bool> installs,
         IReadOnlyCollection<string> tickedRepositories,
         string workFolder,
         IProgress<RestoreProgress>? progress,
         CancellationToken cancellationToken)
     {
-        var settings = DalamudConfigReader.ReadPluginSettings(configPath) ?? new DalamudPluginSettings([], [], false, new HashSet<string>());
+        var settings = IfReadable(() => DalamudConfigReader.ReadPluginSettings(configPath), null) ?? new DalamudPluginSettings([], [], false, new HashSet<string>());
         var chosen = settings.Plugins
-            .Where(plugin => selection.IncludesPlugin(plugin.InternalName))
+            .Where(plugin => installs(plugin.InternalName))
             .DistinctBy(plugin => plugin.InternalName, StringComparer.Ordinal)
             .ToList();
         var outcomes = new Dictionary<string, PluginInstallOutcome>(StringComparer.Ordinal);
         var staged = new List<StagedPlugin>();
+        var requested = false;
         if (TryScan(rootPath) is not { } installed)
         {
             logger.LogWarning("The installed plugins couldn't be listed, so no plugin is installed");
@@ -98,6 +99,10 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
             return Skip(missing, PluginInstallOutcome.DalamudNotReady);
         }
 
+        // A slow list can take minutes too, so the downloads stage starts before the first request.
+        progress?.Report(new RestoreProgress(RestoreStage.DownloadingPlugins, DownloadsStart, "Downloading plugin lists"));
+        requested = true;
+
         // Dalamud lists nothing from custom repositories when the official list fails, so neither does this.
         if (FetchList(OfficialRepository, cancellationToken) is not { } official)
         {
@@ -106,7 +111,7 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
         }
 
         var custom = settings.CustomRepositories
-            .Where(url => tickedRepositories.Contains(url, StringComparer.Ordinal) && IsHttps(url, out _))
+            .Where(url => tickedRepositories.Contains(url, StringComparer.Ordinal) && HttpsHost(url) is not null)
             .Select(url => new CustomRepositoryList(url, FetchList(url, cancellationToken)))
             .ToList();
         if (custom.Count(repository => repository.Plugins is null) is > 0 and var unavailable)
@@ -114,7 +119,8 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
             logger.LogWarning("{Count} custom plugin list(s) couldn't be read", unavailable);
         }
 
-        var plan = InstallPlanner.Plan(missing, installed, dalamud, official, custom, DalamudInstall.LoadBanList(rootPath), settings.DoPluginTest, settings.TestingOptIns);
+        var bans = IfReadable(() => DalamudInstall.LoadBanList(rootPath), DalamudBanList.Empty);
+        var plan = InstallPlanner.Plan(missing, installed, dalamud, official, custom, bans, settings.DoPluginTest, settings.TestingOptIns);
         foreach (var skipped in plan.Skipped)
         {
             outcomes[skipped.InternalName] = skipped.Outcome;
@@ -127,7 +133,7 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
             var install = plan.Installs[i];
             progress?.Report(new RestoreProgress(
                 RestoreStage.DownloadingPlugins,
-                DownloadsStart + ((DownloadsEnd - DownloadsStart) * i / plan.Installs.Count),
+                DownloadsStart + ((DownloadsEnd - DownloadsStart) * (i + 1) / (plan.Installs.Count + 1)),
                 $"Downloading plugin {i + 1} of {plan.Installs.Count}"));
             var name = install.Plugin.InternalName;
             if (diskFull || !IsFolderName(install.Entry.InternalName))
@@ -177,7 +183,7 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
         return Prepared();
 
         PreparedPlugins Prepared() =>
-            new(rootPath, chosen.Select(plugin => new PluginOutcome(plugin.InternalName, outcomes[plugin.InternalName])).ToList(), staged);
+            new(rootPath, chosen.Select(plugin => new PluginOutcome(plugin.InternalName, outcomes[plugin.InternalName])).ToList(), staged, requested);
 
         PreparedPlugins Skip(IEnumerable<PluginReference> plugins, PluginInstallOutcome outcome)
         {
@@ -254,14 +260,46 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
         {
             return InstalledPluginScanner.Scan(rootPath);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
+            // A folder that can't be listed, or a manifest that isn't UTF-8 (see IfReadable).
             return null;
         }
     }
 
-    // Dalamud also accepts plain HTTP repositories; XIV Vault doesn't.
-    private static bool IsHttps(string url, out Uri uri) => Uri.TryCreate(url, UriKind.Absolute, out uri!) && uri.Scheme == Uri.UriSchemeHttps;
+    // System.Text.Json parses text that isn't UTF-8 and throws only when a value is read, so such a file counts as unreadable.
+    private static T IfReadable<T>(Func<T> read, T unreadable)
+    {
+        try
+        {
+            return read();
+        }
+        catch (InvalidOperationException)
+        {
+            return unreadable;
+        }
+    }
+
+    /// <summary>
+    /// The punycode host of an HTTPS repository, or null. Dalamud also accepts plain HTTP repositories; XIV Vault
+    /// doesn't. Uri accepts some hosts it can't convert, such as one holding a pasted soft hyphen, and those are left out.
+    /// </summary>
+    private static string? HttpsHost(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+        {
+            return null;
+        }
+
+        try
+        {
+            return uri.IdnHost;
+        }
+        catch (UriFormatException)
+        {
+            return null;
+        }
+    }
 
     // Paths are built from a plugin's name, so it must be a single plain folder name.
     private static bool IsFolderName(string name) => ArchivePaths.IsSafe(name) && !name.Contains('/');
@@ -423,5 +461,6 @@ internal sealed record StagedPlugin(PlannedInstall Install, string Folder);
 /// <summary>
 /// What <see cref="PluginInstaller.Prepare"/> leaves for <see cref="PluginInstaller.Place"/>: every chosen
 /// plugin's outcome, in order, where <see cref="PluginInstallOutcome.Installed"/> marks one staged to be written.
+/// <c>Requested</c> is true once anything was requested, which takes the progress bar into the downloads' share.
 /// </summary>
-internal sealed record PreparedPlugins(string RootPath, IReadOnlyList<PluginOutcome> Outcomes, IReadOnlyList<StagedPlugin> Staged);
+internal sealed record PreparedPlugins(string RootPath, IReadOnlyList<PluginOutcome> Outcomes, IReadOnlyList<StagedPlugin> Staged, bool Requested);

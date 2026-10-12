@@ -219,11 +219,32 @@ public sealed class RestoreService : IRestoreService
 
         return new RestorePreview(record, contents, target, null, currentConfig, changed, configChanged)
         {
-            Plugins = _pluginInstalls.Available && manifest.Contents.DalamudConfig && manifest.BackupType != BackupKind.PreRestore
-                && ReadBackupConfig(record.FilePath, DalamudConfigReader.ReadPluginSettings) is { } settings
-                ? PluginInstaller.Preview(settings, target.RootPath)
-                : null,
+            Plugins = manifest.Contents.DalamudConfig && CanInstallPlugins(manifest, target) ? PreviewPlugins(record.FilePath, target.RootPath) : null,
         };
+    }
+
+    /// <summary>
+    /// Whether restoring this backup into <paramref name="target"/> can install plugins: only in versions that can, never
+    /// from a safety backup, so plugins stay when a restore is undone, and never into XIVLauncherCN, whose Dalamud may
+    /// use an official repository of its own that hasn't been checked.
+    /// </summary>
+    private bool CanInstallPlugins(BackupManifest manifest, XivLauncherInstallation target) =>
+        _pluginInstalls.Available
+        && manifest.BackupType != BackupKind.PreRestore
+        && !Path.GetFileName(Path.TrimEndingDirectorySeparator(target.RootPath)).Equals("XIVLauncherCN", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Null when the backup's plugin list can't be read. Never throws: it must never stop a restore of the settings.</summary>
+    private PluginInstallPreview? PreviewPlugins(string archivePath, string rootPath)
+    {
+        try
+        {
+            return ReadBackupConfig(archivePath, DalamudConfigReader.ReadPluginSettings) is { } settings ? PluginInstaller.Preview(settings, rootPath) : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("The plugins to install couldn't be worked out ({Error})", ex.GetType().Name);
+            return null;
+        }
     }
 
     /// <summary>The file's SHA-256, or null when it can't be read; an unreadable file counts as changed.</summary>
@@ -348,20 +369,20 @@ public sealed class RestoreService : IRestoreService
         var gamePath = GameSettingsFolder.In(_environment);
         var selection = request.Selection;
         var pluginCount = CheckSelection(selection, manifest);
+        var backupPlugins = BackupAllowlist.PluginNames(manifest.Files.Select(file => file.Path));
         EnsureNoLinks(target.DataPath, gamePath, manifest, selection);
         EnsureNothingRunning();
 
-        progress?.Report(new RestoreProgress(RestoreStage.CreatingSafetySnapshot, 10, "Creating pre-restore safety backup"));
-        var snapshot = _backupService.Create(
-            target, config.BackupDestination!, BackupKind.PreRestore, includeDalamudUi: true, config, null, cancellationToken, applyRetention: false);
-        _logger.LogInformation("Pre-restore snapshot {File} created", snapshot.Record.FileName);
-
+        // Downloads can take minutes, so a restore that installs plugins takes its snapshot after them, right before
+        // anything changes: settings saved meanwhile are in it, and a link made meanwhile is still refused.
+        var installs = request.InstallPlugins && selection.DalamudSettings && CanInstallPlugins(manifest, target);
+        var snapshot = installs ? null : CreateSnapshot(10);
         var workRoot = Path.Combine(_environment.TempPath, "XIV Vault", "restore-" + Guid.NewGuid().ToString("N")[..12]);
         var staging = Path.Combine(workRoot, "staged");
         var rollback = Path.Combine(workRoot, "replaced");
         try
         {
-            progress?.Report(new RestoreProgress(RestoreStage.Extracting, 30, "Unpacking backup"));
+            progress?.Report(new RestoreProgress(RestoreStage.Extracting, installs ? 5 : 30, "Unpacking backup"));
             archive.Position = 0;
             // Every file is unpacked and checked again, chosen or not, so a damaged archive is
             // refused as a whole; only the chosen files are then written.
@@ -369,15 +390,23 @@ public sealed class RestoreService : IRestoreService
             var chosen = staged.Where(file => selection.Includes(file.Item, file.RelativeTarget)).ToList();
 
             // Every plugin is downloaded and checked before any file changes, so cancelling or losing the
-            // network changes nothing. A safety backup installs nothing: plugins stay when a restore is undone.
+            // network changes nothing.
             var dalamudConfig = staged.Find(file => file.Item == PortableItem.DalamudConfig);
-            var installs = _pluginInstalls.Available && request.InstallPlugins && selection.DalamudSettings && manifest.BackupType != BackupKind.PreRestore;
             var plugins = installs && dalamudConfig is not null
-                ? _plugins.Prepare(dalamudConfig.StagedPath, target.RootPath, selection, request.CustomRepositories, Path.Combine(workRoot, "plugins"), progress, cancellationToken)
+                ? _plugins.Prepare(dalamudConfig.StagedPath, target.RootPath, InstallsPlugin, request.CustomRepositories, Path.Combine(workRoot, "plugins"), progress, cancellationToken)
                 : null;
 
+            // A restore that requested nothing moves as one without installs does.
+            var requested = plugins is { Requested: true };
+            if (snapshot is null)
+            {
+                EnsureNoLinks(target.DataPath, gamePath, manifest, selection);
+                EnsureNothingRunning();
+                snapshot = CreateSnapshot(requested ? PluginInstaller.DownloadsEnd : 10);
+            }
+
             EnsureNothingRunning();
-            var (from, to) = plugins is null ? (40.0, 98.0) : (PluginInstaller.DownloadsEnd, PluginInstaller.PlacingStart);
+            var (from, to) = requested ? (PluginInstaller.DownloadsEnd, PluginInstaller.PlacingStart) : (40.0, 98.0);
             var applied = Apply(chosen, target.DataPath, gamePath, rollback, pluginCount, from, to, progress, cancellationToken);
 
             // The settings are restored, so nothing may fail the restore now: a plugin that can't be written is listed instead.
@@ -402,10 +431,8 @@ public sealed class RestoreService : IRestoreService
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not XivVaultException)
         {
-            throw new XivVaultException(
-                XivVaultErrorKind.Unexpected,
-                $"The restore stopped ({ex.Message}). Nothing was changed. Your previous configuration is also saved in {snapshot.Record.FileName}.",
-                ex);
+            var saved = snapshot is null ? "" : $" Your previous configuration is also saved in {snapshot.Record.FileName}.";
+            throw new XivVaultException(XivVaultErrorKind.Unexpected, $"The restore stopped ({ex.Message}). Nothing was changed.{saved}", ex);
         }
         finally
         {
@@ -415,17 +442,32 @@ public sealed class RestoreService : IRestoreService
             // archive being restored, even when that archive is itself the oldest snapshot.
             try
             {
-                _retention.Apply(
-                    Path.GetDirectoryName(snapshot.Record.FilePath)!,
-                    BackupKind.PreRestore,
-                    config.RetentionCount,
-                    [snapshot.Record.FilePath, archivePath]);
+                if (snapshot is not null)
+                {
+                    _retention.Apply(
+                        Path.GetDirectoryName(snapshot.Record.FilePath)!,
+                        BackupKind.PreRestore,
+                        config.RetentionCount,
+                        [snapshot.Record.FilePath, archivePath]);
+                }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XivVaultException)
             {
                 _logger.LogWarning(ex, "Safety snapshot retention was skipped");
             }
         }
+
+        BackupResult CreateSnapshot(double percent)
+        {
+            progress?.Report(new RestoreProgress(RestoreStage.CreatingSafetySnapshot, percent, "Creating pre-restore safety backup"));
+            var created = _backupService.Create(
+                target, config.BackupDestination!, BackupKind.PreRestore, includeDalamudUi: true, config, null, cancellationToken, applyRetention: false);
+            _logger.LogInformation("Pre-restore snapshot {File} created", created.Record.FileName);
+            return created;
+        }
+
+        // A plugin left out in the review isn't installed. One the backup holds no settings for was never offered there.
+        bool InstallsPlugin(string plugin) => selection.IncludesPlugin(plugin) || !backupPlugins.Contains(plugin, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>

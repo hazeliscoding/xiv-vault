@@ -43,11 +43,13 @@ public class PluginInstallerTests : IDisposable
 
         var config = Path.Combine(_host.Environment.Root, "dalamudConfig.json");
         File.WriteAllText(config, FakePluginRepository.DalamudConfig(plugins));
-        return installer.Prepare(config, Root, RestoreSelection.Everything, [], Path.Combine(_host.Environment.Root, "work"), null, Ct);
+        return installer.Prepare(config, Root, plugin => true, [], Path.Combine(_host.Environment.Root, "work"), null, Ct);
     }
 
-    [Fact]
-    public void The_game_starting_while_plugins_are_written_stops_the_rest()
+    [Theory]
+    [InlineData("ffxiv_dx11")]
+    [InlineData("XIVLauncher")]
+    public void The_game_or_XIVLauncher_starting_while_plugins_are_written_stops_the_rest(string process)
     {
         var installer = _host.Get<PluginInstaller>();
         var prepared = Prepare(installer, Wotsit, Orchestrion, Tippy);
@@ -56,7 +58,7 @@ public class PluginInstallerTests : IDisposable
         {
             if (value.Stage == RestoreStage.InstallingPlugins && ++written == 2)
             {
-                _host.Processes.Running.Add("ffxiv_dx11");
+                _host.Processes.Running.Add(process);
             }
         });
 
@@ -128,6 +130,22 @@ public class PluginInstallerTests : IDisposable
         Assert.Equal([new PluginOutcome(Orchestrion.Name, PluginInstallOutcome.WriteFailed)], report.NotInstalled);
         Assert.True(Directory.Exists(orchestrion));
         Assert.Empty(Directory.EnumerateFileSystemEntries(orchestrion));
+    }
+
+    [Fact]
+    public void A_file_held_for_a_moment_is_written_on_a_later_attempt()
+    {
+        var installer = _host.Get<PluginInstaller>();
+        var prepared = Prepare(installer, Wotsit);
+
+        // An antivirus scan holds the staged manifest, which is written last, and lets go of it a moment later.
+        using var held = File.Open(Path.Combine(prepared.Staged.Single().Folder, Wotsit.Name + ".json"), FileMode.Open, FileAccess.Read, FileShare.None);
+        using var release = new Timer(state => held.Dispose(), null, TimeSpan.FromMilliseconds(150), Timeout.InfiniteTimeSpan);
+
+        var report = installer.Place(prepared, null);
+
+        Assert.Equal([Wotsit.Name], report.Installed);
+        Assert.True(File.Exists(Path.Combine(InstalledPlugins, Wotsit.Name, "1.0.0.0", Wotsit.Name + ".json")));
     }
 
     [Fact]

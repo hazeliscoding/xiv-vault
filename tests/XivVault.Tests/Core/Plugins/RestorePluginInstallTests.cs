@@ -1,9 +1,13 @@
 using System.IO.Compression;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using XivVault.Core;
 using XivVault.Core.Backup;
+using XivVault.Core.Configuration;
+using XivVault.Core.Discovery;
 using XivVault.Core.Logging;
 using XivVault.Core.Platform;
 using XivVault.Core.Plugins;
@@ -37,18 +41,24 @@ public class RestorePluginInstallTests
     private static FakePluginRepository Repository(TestHost host) => new(host.Downloads, Path.Combine(host.Environment.Root, "web"));
 
     /// <summary>Backs up another PC whose Dalamud settings are <paramref name="config"/>.</summary>
-    private static async Task<string> BackUpOldPcAsync(TestHost host, string config, IEnumerable<string>? pluginConfigs = null)
+    private static Task<string> BackUpOldPcAsync(TestHost host, string config, IEnumerable<string>? pluginConfigs = null) =>
+        BackUpOldPcAsync(host, Encoding.UTF8.GetBytes(config), pluginConfigs);
+
+    private static async Task<string> BackUpOldPcAsync(TestHost host, byte[] config, IEnumerable<string>? pluginConfigs = null)
     {
         var oldPc = FakeXivLauncher.Create(Path.Combine(host.Environment.Root, "OldPC", "XIVLauncher"), plugins: pluginConfigs);
-        oldPc.Write(config, "dalamudConfig.json");
+        File.WriteAllBytes(Path.Combine(oldPc.DataPath, "dalamudConfig.json"), config);
         var backup = await host.Backups.CreateBackupAsync(new BackupRequest(BackupKind.Manual) { Source = oldPc.Root }, cancellationToken: Ct);
         return backup.Record.FilePath;
     }
 
+    /// <summary>The text as UTF-8, with each # replaced by a byte UTF-8 never uses.</summary>
+    private static byte[] NotUtf8(string text) => [.. Encoding.UTF8.GetBytes(text).Select(value => value == (byte)'#' ? (byte)0xFF : value)];
+
     /// <summary>A new PC where XIVLauncher has run once and, unless told otherwise, has finished downloading Dalamud.</summary>
-    private static string NewPc(TestHost host, bool dalamudReady = true)
+    private static string NewPc(TestHost host, bool dalamudReady = true, string folder = "XIVLauncher")
     {
-        var root = host.Environment.XivLauncherPath;
+        var root = Path.Combine(host.Environment.RoamingAppData, folder);
         Directory.CreateDirectory(root);
         File.WriteAllText(Path.Combine(root, "launcherConfigV3.json"), "{}");
         if (dalamudReady)
@@ -125,6 +135,9 @@ public class RestorePluginInstallTests
         Assert.True(!Directory.Exists(work) || !Directory.EnumerateFileSystemEntries(work).Any(), "The restore's work folder is removed.");
     }
 
+    private static void AssertNoSafetySnapshot(TestHost host) =>
+        Assert.DoesNotContain(host.Catalog.List(host.BackupFolder), record => record.IsSafetySnapshot);
+
     [Fact]
     public async Task A_new_PC_gets_the_plugins_of_every_collection_with_their_IDs()
     {
@@ -179,6 +192,43 @@ public class RestorePluginInstallTests
         Assert.Null(result.Plugins);
         Assert.Empty(host.Downloads.Requests);
         Assert.False(Directory.Exists(InstalledPlugins(root)));
+        Assert.True(result.DalamudConfigRestored);
+    }
+
+    [Fact]
+    public void Only_a_prerelease_version_is_a_beta()
+    {
+        Assert.True(XivVaultInfo.IsPrerelease("1.1.0-beta.1"));
+        Assert.False(XivVaultInfo.IsPrerelease("1.1.0"));
+    }
+
+    [Fact]
+    public void Installs_follow_this_version_when_a_front_end_registers_nothing()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IWebDownloader>(new FakeWebDownloader());
+        services.AddXivVaultCore();
+        using var provider = services.BuildServiceProvider();
+
+        // Checked against the version string rather than IsBeta: tests build as a stable version, where installs must be off.
+        Assert.Equal(XivVaultInfo.IsPrerelease(XivVaultInfo.Version), provider.GetRequiredService<PluginInstalls>().Available);
+    }
+
+    [Fact]
+    public async Task XIVLauncherCN_gets_no_plugin_installs()
+    {
+        using var host = new TestHost();
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit]));
+        var root = NewPc(host, folder: "XIVLauncherCN");
+        Repository(host).Add(Wotsit.Name);
+
+        var preview = await host.Restores.PreviewAsync(archive, cancellationToken: Ct);
+        var result = await RestoreAsync(host, archive);
+
+        Assert.Equal(root, preview.Target!.RootPath);
+        Assert.Null(preview.Plugins);
+        Assert.Null(result.Plugins);
+        Assert.Empty(host.Downloads.Requests);
         Assert.True(result.DalamudConfigRestored);
     }
 
@@ -254,6 +304,26 @@ public class RestorePluginInstallTests
     }
 
     [Fact]
+    public async Task Plugins_without_settings_in_the_backup_install_when_another_choice_is_left_out()
+    {
+        using var host = new TestHost();
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit, Orchestrion]), pluginConfigs: [Wotsit.Name]);
+        NewPc(host);
+        var repository = Repository(host);
+        repository.Add(Wotsit.Name);
+        repository.Add(Orchestrion.Name);
+        var preview = await host.Restores.PreviewAsync(archive, cancellationToken: Ct);
+
+        // Every plugin configuration ticked, and something else left out, as the app does for system settings on a new PC.
+        // Orchestrion has no settings in the backup, so the review never offered it to leave out.
+        var result = await host.Restores.RestoreAsync(
+            new RestoreRequest(archive) { InstallPlugins = true, Selection = RestoreSelection.Only(preview.Backup.PluginNames, dalamudSettings: true) },
+            cancellationToken: Ct);
+
+        Assert.Equal([Orchestrion.Name, Wotsit.Name], Report(result, chosen: 2).Installed.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public async Task Restoring_a_safety_backup_installs_nothing()
     {
         using var host = new TestHost();
@@ -321,6 +391,89 @@ public class RestorePluginInstallTests
     }
 
     [Fact]
+    public async Task A_repository_over_plain_HTTP_is_never_requested()
+    {
+        using var host = new TestHost();
+        const string insecure = "http://insecure.example.com/repo.json";
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Tippy], repositories: [(insecure, true)]));
+        NewPc(host);
+        Repository(host).Add(Tippy.Name, repository: insecure);
+
+        var result = await RestoreAsync(host, archive, insecure);
+
+        Assert.DoesNotContain(insecure, host.Downloads.Requests);
+        Assert.Equal(PluginInstallOutcome.NotOffered, OutcomeOf(Report(result, chosen: 1), Tippy));
+    }
+
+    [Fact]
+    public async Task A_repository_whose_host_has_no_punycode_form_is_never_offered_or_requested()
+    {
+        using var host = new TestHost();
+
+        // Dalamud saves any address Uri accepts, and Uri accepts a soft hyphen pasted into a host but can't convert it.
+        const string unconvertible = "https://­.example.com/repo.json";
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit, Moodles], repositories: [(unconvertible, true), (Ticked, true)]));
+        NewPc(host);
+        var repository = Repository(host);
+        repository.Add(Wotsit.Name);
+        repository.Add(Moodles.Name, repository: unconvertible);
+        host.Downloads.Bodies[Ticked] = "[]"u8.ToArray();
+
+        var preview = await host.Restores.PreviewAsync(archive, cancellationToken: Ct);
+        var result = await RestoreAsync(host, archive, unconvertible, Ticked);
+
+        Assert.Equal([new CustomRepository(Ticked, "raw.example.com")], preview.Plugins!.CustomRepositories);
+        Assert.DoesNotContain(unconvertible, host.Downloads.Requests);
+        var report = Report(result, chosen: 2);
+        Assert.Equal([Wotsit.Name], report.Installed);
+        Assert.Equal(PluginInstallOutcome.NotOffered, OutcomeOf(report, Moodles));
+    }
+
+    [Fact]
+    public async Task A_ticked_list_that_cannot_be_read_leaves_its_plugins_unavailable()
+    {
+        using var host = new TestHost();
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit, Moodles], repositories: [(Ticked, true)]));
+        NewPc(host);
+        var repository = Repository(host);
+        repository.Add(Wotsit.Name);
+        repository.Add(Moodles.Name, repository: Ticked);
+        host.Downloads.Bodies.Remove(Ticked);
+
+        var result = await RestoreAsync(host, archive, Ticked);
+
+        var report = Report(result, chosen: 2);
+        Assert.Equal([Wotsit.Name], report.Installed);
+        Assert.Equal(PluginInstallOutcome.RepositoryUnavailable, OutcomeOf(report, Moodles));
+    }
+
+    [Fact]
+    public async Task Lists_and_plugins_are_requested_as_Dalamud_requests_them()
+    {
+        var web = new FakeWebDownloader();
+        var recording = new RecordingDownloads(web);
+        using var host = new TestHost(configure: services => services.AddSingleton<IWebDownloader>(recording));
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit, Orchestrion, Moodles], repositories: [(Ticked, true)]));
+        NewPc(host);
+        var repository = new FakePluginRepository(web, Path.Combine(host.Environment.Root, "web"));
+        string[] links = [repository.Add(Wotsit.Name), repository.Add(Orchestrion.Name), repository.Add(Moodles.Name, repository: Ticked)];
+
+        var result = await RestoreAsync(host, archive, Ticked);
+
+        Assert.Equal(3, Report(result, chosen: 3).Installed.Count);
+        List<(string Url, string Accept, long MaxBytes)> expected =
+        [
+            (FakePluginRepository.Official, "application/json", 32L << 20),
+            (Ticked, "application/json", 32L << 20),
+            .. links.Select(link => (link, "application/zip", 512L << 20)),
+        ];
+        Assert.Equal(expected, recording.Requests.Select(request => (request.Url, request.Accept, request.MaxBytes)));
+
+        // Each zip is deleted once it is unpacked, before the next one downloads.
+        Assert.DoesNotContain(recording.Requests, request => request.EarlierZipLeft);
+    }
+
+    [Fact]
     public async Task An_unreachable_official_repository_still_restores_the_settings()
     {
         using var host = new TestHost();
@@ -338,6 +491,26 @@ public class RestorePluginInstallTests
         var report = Report(result, chosen: 2);
         Assert.All(report.NotInstalled, plugin => Assert.Equal(PluginInstallOutcome.RepositoryUnavailable, plugin.Outcome));
         Assert.Equal(config, File.ReadAllText(Path.Combine(root, "dalamudConfig.json")));
+        Assert.False(Directory.Exists(InstalledPlugins(root)));
+    }
+
+    [Fact]
+    public async Task An_official_list_that_cannot_be_read_installs_nothing()
+    {
+        using var host = new TestHost();
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit, Orchestrion]));
+        var root = NewPc(host);
+        var repository = Repository(host);
+        repository.Add(Wotsit.Name);
+        repository.Add(Orchestrion.Name);
+        host.Downloads.Bodies[FakePluginRepository.Official] = "<html>Service unavailable</html>"u8.ToArray();
+
+        var result = await RestoreAsync(host, archive);
+
+        Assert.Equal([FakePluginRepository.Official], host.Downloads.Requests);
+        var report = Report(result, chosen: 2);
+        Assert.Equal(2, report.NotInstalled.Count);
+        Assert.All(report.NotInstalled, plugin => Assert.Equal(PluginInstallOutcome.RepositoryUnavailable, plugin.Outcome));
         Assert.False(Directory.Exists(InstalledPlugins(root)));
     }
 
@@ -394,6 +567,61 @@ public class RestorePluginInstallTests
         Assert.False(File.Exists(Path.Combine(root, "dalamudConfig.json")));
         Assert.False(Directory.Exists(InstalledPlugins(root)));
         AssertNoWorkFolderLeft(host);
+        AssertNoSafetySnapshot(host);
+    }
+
+    [Fact]
+    public async Task Settings_saved_while_plugins_download_are_in_the_safety_snapshot()
+    {
+        using var host = new TestHost();
+        var config = FakePluginRepository.DalamudConfig([Wotsit]);
+        var archive = await BackUpOldPcAsync(host, config);
+        var root = NewPc(host);
+        var current = Path.Combine(root, "dalamudConfig.json");
+        File.WriteAllText(current, "before the downloads");
+        Repository(host).Add(Wotsit.Name);
+        host.Downloads.BeforeRequest = url =>
+        {
+            // The game started and closed again while the plugin downloaded, and Dalamud saved its settings.
+            if (url.Contains("/Plugin/Download/", StringComparison.Ordinal))
+            {
+                File.WriteAllText(current, "saved during the downloads");
+            }
+        };
+
+        var result = await RestoreAsync(host, archive);
+
+        Assert.Equal(config, File.ReadAllText(current));
+        using var snapshot = ZipFile.OpenRead(result.SafetySnapshot.FilePath);
+        using var saved = new StreamReader(snapshot.GetEntry("payload/dalamudConfig.json")!.Open());
+        Assert.Equal("saved during the downloads", saved.ReadToEnd());
+    }
+
+    [Fact]
+    public async Task A_link_made_while_plugins_download_is_refused_before_anything_changes()
+    {
+        using var host = new TestHost();
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit]), pluginConfigs: [Wotsit.Name]);
+        var root = NewPc(host);
+        Repository(host).Add(Wotsit.Name);
+        var elsewhere = Path.Combine(host.Environment.Root, "Elsewhere");
+        Directory.CreateDirectory(elsewhere);
+        host.Downloads.BeforeRequest = url =>
+        {
+            if (url.Contains("/Plugin/Download/", StringComparison.Ordinal))
+            {
+                RestoreHardeningTests.CreateJunction(Path.Combine(root, "pluginConfigs"), elsewhere);
+            }
+        };
+
+        var error = await Assert.ThrowsAsync<XivVaultException>(() => RestoreAsync(host, archive));
+
+        Assert.Equal(XivVaultErrorKind.RestoreValidationFailed, error.Kind);
+        Assert.Empty(Directory.EnumerateFileSystemEntries(elsewhere));
+        Assert.False(File.Exists(Path.Combine(root, "dalamudConfig.json")));
+        Assert.False(Directory.Exists(InstalledPlugins(root)));
+        AssertNoWorkFolderLeft(host);
+        AssertNoSafetySnapshot(host);
     }
 
     [Fact]
@@ -420,6 +648,112 @@ public class RestorePluginInstallTests
         Assert.False(File.Exists(Path.Combine(root, "dalamudConfig.json")));
         Assert.False(Directory.Exists(InstalledPlugins(root)));
         AssertNoWorkFolderLeft(host);
+        AssertNoSafetySnapshot(host);
+    }
+
+    [Fact]
+    public async Task Plugins_are_written_only_once_the_settings_are()
+    {
+        using var host = new TestHost(configure: services => services.AddSingleton<IRestoreService>(provider => new RestoreService(
+            provider.GetRequiredService<IConfigStore>(),
+            provider.GetRequiredService<IXivLauncherLocator>(),
+            provider.GetRequiredService<ArchiveValidator>(),
+            provider.GetRequiredService<BackupCatalog>(),
+            provider.GetRequiredService<BackupService>(),
+            provider.GetRequiredService<PortableStateScanner>(),
+            provider.GetRequiredService<GameProcessGuard>(),
+            provider.GetRequiredService<PathDisplay>(),
+            provider.GetRequiredService<IAppEnvironment>(),
+            provider.GetRequiredService<RetentionService>(),
+            provider.GetRequiredService<OperationLock>(),
+            NullLogger<RestoreService>.Instance,
+            provider.GetRequiredService<PluginInstaller>(),
+            provider.GetRequiredService<PluginInstalls>(),
+            new FailingConfigWriter())));
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit]));
+        var root = NewPc(host);
+        Repository(host).Add(Wotsit.Name);
+
+        var error = await Assert.ThrowsAsync<XivVaultException>(() => RestoreAsync(host, archive));
+
+        Assert.Contains("put back", error.Message);
+        Assert.False(Directory.Exists(InstalledPlugins(root)));
+    }
+
+    [Fact]
+    public async Task Once_the_settings_are_restored_the_restore_completes_whatever_installing_throws()
+    {
+        using var host = new TestHost();
+        var config = FakePluginRepository.DalamudConfig([Wotsit, Orchestrion]);
+        var archive = await BackUpOldPcAsync(host, config);
+        var root = NewPc(host);
+        var repository = Repository(host);
+        repository.Add(Wotsit.Name);
+        repository.Add(Orchestrion.Name);
+        var installing = 0;
+        var progress = new InlineProgress(value =>
+        {
+            // A front end failing to show the second install.
+            if (value.Stage == RestoreStage.InstallingPlugins && ++installing == 2)
+            {
+                throw new InvalidOperationException("The window was closed.");
+            }
+        });
+
+        var result = await host.Restores.RestoreAsync(new RestoreRequest(archive) { InstallPlugins = true }, progress, Ct);
+
+        Assert.Equal(config, File.ReadAllText(Path.Combine(root, "dalamudConfig.json")));
+        var report = Report(result, chosen: 2);
+        var installed = Assert.Single(report.Installed);
+        Assert.Equal(PluginInstallOutcome.WriteFailed, Assert.Single(report.NotInstalled).Outcome);
+        Assert.Equal([installed], Directory.GetDirectories(InstalledPlugins(root)).Select(Path.GetFileName));
+    }
+
+    [Fact]
+    public async Task Progress_moves_on_through_the_downloads_and_never_goes_back()
+    {
+        using var host = new TestHost();
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit, Orchestrion]));
+        NewPc(host);
+        var repository = Repository(host);
+        repository.Add(Wotsit.Name);
+        repository.Add(Orchestrion.Name);
+        var reports = new List<RestoreProgress>();
+        var atRequests = new List<RestoreProgress>();
+        host.Downloads.BeforeRequest = _ => atRequests.Add(reports[^1]);
+
+        await host.Restores.RestoreAsync(new RestoreRequest(archive) { InstallPlugins = true }, new InlineProgress(reports.Add), Ct);
+
+        // The plugin list, then each plugin, moves the bar on.
+        Assert.Equal(3, atRequests.Count);
+        Assert.All(atRequests, report => Assert.Equal(RestoreStage.DownloadingPlugins, report.Stage));
+        Assert.True(atRequests[0].Percent < atRequests[1].Percent && atRequests[1].Percent < atRequests[2].Percent);
+        Assert.Equal(reports.Select(report => report.Percent).Order(), reports.Select(report => report.Percent));
+
+        // The safety snapshot is taken after the downloads, right before anything changes.
+        Assert.Equal(
+            [
+                RestoreStage.VerifyingIntegrity, RestoreStage.Extracting, RestoreStage.DownloadingPlugins, RestoreStage.CreatingSafetySnapshot,
+                RestoreStage.RestoringPluginConfigs, RestoreStage.RestoringDalamudSettings, RestoreStage.InstallingPlugins, RestoreStage.Completed,
+            ],
+            reports.Select(report => report.Stage).Distinct());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_restore_that_downloads_nothing_moves_at_its_usual_pace(bool installPlugins)
+    {
+        using var host = new TestHost();
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit]));
+        InstallLocally(NewPc(host), Wotsit);
+        var reports = new List<RestoreProgress>();
+
+        await host.Restores.RestoreAsync(new RestoreRequest(archive) { InstallPlugins = installPlugins }, new InlineProgress(reports.Add), Ct);
+
+        Assert.Equal(40, reports.First(report => report.Stage == RestoreStage.RestoringPluginConfigs).Percent);
+        Assert.Equal(reports.Select(report => report.Percent).Order(), reports.Select(report => report.Percent));
+        Assert.DoesNotContain(reports, report => report.Stage is RestoreStage.DownloadingPlugins or RestoreStage.InstallingPlugins);
     }
 
     [Theory]
@@ -520,6 +854,63 @@ public class RestorePluginInstallTests
         Assert.Empty(Directory.GetFiles(root, "*.xiv-vault-restore", SearchOption.AllDirectories));
     }
 
+    // System.Text.Json parses text that isn't UTF-8, and fails only when a value is read; Newtonsoft, which Dalamud uses,
+    // reads such a byte as a replacement character. Either way, the settings must still restore.
+    [Fact]
+    public async Task Settings_that_are_not_UTF8_never_stop_a_restore()
+    {
+        using var host = new TestHost();
+        var config = NotUtf8(FakePluginRepository.DalamudConfig([("Wots#t", Wotsit.Id), Orchestrion]));
+        var archive = await BackUpOldPcAsync(host, config);
+        var root = NewPc(host);
+        Repository(host).Add(Orchestrion.Name);
+
+        await host.Restores.PreviewAsync(archive, cancellationToken: Ct);
+        var result = await RestoreAsync(host, archive);
+
+        Assert.True(result.DalamudConfigRestored);
+        Assert.Equal(config, File.ReadAllBytes(Path.Combine(root, "dalamudConfig.json")));
+    }
+
+    [Fact]
+    public async Task An_installed_manifest_that_is_not_UTF8_never_stops_a_restore()
+    {
+        using var host = new TestHost();
+        var config = FakePluginRepository.DalamudConfig([Wotsit, Orchestrion]);
+        var archive = await BackUpOldPcAsync(host, config);
+        var root = NewPc(host);
+        var repository = Repository(host);
+        repository.Add(Wotsit.Name);
+        repository.Add(Orchestrion.Name);
+        InstallLocally(root, Orchestrion);
+        var manifest = Path.Combine(InstalledPlugins(root), Orchestrion.Name, "0.9.0.0", Orchestrion.Name + ".json");
+        var unreadable = NotUtf8("""{ "InternalName": "Orchestrion", "WorkingPluginId": "#" }""");
+        File.WriteAllBytes(manifest, unreadable);
+
+        var preview = await host.Restores.PreviewAsync(archive, cancellationToken: Ct);
+        var result = await RestoreAsync(host, archive);
+
+        Assert.NotNull(preview.Plugins);
+        Assert.Equal(config, File.ReadAllText(Path.Combine(root, "dalamudConfig.json")));
+        Assert.DoesNotContain(Orchestrion.Name, Report(result, chosen: 2).Installed);
+        Assert.Equal(unreadable, File.ReadAllBytes(manifest));
+    }
+
+    [Fact]
+    public async Task A_ban_list_that_is_not_UTF8_never_stops_a_restore()
+    {
+        using var host = new TestHost();
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit]));
+        var root = NewPc(host);
+        Repository(host).Add(Wotsit.Name);
+        FakeDalamud.WriteBanList(root, "[]");
+        File.WriteAllBytes(Path.Combine(root, "dalamudAssets", "444", "UIRes", "bannedplugin.json"), NotUtf8("""[ { "Name": "Banned#", "AssemblyVersion": null } ]"""));
+
+        var result = await RestoreAsync(host, archive);
+
+        Assert.Equal([Wotsit.Name], Report(result, chosen: 1).Installed);
+    }
+
     [Fact]
     public async Task Logs_name_no_plugin_repository_or_plugin_ID()
     {
@@ -529,24 +920,46 @@ public class RestorePluginInstallTests
             services.AddSingleton<ILoggerProvider>(provider =>
                 new FileLoggerProvider(Path.Combine(provider.GetRequiredService<IAppEnvironment>().DataDirectory, "logs"), LogLevel.Trace));
         });
-        var plugins = new[] { Wotsit, Orchestrion, Moodles, Lifestream, Tippy };
-        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig(plugins, repositories: [(Ticked, true), (Unticked, true)]));
-        NewPc(host);
+        const string gone = "https://gone.example.com/repo.json";
+        var plugins = new[] { Wotsit, Orchestrion, SimpleTweaks, Moodles, Lifestream, Tippy };
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig(plugins, repositories: [(Ticked, true), (Unticked, true), (gone, true)]));
+        var root = NewPc(host);
         var repository = Repository(host);
         repository.Add(Wotsit.Name);
         host.Downloads.Bodies.Remove(repository.Add(Orchestrion.Name));
+        repository.Add(SimpleTweaks.Name);
         repository.Add(Moodles.Name, repository: Ticked);
         repository.Add(Lifestream.Name, package: FakePluginRepository.Package(Lifestream.Name, version: "9.9.9.9"));
         repository.Add(Tippy.Name, repository: Unticked);
 
-        var result = await RestoreAsync(host, archive, Ticked);
+        // Errors that name a plugin: a file in the way, whose error holds its path, and a front end failing mid-install.
+        Directory.CreateDirectory(InstalledPlugins(root));
+        File.WriteAllText(Path.Combine(InstalledPlugins(root), SimpleTweaks.Name), "in the way");
+        var installing = 0;
+        var progress = new InlineProgress(value =>
+        {
+            if (value.Stage == RestoreStage.InstallingPlugins && ++installing == 3)
+            {
+                throw new InvalidOperationException($"{Moodles.Name} couldn't be shown.");
+            }
+        });
 
-        Assert.Equal(2, Report(result, chosen: 5).Installed.Count);
+        var first = await host.Restores.RestoreAsync(new RestoreRequest(archive) { InstallPlugins = true, CustomRepositories = [Ticked, gone] }, progress, Ct);
+        host.Clock.Advance(TimeSpan.FromMinutes(1));
+        host.Downloads.Bodies[FakePluginRepository.Official] = "not a plugin list"u8.ToArray();
+        var second = await RestoreAsync(host, archive, Ticked);
+
+        Assert.Equal([Wotsit.Name], Report(first, chosen: 6).Installed);
+        Assert.All(Report(second, chosen: 6).NotInstalled, plugin => Assert.Equal(PluginInstallOutcome.RepositoryUnavailable, plugin.Outcome));
         var text = string.Concat(Directory.GetFiles(Path.Combine(host.Environment.DataDirectory, "logs")).Select(File.ReadAllText));
-        Assert.Contains("Restored", text, StringComparison.Ordinal);
+        foreach (var reason in new[] { "Restored", "couldn't be written", "stopped unexpectedly", "custom plugin list(s) couldn't be read", "official plugin list couldn't be read" })
+        {
+            Assert.Contains(reason, text, StringComparison.Ordinal);
+        }
+
         var secrets = plugins.SelectMany(plugin => new[] { plugin.Name, plugin.Id.ToString(), plugin.Id.ToString("N") })
             .Concat(host.Downloads.Bodies.Keys)
-            .Concat(["raw.example.com", "other.example.org", "kamori.goats.dev", "example"]);
+            .Concat(["raw.example.com", "other.example.org", "gone.example.com", "kamori.goats.dev", "example"]);
         foreach (var secret in secrets)
         {
             Assert.DoesNotContain(secret, text, StringComparison.OrdinalIgnoreCase);
@@ -623,5 +1036,45 @@ public class RestorePluginInstallTests
             destination.Write(body, 0, body.Length / 2);
             throw new WebDownloadException("the download was interrupted");
         }
+    }
+
+    /// <summary>Records how each request is made, and whether an earlier plugin's zip was still in the work folder then.</summary>
+    private sealed class RecordingDownloads(FakeWebDownloader inner) : IWebDownloader
+    {
+        private readonly List<string> _zips = [];
+
+        public List<(string Url, string Accept, long MaxBytes, bool EarlierZipLeft)> Requests { get; } = [];
+
+        public void Download(string url, string accept, Stream destination, long maxBytes, CancellationToken cancellationToken)
+        {
+            Requests.Add((url, accept, maxBytes, _zips.Any(File.Exists)));
+            if (destination is FileStream file)
+            {
+                _zips.Add(file.Name);
+            }
+
+            inner.Download(url, accept, destination, maxBytes, cancellationToken);
+        }
+    }
+
+    /// <summary>Writes every file but dalamudConfig.json, which fails as a full disk would.</summary>
+    private sealed class FailingConfigWriter : IRestoreFileWriter
+    {
+        private readonly RenameRestoreFileWriter _inner = new();
+
+        public void Replace(string stagedPath, string targetPath)
+        {
+            if (Path.GetFileName(targetPath) == "dalamudConfig.json")
+            {
+                throw new IOException("There is not enough space on the disk.");
+            }
+
+            _inner.Replace(stagedPath, targetPath);
+        }
+    }
+
+    private sealed class InlineProgress(Action<RestoreProgress> report) : IProgress<RestoreProgress>
+    {
+        public void Report(RestoreProgress value) => report(value);
     }
 }

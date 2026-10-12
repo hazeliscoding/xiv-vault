@@ -12,8 +12,9 @@ public sealed record RestoreRequest(string ArchivePath)
     public RestoreSelection Selection { get; init; } = RestoreSelection.Everything;
 
     /// <summary>
-    /// Installs the chosen plugins this PC is missing when the Dalamud settings are restored, in versions that can
-    /// (<see cref="PluginInstalls"/>). Off unless a front end asks, so a scripted restore never starts downloading.
+    /// Installs the plugins this PC is missing when the Dalamud settings are restored, in versions that can
+    /// (<see cref="PluginInstalls"/>), except a plugin whose settings are left out of <see cref="Selection"/>.
+    /// Off unless a front end asks, so a scripted restore never starts downloading.
     /// </summary>
     public bool InstallPlugins { get; init; }
 
@@ -151,8 +152,8 @@ public sealed record RestorePreview(
 {
     /// <summary>
     /// The plugins a restore with <see cref="RestoreRequest.InstallPlugins"/> would install. Null when this
-    /// version can't install plugins, the backup has no Dalamud settings or is a safety backup, or no
-    /// XIVLauncher folder was found.
+    /// version can't install plugins, the backup has no readable Dalamud settings or is a safety backup, or
+    /// the XIVLauncher folder is missing or is XIVLauncherCN's.
     /// </summary>
     public PluginInstallPreview? Plugins { get; init; }
 
