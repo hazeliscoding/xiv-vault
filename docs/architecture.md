@@ -68,7 +68,7 @@ Any failure deletes the `.tmp`, so nothing half-written looks like a backup.
 1. Validate the archive completely; refuse on any issue (exit 5).
 2. Locate the target. A folder where XIVLauncher has run but Dalamud hasn't is fine, which makes a fresh PC a valid target. Refuse if any folder or file the restore would write is a link, since backups don't follow links.
 3. Refuse while XIVLauncher or FFXIV runs (exit 6).
-4. Take a pre-restore snapshot into the backup folder, including the UI layout. No snapshot, no restore. The archive being restored stays open, read-shared only, until the end.
+4. Take a pre-restore snapshot into the backup folder, including the UI layout. Without a snapshot, nothing is restored. The archive being restored stays open, read-shared only, until the end.
 5. Extract the manifest's files into a private temp folder and re-hash them, all of them even when only some are chosen.
 6. Check processes again, then replace the chosen files one by one: copy next to the target and rename over it. The original of each replaced file is kept aside.
 7. On any failure, put every replaced file back and delete files the restore created. The snapshot is the second line of defense.
