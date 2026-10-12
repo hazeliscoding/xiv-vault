@@ -13,6 +13,7 @@ namespace XivVault.Screenshots;
 internal static class Program
 {
     private static string _output = "";
+    private static bool _audit;
 
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()
@@ -25,6 +26,14 @@ internal static class Program
         if (args.FirstOrDefault() == "--demo")
         {
             return RecordDemo(args.ElementAtOrDefault(1) ?? "demo.gif", args.ElementAtOrDefault(2));
+        }
+
+        // --a11y writes each screen's Tab order and automation tree next to its screenshot. Trying
+        // the arrow keys changes list selections, so take the README's screenshots without it.
+        if (args.FirstOrDefault() == "--a11y")
+        {
+            _audit = true;
+            args = args[1..];
         }
 
         _output = Path.GetFullPath(args.FirstOrDefault() ?? "screenshots");
@@ -199,5 +208,9 @@ internal static class Program
         frame.Save(Path.Combine(_output, name + ".png"));
 #pragma warning restore CS0618
         Console.WriteLine($"  {name}.png");
+        if (_audit)
+        {
+            File.WriteAllText(Path.Combine(_output, name + ".a11y.txt"), AccessibilityAudit.Report(window, () => Settle(TimeSpan.FromMilliseconds(60))));
+        }
     }
 }
