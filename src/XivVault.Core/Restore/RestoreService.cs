@@ -6,6 +6,7 @@ using XivVault.Core.Backup;
 using XivVault.Core.Configuration;
 using XivVault.Core.Discovery;
 using XivVault.Core.Platform;
+using XivVault.Core.Plugins;
 
 namespace XivVault.Core.Restore;
 
@@ -63,6 +64,8 @@ public sealed class RestoreService : IRestoreService
     private readonly RetentionService _retention;
     private readonly OperationLock _operationLock;
     private readonly ILogger<RestoreService> _logger;
+    private readonly PluginInstaller _plugins;
+    private readonly PluginInstalls _pluginInstalls;
     private readonly IRestoreFileWriter _writer;
 
     public RestoreService(
@@ -77,8 +80,10 @@ public sealed class RestoreService : IRestoreService
         IAppEnvironment environment,
         RetentionService retention,
         OperationLock operationLock,
-        ILogger<RestoreService> logger)
-        : this(configStore, locator, validator, catalog, backupService, scanner, guard, paths, environment, retention, operationLock, logger, new RenameRestoreFileWriter())
+        ILogger<RestoreService> logger,
+        PluginInstaller plugins,
+        PluginInstalls pluginInstalls)
+        : this(configStore, locator, validator, catalog, backupService, scanner, guard, paths, environment, retention, operationLock, logger, plugins, pluginInstalls, new RenameRestoreFileWriter())
     {
     }
 
@@ -95,6 +100,8 @@ public sealed class RestoreService : IRestoreService
         RetentionService retention,
         OperationLock operationLock,
         ILogger<RestoreService> logger,
+        PluginInstaller plugins,
+        PluginInstalls pluginInstalls,
         IRestoreFileWriter writer)
     {
         _configStore = configStore;
@@ -109,6 +116,8 @@ public sealed class RestoreService : IRestoreService
         _retention = retention;
         _operationLock = operationLock;
         _logger = logger;
+        _plugins = plugins;
+        _pluginInstalls = pluginInstalls;
         _writer = writer;
     }
 
@@ -150,7 +159,7 @@ public sealed class RestoreService : IRestoreService
         int? backupRepos = null;
         if (manifest.Contents.DalamudConfig)
         {
-            backupRepos = ReadBackupRepositoryCount(record.FilePath);
+            backupRepos = ReadBackupConfig(record.FilePath, DalamudConfigReader.CountCustomRepositories);
         }
 
         var contents = new RestoreContents(
@@ -208,7 +217,13 @@ public sealed class RestoreService : IRestoreService
             .ToList();
         var configChanged = current.Files.Any(file => file.Item == PortableItem.DalamudConfig && ChangedSinceBackup(file));
 
-        return new RestorePreview(record, contents, target, null, currentConfig, changed, configChanged);
+        return new RestorePreview(record, contents, target, null, currentConfig, changed, configChanged)
+        {
+            Plugins = _pluginInstalls.Available && manifest.Contents.DalamudConfig && manifest.BackupType != BackupKind.PreRestore
+                && ReadBackupConfig(record.FilePath, DalamudConfigReader.ReadPluginSettings) is { } settings
+                ? PluginInstaller.Preview(settings, target.RootPath)
+                : null,
+        };
     }
 
     /// <summary>The file's SHA-256, or null when it can't be read; an unreadable file counts as changed.</summary>
@@ -353,8 +368,20 @@ public sealed class RestoreService : IRestoreService
             var staged = Extract(archive, manifest, staging, cancellationToken);
             var chosen = staged.Where(file => selection.Includes(file.Item, file.RelativeTarget)).ToList();
 
+            // Every plugin is downloaded and checked before any file changes, so cancelling or losing the
+            // network changes nothing. A safety backup installs nothing: plugins stay when a restore is undone.
+            var dalamudConfig = staged.Find(file => file.Item == PortableItem.DalamudConfig);
+            var installs = _pluginInstalls.Available && request.InstallPlugins && selection.DalamudSettings && manifest.BackupType != BackupKind.PreRestore;
+            var plugins = installs && dalamudConfig is not null
+                ? _plugins.Prepare(dalamudConfig.StagedPath, target.RootPath, selection, request.CustomRepositories, Path.Combine(workRoot, "plugins"), progress, cancellationToken)
+                : null;
+
             EnsureNothingRunning();
-            var applied = Apply(chosen, target.DataPath, gamePath, rollback, pluginCount, progress, cancellationToken);
+            var (from, to) = plugins is null ? (40.0, 98.0) : (PluginInstaller.DownloadsEnd, PluginInstaller.PlacingStart);
+            var applied = Apply(chosen, target.DataPath, gamePath, rollback, pluginCount, from, to, progress, cancellationToken);
+
+            // The settings are restored, so nothing may fail the restore now: a plugin that can't be written is listed instead.
+            var report = plugins is null ? null : _plugins.Place(plugins, progress);
 
             progress?.Report(new RestoreProgress(RestoreStage.Completed, 100, "Restore complete"));
             _logger.LogInformation("Restored {Count} files into {Path}", applied, target.DataPath);
@@ -368,7 +395,10 @@ public sealed class RestoreService : IRestoreService
                 target.DataPath,
                 stopwatch.Elapsed,
                 manifest.Contents.CharacterSettings && selection.CharacterSettings,
-                manifest.Contents.SystemSettings && selection.SystemSettings);
+                manifest.Contents.SystemSettings && selection.SystemSettings)
+            {
+                Plugins = report,
+            };
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not XivVaultException)
         {
@@ -526,6 +556,8 @@ public sealed class RestoreService : IRestoreService
         string gamePath,
         string rollback,
         int pluginCount,
+        double fromPercent,
+        double toPercent,
         IProgress<RestoreProgress>? progress,
         CancellationToken cancellationToken)
     {
@@ -544,7 +576,7 @@ public sealed class RestoreService : IRestoreService
                 cancellationToken.ThrowIfCancellationRequested();
                 var file = ordered[i];
                 var game = BackupAllowlist.IsGame(file.Item);
-                var percent = 40 + (58.0 * i / Math.Max(1, ordered.Count));
+                var percent = fromPercent + ((toPercent - fromPercent) * i / Math.Max(1, ordered.Count));
                 progress?.Report(
                     file.Item == PortableItem.PluginConfig ? new RestoreProgress(RestoreStage.RestoringPluginConfigs, percent, $"Restoring {Formatting.Count(pluginCount, "plugin configuration")}")
                     : game ? new RestoreProgress(RestoreStage.RestoringGameSettings, percent, "Restoring game settings")
@@ -687,7 +719,7 @@ public sealed class RestoreService : IRestoreService
         }
     }
 
-    private static int? ReadBackupRepositoryCount(string archivePath)
+    private static T? ReadBackupConfig<T>(string archivePath, Func<Stream, T?> read)
     {
         try
         {
@@ -695,15 +727,15 @@ public sealed class RestoreService : IRestoreService
             var entry = zip.GetEntry(BackupAllowlist.ArchivePathFor(PortableItem.DalamudConfig));
             if (entry is null || entry.Length > 32 * 1024 * 1024)
             {
-                return null;
+                return default;
             }
 
             using var stream = entry.Open();
-            return DalamudConfigReader.CountCustomRepositories(stream);
+            return read(stream);
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
         {
-            return null;
+            return default;
         }
     }
 
@@ -744,7 +776,8 @@ public sealed class RestoreService : IRestoreService
         }
         catch (Exception ex) when (IsFileSystemError(ex))
         {
-            _logger.LogWarning(ex, "Could not remove the temporary restore folder");
+            // Without the exception: its path can name a plugin the restore downloaded.
+            _logger.LogWarning("Could not remove the temporary restore folder ({Error})", ex.GetType().Name);
         }
     }
 }

@@ -8,6 +8,9 @@ public static class XivVaultInfo
 
     public static string Version { get; } = ReadVersion();
 
+    /// <summary>True for a prerelease such as 1.1.0-beta.1, which release.yml builds from a beta tag.</summary>
+    public static bool IsBeta { get; } = Version.Contains('-');
+
     private static string ReadVersion()
     {
         var informational = typeof(XivVaultInfo).Assembly

@@ -1,5 +1,6 @@
 using XivVault.Core.Backup;
 using XivVault.Core.Discovery;
+using XivVault.Core.Plugins;
 
 namespace XivVault.Core.Restore;
 
@@ -9,6 +10,18 @@ public sealed record RestoreRequest(string ArchivePath)
     public string? Source { get; init; }
 
     public RestoreSelection Selection { get; init; } = RestoreSelection.Everything;
+
+    /// <summary>
+    /// Installs the chosen plugins this PC is missing when the Dalamud settings are restored, in versions that can
+    /// (<see cref="PluginInstalls"/>). Off unless a front end asks, so a scripted restore never starts downloading.
+    /// </summary>
+    public bool InstallPlugins { get; init; }
+
+    /// <summary>
+    /// The custom repositories the user ticked, exactly as <see cref="PluginInstallPreview"/> gave them. Only
+    /// those the restored settings turn on are used.
+    /// </summary>
+    public IReadOnlyCollection<string> CustomRepositories { get; init; } = [];
 }
 
 /// <summary>
@@ -136,6 +149,13 @@ public sealed record RestorePreview(
     IReadOnlyList<string> PluginsChangedSinceBackup,
     bool DalamudConfigChangedSinceBackup)
 {
+    /// <summary>
+    /// The plugins a restore with <see cref="RestoreRequest.InstallPlugins"/> would install. Null when this
+    /// version can't install plugins, the backup has no Dalamud settings or is a safety backup, or no
+    /// XIVLauncher folder was found.
+    /// </summary>
+    public PluginInstallPreview? Plugins { get; init; }
+
     /// <summary>True when restoring will roll back settings that changed after the backup was taken.</summary>
     public bool IsOlderThanCurrent => PluginsChangedSinceBackup.Count > 0 || DalamudConfigChangedSinceBackup;
 
@@ -173,6 +193,8 @@ public enum RestoreStage
     RestoringDalamudSettings,
     RestoringGameSettings,
     Completed,
+    DownloadingPlugins,
+    InstallingPlugins,
 }
 
 public sealed record RestoreProgress(RestoreStage Stage, double Percent, string Message);
@@ -187,4 +209,8 @@ public sealed record RestoreResult(
     string TargetDataPath,
     TimeSpan Duration,
     bool CharacterSettingsRestored = false,
-    bool SystemSettingsRestored = false);
+    bool SystemSettingsRestored = false)
+{
+    /// <summary>The plugins the restore installed and why the others weren't, or null when installs didn't run.</summary>
+    public PluginInstallReport? Plugins { get; init; }
+}

@@ -39,6 +39,7 @@ internal sealed class World : IDisposable
         collection.AddSingleton<IProcessInspector, NoProcesses>();
         collection.AddSingleton<ICommandRunner, FakeScheduler>();
         collection.AddSingleton<IFileAvailability>(Cloud);
+        collection.AddSingleton<IWebDownloader, NoDownloads>();
         collection.AddXivVaultDesktop();
 
         // The desktop registers its own UI services, so these replace them afterwards.
@@ -220,5 +221,12 @@ internal sealed class World : IDisposable
         {
             File.SetLastWriteTime(Path.Combine(LauncherPath, "pluginConfigs", plugin + ".json"), new DateTime(2026, 9, 28, 14, 30, 0));
         }
+    }
+
+    /// <summary>Refuses every download, so rendering the screens never touches the network.</summary>
+    private sealed class NoDownloads : IWebDownloader
+    {
+        public void Download(string url, string accept, Stream destination, long maxBytes, CancellationToken cancellationToken) =>
+            throw new WebDownloadException("the screenshots never download");
     }
 }

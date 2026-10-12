@@ -7,6 +7,7 @@ using XivVault.Core.Configuration;
 using XivVault.Core.Discovery;
 using XivVault.Core.Logging;
 using XivVault.Core.Platform;
+using XivVault.Core.Plugins;
 using XivVault.Core.Restore;
 using XivVault.Tests.Support;
 
@@ -54,6 +55,8 @@ public class ContentIdTests
             provider.GetRequiredService<RetentionService>(),
             provider.GetRequiredService<OperationLock>(),
             NullLogger<RestoreService>.Instance,
+            provider.GetRequiredService<PluginInstaller>(),
+            provider.GetRequiredService<PluginInstalls>(),
             new DeniedInCharacterFolders())));
         host.CreateLauncher();
         host.CreateGameSettings();

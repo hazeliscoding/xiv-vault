@@ -4,6 +4,7 @@ using XivVault.Core.Backup;
 using XivVault.Core.Configuration;
 using XivVault.Core.Discovery;
 using XivVault.Core.Platform;
+using XivVault.Core.Plugins;
 using XivVault.Core.Restore;
 using XivVault.Core.State;
 
@@ -24,6 +25,10 @@ public sealed class TestHost : IDisposable
         services.AddSingleton<TimeProvider>(Clock);
         services.AddSingleton<IFileAvailability>(Files);
         services.AddSingleton<INotifier>(Notifications);
+        services.AddSingleton<IWebDownloader>(Downloads);
+
+        // Core's own tests cover plugin installs, which only beta versions turn on.
+        services.AddSingleton(new PluginInstalls(true));
         configure?.Invoke(services);
         services.AddXivVaultCore();
         _provider = services.BuildServiceProvider();
@@ -38,6 +43,8 @@ public sealed class TestHost : IDisposable
     public FakeNotifier Notifications { get; } = new();
 
     public FakeFileAvailability Files { get; } = new();
+
+    public FakeWebDownloader Downloads { get; } = new();
 
     public TestClock Clock { get; } = new(new DateTimeOffset(2026, 10, 4, 13, 19, 0, TimeSpan.Zero));
 

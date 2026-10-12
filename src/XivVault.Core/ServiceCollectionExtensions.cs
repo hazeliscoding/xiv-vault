@@ -5,6 +5,7 @@ using XivVault.Core.Configuration;
 using XivVault.Core.Diagnostics;
 using XivVault.Core.Discovery;
 using XivVault.Core.Platform;
+using XivVault.Core.Plugins;
 using XivVault.Core.Restore;
 using XivVault.Core.Scheduling;
 using XivVault.Core.State;
@@ -27,6 +28,8 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<ICommandRunner, ProcessCommandRunner>();
         services.TryAddSingleton<IFileAvailability, WindowsFileAvailability>();
         services.TryAddSingleton<INotifier, WindowsNotifier>();
+        services.TryAddSingleton<IWebDownloader, HttpWebDownloader>();
+        services.TryAddSingleton(PluginInstalls.ForThisVersion);
 
         services.TryAddSingleton<IConfigStore, ConfigStore>();
         services.TryAddSingleton<IStateStore, StateStore>();
@@ -41,6 +44,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<BackupService>();
         services.TryAddSingleton<IBackupService>(provider => provider.GetRequiredService<BackupService>());
         services.TryAddSingleton<GameProcessGuard>();
+        services.TryAddSingleton<PluginInstaller>();
         services.TryAddSingleton<IRestoreService, RestoreService>();
         services.TryAddSingleton<IBackupScheduler, WindowsTaskScheduler>();
         services.TryAddSingleton<ScheduleService>();

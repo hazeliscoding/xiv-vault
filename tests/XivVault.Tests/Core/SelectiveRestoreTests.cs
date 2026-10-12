@@ -6,6 +6,7 @@ using XivVault.Core.Backup;
 using XivVault.Core.Configuration;
 using XivVault.Core.Discovery;
 using XivVault.Core.Platform;
+using XivVault.Core.Plugins;
 using XivVault.Core.Restore;
 using XivVault.Tests.Support;
 
@@ -219,6 +220,8 @@ public class SelectiveRestoreTests
             provider.GetRequiredService<RetentionService>(),
             provider.GetRequiredService<OperationLock>(),
             NullLogger<RestoreService>.Instance,
+            provider.GetRequiredService<PluginInstaller>(),
+            provider.GetRequiredService<PluginInstalls>(),
             writer)));
         var launcher = host.CreateLauncher();
         var backup = await host.BackUpAsync();

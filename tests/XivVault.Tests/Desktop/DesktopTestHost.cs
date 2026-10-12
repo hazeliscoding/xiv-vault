@@ -24,6 +24,7 @@ public sealed class DesktopTestHost : IDisposable
         services.AddSingleton<TimeProvider>(Clock);
         services.AddSingleton<IFileAvailability>(Files);
         services.AddSingleton<INotifier>(Notifications);
+        services.AddSingleton<IWebDownloader>(new FakeWebDownloader());
         services.AddXivVaultDesktop();
 
         // Registered after the app's own, so these win.

@@ -130,3 +130,27 @@ public enum PluginInstallOutcome
 public sealed record PluginOutcome(string InternalName, PluginInstallOutcome Outcome);
 
 public sealed record InstallPlan(IReadOnlyList<PlannedInstall> Installs, IReadOnlyList<PluginOutcome> Skipped);
+
+/// <summary>
+/// Whether a restore can install plugins. Only beta versions can (the owner's call): a stable version
+/// shows nothing about installs and never downloads a plugin. Tests and front ends can register their own.
+/// </summary>
+public sealed record PluginInstalls(bool Available)
+{
+    public static PluginInstalls ForThisVersion { get; } = new(XivVaultInfo.IsBeta);
+}
+
+/// <summary>
+/// A custom repository the backup's settings turn on. The host is shown instead of the URL, which can hold a
+/// token, and in punycode, so a look-alike name can't pass for another.
+/// </summary>
+public sealed record CustomRepository(string Url, string Host);
+
+/// <summary>What a restore would install, worked out without any request.</summary>
+/// <param name="Missing">The backup's plugins that this PC doesn't have and nothing on it blocks, by name.</param>
+/// <param name="CustomRepositories">The custom repositories the backup turns on, HTTPS only, for the user to tick.</param>
+/// <param name="DalamudReady">False until XIVLauncher has finished downloading Dalamud; until then nothing is installed.</param>
+public sealed record PluginInstallPreview(IReadOnlyList<string> Missing, IReadOnlyList<CustomRepository> CustomRepositories, bool DalamudReady);
+
+/// <summary>What a restore installed. Every chosen plugin is counted once: installed, already installed, or not installed with its reason.</summary>
+public sealed record PluginInstallReport(IReadOnlyList<string> Installed, IReadOnlyList<PluginOutcome> NotInstalled, int AlreadyInstalled);
