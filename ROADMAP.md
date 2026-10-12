@@ -118,6 +118,14 @@ An independent review of the restore and validation code found failure modes; th
 - **Only failures notify,** with fixed words and no path or error text, because a notification can appear on a stream. A backup skipped because the game stayed open doesn't notify; Schedule shows it.
 - **A notification never fails the run.** The result is recorded first, and an error showing it is only logged.
 
+## Decisions (2026-10-11, the 1.0 promise)
+
+- **Backups restore forever.** Every archive any version made restores in every later version, major versions included. A major version may change the command line, but never this.
+- **Scheduled tasks survive updates,** major versions included: `XIV-Vault.exe --scheduled-backup` and `xiv-vault backup --scheduled` stay, so a schedule set up once keeps running.
+- **The command line is stable through 1.x:** commands, options, `config set` keys, exit codes, JSON fields and the listed JSON values. New ones may be added. Wording isn't promised, including the JSON fields that hold it (`message`, `problem`, `attentionReason`, `summary`, `title`, `label`, `detail`).
+- **One fix before the promise:** `schedule status --json` wrote days as `"Sunday"` while every other JSON value is camelCase, so it now writes `"sunday"`.
+- **The promise is written in `docs/cli.md`,** with the README's Stability section in short. `CliContractTests` pins every JSON field and the exit codes, so a rename fails a test.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
@@ -223,7 +231,7 @@ Released as 0.4.0 on 2026-10-10. A real 0.3.0 install updated itself to it from 
 
 - [x] A Windows notification when a scheduled backup fails. (Checked on the author's PC: a failing scheduled run from the app and from the CLI each showed one.)
 - [x] Real 0.1.0 archives kept as test files, which every later version must validate and restore. (A manual backup with the UI layout and the safety snapshot from restoring it, made by the published 0.1.0 CLI from a fake XIVLauncher folder, in `tests/XivVault.Tests/Fixtures/0.1.0`.)
-- [ ] The stable parts written down: backup format, CLI commands and options, JSON output, exit codes, and what a major version may change.
+- [x] The stable parts written down: backup format, CLI commands and options, JSON output, exit codes, and what a major version may change. (`docs/cli.md`, the README's Stability section and `docs/backup-format.md`; `CliContractTests` pins the JSON fields and exit codes.)
 - [ ] A release checklist that installs the previous release and updates it before a draft is published.
 - [ ] An accessibility check of every screen: Narrator, the keyboard alone, and WCAG AA contrast.
 - [ ] An Impeccable UI audit of every screen, with fixes that keep to the approved mockup.
