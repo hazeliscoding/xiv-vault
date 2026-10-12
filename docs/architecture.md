@@ -95,4 +95,4 @@ To try an update without publishing a release, pack two versions into one folder
 
 ## Releases
 
-`release.yml` runs on `v*` tags: tests, self-contained single-file publish for win-x64, the smoke test against the published CLI, Setup and the update packages from `vpk` (pinned in `dotnet-tools.json`, with a delta from the previous published release), zips plus `SHA256SUMS`, then a draft GitHub release from a separate job that holds the only write permission. Installed copies only see published releases, so a draft never reaches them.
+`release.yml` runs on `v*` tags: tests, self-contained single-file publish for win-x64, the smoke test against the published CLI, Setup and the update packages from `vpk` (pinned in `dotnet-tools.json`, with a delta from the previous published release), zips plus `SHA256SUMS`, then a draft GitHub release from a separate job that holds the only write permission. Installed copies only see published releases, so a draft never reaches them. [releasing.md](releasing.md) is the checklist from version bump to publishing, including updating the previous release to the draft.
