@@ -19,6 +19,7 @@ public class PluginInstallCliTests
     private const string Ticked = "https://Raw.Example.com/Someone/Plugins/main/repo.json";
     private const string Unticked = "https://other.example.org/pluginmaster.json";
     private const string Disabled = "https://disabled.example.net/repo.json";
+    private const string UntickedSameHost = "https://other.example.org/more/repo.json";
 
     private static async Task<(int Code, string Output)> Run(TestHost host, bool beta, params string[] args)
     {
@@ -36,11 +37,8 @@ public class PluginInstallCliTests
                 services.AddSingleton<INotifier>(host.Notifications);
                 services.AddSingleton<IWebDownloader>(host.Downloads);
 
-                // Test builds are a stable version, so a stable run keeps the default.
-                if (beta)
-                {
-                    services.AddSingleton(new PluginInstalls(true));
-                }
+                // Registered either way, so the stable cases also pass when the build itself is a beta.
+                services.AddSingleton(new PluginInstalls(beta));
             },
             console,
             TestContext.Current.CancellationToken);
@@ -181,7 +179,7 @@ public class PluginInstallCliTests
     public async Task Only_the_custom_repositories_named_by_host_are_installed_from()
     {
         using var host = new TestHost();
-        await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit, Moodles, Lifestream], repositories: [(Ticked, true), (Unticked, true)]));
+        await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit, Moodles, Lifestream], repositories: [(Ticked, true), (Unticked, true), (UntickedSameHost, true)]));
         var root = NewPc(host);
         var repository = Repository(host);
         repository.Add(Wotsit.Name);
@@ -192,10 +190,11 @@ public class PluginInstallCliTests
 
         Assert.Equal(0, code);
         Assert.Contains("✓ 1 custom repository at raw.example.com · included", output);
-        Assert.Contains("– 1 custom repository at other.example.org · add --custom-repository other.example.org to include it", output);
-        Assert.Contains("Plugins have full control over your PC, like any other program, and may cause harm or crashes.", output);
+        Assert.Contains("– 2 custom repositories at other.example.org · add --custom-repository other.example.org to include them", output);
+        Assert.Contains("! Dalamud warns: \"Plugins have full control over your PC, like any other program, and may cause harm or crashes.", output);
         Assert.Contains("Please make absolutely sure that you only install plugins from developers you trust.", output);
         Assert.Contains("2 plugins installed: Moodles and Wotsit", output);
+        Assert.Contains("! 1 plugin not installed. Install it from Dalamud's plugin installer in the game (/xlplugins):", output);
         Assert.Contains($"Lifestream: {Phrase(PluginInstallOutcome.NotOffered)}", output);
         Assert.True(Directory.Exists(Path.Combine(root, "installedPlugins", Moodles.Name)));
         Assert.False(Directory.Exists(Path.Combine(root, "installedPlugins", Lifestream.Name)));
@@ -204,7 +203,7 @@ public class PluginInstallCliTests
         // A repository's URL can hold a token: the screen shows only its host, and the logs name no repository or plugin.
         var logs = string.Concat(Directory.GetFiles(Path.Combine(host.Environment.DataDirectory, "logs")).Select(File.ReadAllText));
         Assert.NotEmpty(logs);
-        foreach (var url in new[] { Ticked, Unticked })
+        foreach (var url in new[] { Ticked, Unticked, UntickedSameHost })
         {
             Assert.DoesNotContain(new Uri(url).AbsolutePath, output, StringComparison.OrdinalIgnoreCase);
         }
@@ -216,22 +215,66 @@ public class PluginInstallCliTests
     }
 
     [Fact]
-    public async Task Without_Dalamud_the_review_says_so_and_the_settings_are_restored_without_requests()
+    public async Task With_no_plugin_missing_the_review_says_so_and_nothing_is_requested()
     {
         using var host = new TestHost();
-        var config = FakePluginRepository.DalamudConfig([Wotsit]);
+        await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit], repositories: [(Ticked, true)]));
+        InstallLocally(NewPc(host), Wotsit);
+
+        var (code, output) = await Run(host, beta: true, "restore", "latest", "--yes", "--install-plugins", "--custom-repository", "raw.example.com");
+
+        Assert.Equal(0, code);
+        Assert.Contains("– No missing plugins to install", output);
+        Assert.DoesNotContain("raw.example.com", output, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Dalamud warns", output);
+        Assert.Contains("1 plugin already installed", output);
+        Assert.DoesNotContain("not installed", output);
+        Assert.Empty(host.Downloads.Requests);
+    }
+
+    [Fact]
+    public async Task Without_Dalamud_the_restore_says_once_to_restore_again_and_requests_nothing()
+    {
+        using var host = new TestHost();
+        var config = FakePluginRepository.DalamudConfig([Wotsit, Moodles]);
         await BackUpOldPcAsync(host, config);
         var root = NewPc(host, dalamudReady: false);
         Repository(host).Add(Wotsit.Name);
-        var notReady = Phrase(PluginInstallOutcome.DalamudNotReady);
+        var phrase = Phrase(PluginInstallOutcome.DalamudNotReady);
+        var notReady = char.ToUpperInvariant(phrase[0]) + phrase[1..];
 
         var (code, output) = await Run(host, beta: true, "restore", "latest", "--yes", "--install-plugins");
 
         Assert.Equal(0, code);
-        Assert.Contains("– " + char.ToUpperInvariant(notReady[0]) + notReady[1..], output);
+        Assert.Contains("– " + notReady, output);
         Assert.DoesNotContain("to install", output);
+
+        // Dalamud's own install would give each plugin a new ID, so none is sent to /xlplugins.
+        var result = output[output.IndexOf("Restore complete", StringComparison.Ordinal)..];
+        Assert.Equal("! " + notReady, Assert.Single(result.Split('\n'), line => line.Contains(notReady, StringComparison.Ordinal)).TrimEnd());
+        Assert.DoesNotContain("plugins installed", result);
+        Assert.DoesNotContain("/xlplugins", output);
+        Assert.DoesNotContain(Wotsit.Name, output);
+        Assert.DoesNotContain(Moodles.Name, output);
         Assert.Empty(host.Downloads.Requests);
         Assert.Equal(config, File.ReadAllText(Path.Combine(root, "dalamudConfig.json")));
+    }
+
+    [Fact]
+    public async Task Without_Dalamud_a_plugin_in_the_way_is_still_listed_for_xlplugins()
+    {
+        using var host = new TestHost();
+        await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig([Wotsit, Lifestream]));
+        var root = NewPc(host, dalamudReady: false);
+        InstallLocally(root, Lifestream);
+        File.WriteAllText(Path.Combine(root, "installedPlugins", Lifestream.Name, ".broken"), "");
+
+        var (code, output) = await Run(host, beta: true, "restore", "latest", "--yes", "--install-plugins");
+
+        Assert.Equal(0, code);
+        Assert.Contains("! 1 plugin not installed. Install it from Dalamud's plugin installer in the game (/xlplugins):", output);
+        Assert.Contains($"Lifestream: {Phrase(PluginInstallOutcome.InTheWay)}", output);
+        Assert.DoesNotContain(Wotsit.Name, output);
     }
 
     [Fact]

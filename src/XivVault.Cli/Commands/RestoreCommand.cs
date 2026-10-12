@@ -176,8 +176,7 @@ internal sealed class RestoreCommand(
         }
         else if (installs is { DalamudReady: false })
         {
-            var notReady = PluginOutcomeText.Describe(PluginInstallOutcome.DalamudNotReady);
-            Item(false, char.ToUpperInvariant(notReady[0]) + notReady[1..]);
+            Item(false, DalamudNotReady());
         }
         else if (installs is not null)
         {
@@ -191,8 +190,9 @@ internal sealed class RestoreCommand(
             {
                 foreach (var host in installs.CustomRepositories.GroupBy(repository => repository.Host, StringComparer.OrdinalIgnoreCase))
                 {
-                    var label = $"{Formatting.Count(host.Count(), "custom repository", "custom repositories")} at {host.Key}";
-                    Item(ticked.Contains(host.Key), ticked.Contains(host.Key) ? $"{label} · included" : $"{label} · add --custom-repository {host.Key} to include it");
+                    var count = host.Count();
+                    var label = $"{Formatting.Count(count, "custom repository", "custom repositories")} at {host.Key}";
+                    Item(ticked.Contains(host.Key), ticked.Contains(host.Key) ? $"{label} · included" : $"{label} · add --custom-repository {host.Key} to include {(count == 1 ? "it" : "them")}");
                 }
 
                 // Dalamud's own words, from its custom repository settings.
@@ -263,17 +263,30 @@ internal sealed class RestoreCommand(
         Output.Detail($"Safety snapshot: {result.SafetySnapshot.FileName} in {paths.Friendly(Path.GetDirectoryName(result.SafetySnapshot.FilePath)!)}");
         if (result.Plugins is { } report)
         {
-            var installed = report.Installed.Order(StringComparer.OrdinalIgnoreCase).ToList();
-            Output.Detail($"{Formatting.Count(installed.Count, "plugin")} installed{(installed.Count > 0 ? ": " + Formatting.JoinWords(installed) : "")}");
+            // Installing from /xlplugins would give these plugins new IDs, so they wait for the restore to run again.
+            var notInstalled = report.NotInstalled
+                .Where(plugin => plugin.Outcome != PluginInstallOutcome.DalamudNotReady)
+                .OrderBy(plugin => plugin.InternalName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (notInstalled.Count < report.NotInstalled.Count)
+            {
+                Output.Warning(DalamudNotReady());
+            }
+            else
+            {
+                var installed = report.Installed.Order(StringComparer.OrdinalIgnoreCase).ToList();
+                Output.Detail($"{Formatting.Count(installed.Count, "plugin")} installed{(installed.Count > 0 ? ": " + Formatting.JoinWords(installed) : "")}");
+            }
+
             if (report.AlreadyInstalled > 0)
             {
                 Output.Detail($"{Formatting.Count(report.AlreadyInstalled, "plugin")} already installed");
             }
 
-            if (report.NotInstalled.Count > 0)
+            if (notInstalled.Count > 0)
             {
-                Output.Warning($"{Formatting.Count(report.NotInstalled.Count, "plugin")} not installed. Install {(report.NotInstalled.Count == 1 ? "it" : "them")} from Dalamud's plugin installer in the game (/xlplugins):");
-                foreach (var plugin in report.NotInstalled.OrderBy(plugin => plugin.InternalName, StringComparer.OrdinalIgnoreCase))
+                Output.Warning($"{Formatting.Count(notInstalled.Count, "plugin")} not installed. Install {(notInstalled.Count == 1 ? "it" : "them")} from Dalamud's plugin installer in the game (/xlplugins):");
+                foreach (var plugin in notInstalled)
                 {
                     Output.Detail($"{plugin.InternalName}: {PluginOutcomeText.Describe(plugin.Outcome)}");
                 }
@@ -282,6 +295,13 @@ internal sealed class RestoreCommand(
 
         // The settings are restored, so plugins that didn't install never fail the command.
         return 0;
+    }
+
+    // Outcome phrases follow a plugin's name; this one stands alone, so it starts a sentence.
+    private static string DalamudNotReady()
+    {
+        var phrase = PluginOutcomeText.Describe(PluginInstallOutcome.DalamudNotReady);
+        return char.ToUpperInvariant(phrase[0]) + phrase[1..];
     }
 
     private void Item(bool included, string label) =>
