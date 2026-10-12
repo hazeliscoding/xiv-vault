@@ -18,10 +18,11 @@ internal static class InstallPlanner
     {
         var api = dalamudVersion.Major;
 
-        // Dalamud drops a custom entry whose name matches an official one in any case, even one the official
-        // repository can't install (PluginRepository.cs L135-152), and hides custom entries marked hidden.
-        // Official entries are never hidden: Dalamud ignores the flag, which kamori sets on most of them.
-        var officialNames = official.Select(entry => entry.InternalName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        // Dalamud drops a custom entry whose name matches an official one, even one the official repository
+        // can't install (PluginRepository.cs L135-152). It compares with the invariant culture without case,
+        // which also ignores invisible characters such as a soft hyphen. It hides custom entries marked hidden
+        // too. Official entries are never hidden: Dalamud ignores the flag, which kamori sets on most of them.
+        var officialNames = official.Select(entry => entry.InternalName).ToHashSet(StringComparer.InvariantCultureIgnoreCase);
         var custom = customRepositories
             .Where(repository => repository.Plugins is not null)
             .Select(repository => (repository.Url, Entries: repository.Plugins!.Where(entry => !entry.IsHide && !officialNames.Contains(entry.InternalName)).ToList()))
@@ -55,7 +56,12 @@ internal static class InstallPlanner
                 PluginFolderState.Installed => PluginInstallOutcome.AlreadyInstalled,
                 PluginFolderState.InTheWay => PluginInstallOutcome.InTheWay,
                 PluginFolderState.Link => PluginInstallOutcome.LinkedFolder,
-                _ => installed.Ids.Contains(plugin.WorkingPluginId) ? PluginInstallOutcome.IdInUse : null,
+
+                // An ID planned earlier counts too: Dalamud finds plugins by ID, and this shouldn't rely on the
+                // settings reader never repeating one.
+                _ => installed.Ids.Contains(plugin.WorkingPluginId) || installs.Any(planned => planned.Plugin.WorkingPluginId == plugin.WorkingPluginId)
+                    ? PluginInstallOutcome.IdInUse
+                    : null,
             };
             if (blocked is { } reason)
             {
@@ -70,10 +76,10 @@ internal static class InstallPlanner
                 var offers = custom.Where(repository => repository.Entries.Any(candidate => candidate.InternalName == name)).ToList();
                 if (offers.Count != 1)
                 {
-                    // Dalamud has no tie-break for a name two repositories offer, and a repository that
-                    // couldn't be read may have held it.
+                    // Dalamud has no tie-break for a name two repositories offer. A repository that couldn't be
+                    // read may have held it, unless an official name hides it there too.
                     return offers.Count > 1 ? PluginInstallOutcome.OfferedTwice
-                        : someUnavailable ? PluginInstallOutcome.RepositoryUnavailable
+                        : someUnavailable && !officialNames.Contains(name) ? PluginInstallOutcome.RepositoryUnavailable
                         : PluginInstallOutcome.NotOffered;
                 }
 

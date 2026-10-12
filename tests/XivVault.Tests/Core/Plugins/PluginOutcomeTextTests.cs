@@ -23,5 +23,8 @@ public class PluginOutcomeTextTests
     {
         Assert.Equal("installed", PluginOutcomeText.Describe(PluginInstallOutcome.Installed));
         Assert.Equal("needs a newer version of Dalamud", PluginOutcomeText.Describe(PluginInstallOutcome.NeedsNewerDalamud));
+
+        // A list that was fetched but can't be read lands here too.
+        Assert.Equal("its repository couldn't be reached or read", PluginOutcomeText.Describe(PluginInstallOutcome.RepositoryUnavailable));
     }
 }

@@ -50,6 +50,9 @@ internal static class PluginRepositoryParser
         }
     }
 
+    // shortcut: only the fields installing needs are checked, so a repository Dalamud rejects for a bad value
+    // elsewhere still supplies plugins here (they load: Dalamud finds a plugin's repository by URL); convert
+    // the rest as Newtonsoft does if that ever matters.
     private static RepositoryPlugin? Read(JsonElement entry)
     {
         // Every value is converted before an entry is dropped, because Newtonsoft reads the whole list first.

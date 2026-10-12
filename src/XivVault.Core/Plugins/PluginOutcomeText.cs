@@ -10,7 +10,7 @@ public static class PluginOutcomeText
         PluginInstallOutcome.InTheWay => "an unfinished or removed copy is in the way: start the game once, then restore again",
         PluginInstallOutcome.IdInUse => "another installed plugin uses its ID",
         PluginInstallOutcome.NotOffered => "not in the official repository or a custom repository you chose",
-        PluginInstallOutcome.RepositoryUnavailable => "its repository couldn't be reached",
+        PluginInstallOutcome.RepositoryUnavailable => "its repository couldn't be reached or read",
         PluginInstallOutcome.OfferedTwice => "offered by more than one custom repository you chose",
         PluginInstallOutcome.NotUpdated => "not updated for this version of Dalamud yet",
         PluginInstallOutcome.NeedsNewerDalamud => "needs a newer version of Dalamud",

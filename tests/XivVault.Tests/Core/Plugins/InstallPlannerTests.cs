@@ -100,6 +100,15 @@ public class InstallPlannerTests
     }
 
     [Fact]
+    public void A_plugin_installed_under_its_own_ID_is_already_installed()
+    {
+        // As on the PC the backup came from, where the scanner also lists the plugin's own ID.
+        var installed = WithFolder("Foo", PluginFolderState.Installed) with { Ids = new HashSet<Guid> { Foo.WorkingPluginId } };
+
+        Assert.Equal(PluginInstallOutcome.AlreadyInstalled, Skipped(Plan(official: [Entry("Foo")], installed: installed)));
+    }
+
+    [Fact]
     public void A_linked_plugins_folder_installs_nothing()
     {
         var plan = Plan(
@@ -121,6 +130,18 @@ public class InstallPlannerTests
     }
 
     [Fact]
+    public void An_ID_is_planned_for_one_plugin_only()
+    {
+        var plan = Plan(official: [Entry("Foo"), Entry("Bar")], plugins: [Foo, Foo with { InternalName = "Bar" }]);
+
+        Assert.Equal(Foo, Assert.Single(plan.Installs).Plugin);
+        Assert.Equal(new PluginOutcome("Bar", PluginInstallOutcome.IdInUse), Assert.Single(plan.Skipped));
+
+        // An ID counts only once a plugin is planned under it.
+        Assert.Equal(Foo, Assert.Single(Plan(official: [Entry("Foo")], plugins: [Foo with { InternalName = "Missing" }, Foo]).Installs).Plugin);
+    }
+
+    [Fact]
     public void A_plugin_no_repository_offers_is_not_offered()
     {
         Assert.Equal(PluginInstallOutcome.NotOffered, Skipped(Plan(official: [Entry("Bar")])));
@@ -138,6 +159,9 @@ public class InstallPlannerTests
 
         // A repository that does offer it is still the source.
         Assert.Equal(CustomUrl, Planned(Plan(custom: [new CustomRepositoryList(CustomUrl, [Entry("Foo")]), unavailable])).RepositoryUrl);
+
+        // Not when an official name hides it in every custom repository.
+        Assert.Equal(PluginInstallOutcome.NotOffered, Skipped(Plan(official: [Entry("FOO")], custom: [unavailable])));
     }
 
     [Fact]
@@ -164,6 +188,21 @@ public class InstallPlannerTests
         var plan = Plan(
             official: [Entry("FOO") with { DalamudApiLevel = 9 }],
             custom: [new CustomRepositoryList(CustomUrl, [Entry("Foo")])]);
+
+        Assert.Equal(PluginInstallOutcome.NotOffered, Skipped(plan));
+    }
+
+    [Theory]
+    [InlineData(0x00AD)] // a soft hyphen
+    [InlineData(0x200B)] // a zero-width space
+    public void An_official_name_hides_custom_look_alikes_with_invisible_characters(int invisible)
+    {
+        // The name shows exactly like the official one, and Dalamud's invariant-culture comparison ignores the character.
+        var lookAlike = $"F{(char)invisible}oo";
+        var plan = Plan(
+            official: [Entry("Foo")],
+            custom: [new CustomRepositoryList(CustomUrl, [Entry(lookAlike)])],
+            plugins: [Foo with { InternalName = lookAlike }]);
 
         Assert.Equal(PluginInstallOutcome.NotOffered, Skipped(plan));
     }
@@ -286,6 +325,14 @@ public class InstallPlannerTests
     public void A_testing_build_is_held_to_its_own_API_level()
     {
         var entry = WithTesting(Entry("Foo")) with { IsTestingExclusive = true, TestingDalamudApiLevel = 14 };
+
+        Assert.Equal(PluginInstallOutcome.NotUpdated, Skipped(Plan(official: [entry], doPluginTest: true, optIns: ["Foo"])));
+    }
+
+    [Fact]
+    public void A_testing_build_without_its_own_API_level_is_held_to_the_stable_one()
+    {
+        var entry = Entry("Foo") with { IsTestingExclusive = true, TestingAssemblyVersion = new Version(1, 3, 0, 0), DalamudApiLevel = 14 };
 
         Assert.Equal(PluginInstallOutcome.NotUpdated, Skipped(Plan(official: [entry], doPluginTest: true, optIns: ["Foo"])));
     }
