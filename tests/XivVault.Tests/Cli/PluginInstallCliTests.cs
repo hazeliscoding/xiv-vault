@@ -228,6 +228,7 @@ public class PluginInstallCliTests
         Assert.DoesNotContain("raw.example.com", output, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Dalamud warns", output);
         Assert.Contains("1 plugin already installed", output);
+        Assert.DoesNotContain("plugins installed", output);
         Assert.DoesNotContain("not installed", output);
         Assert.Empty(host.Downloads.Requests);
     }

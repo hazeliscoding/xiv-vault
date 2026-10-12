@@ -272,10 +272,10 @@ internal sealed class RestoreCommand(
             {
                 Output.Warning(DalamudNotReady());
             }
-            else
+            else if (report.Installed.Count > 0)
             {
                 var installed = report.Installed.Order(StringComparer.OrdinalIgnoreCase).ToList();
-                Output.Detail($"{Formatting.Count(installed.Count, "plugin")} installed{(installed.Count > 0 ? ": " + Formatting.JoinWords(installed) : "")}");
+                Output.Detail($"{Formatting.Count(installed.Count, "plugin")} installed: {Formatting.JoinWords(installed)}");
             }
 
             if (report.AlreadyInstalled > 0)
