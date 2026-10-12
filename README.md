@@ -37,7 +37,8 @@ All three are self-contained: no .NET install is needed. Check downloads against
 2. Make your backups available: sign in to OneDrive or Dropbox, or plug in the drive. Backups that stay in the cloud are fine: XIV Vault lists them without downloading them.
 3. Install XIV Vault with Setup and open it. If the backups are in `OneDrive\XIV Vault`, XIV Vault finds them on its own. Otherwise choose the folder in **Settings**, or pick a backup file in the restore wizard.
 4. Open **Restore**, choose the newest backup, review it, and let the safety checks run. XIVLauncher and FFXIV must be closed. A backup that is still in the cloud downloads first, and XIV Vault shows its size before it starts.
-5. Select **Restore Configuration**, then open XIVLauncher. Dalamud downloads your plugins again and they pick up their restored settings, and the game finds your HUD layout, hotbars and macros when you log in. The game doesn't need to have started on the new PC first.
+5. Select **Restore Configuration**, then open XIVLauncher and log in. The game finds your HUD layout, hotbars and macros; it doesn't need to have started on the new PC first.
+6. Install your plugins again: type `/xlplugins` in the game's chat to open Dalamud's plugin installer. Dalamud doesn't reinstall them on its own. Each plugin picks up its restored settings when it is installed, and plugins from custom repositories appear because those repositories are part of the restored Dalamud settings.
 
 System settings hold the resolution and monitor. If the new PC has a different screen, leave **System settings** out in the review and set graphics again in the game.
 
@@ -118,7 +119,7 @@ The files are copied byte for byte; XIV Vault never looks inside them. Each char
 
 ## What is not backed up
 
-- **Plugin binaries** (`installedPlugins\`). XIV Vault does not copy or install plugins. Dalamud downloads them again on the new PC.
+- **Plugin binaries** (`installedPlugins\`). XIV Vault does not copy or install plugins, and Dalamud doesn't reinstall them on its own. On a new PC, install them again from `/xlplugins`.
 - Dalamud's runtime and hooks (`runtime\`, `addon\`), logs, caches and anything downloaded.
 - XIVLauncher's own settings and the game install.
 - From the game's settings folder: chat logs, screenshots, `cfgcopy`, `*.old` copies and `FFXIV_BOOT.cfg`.
@@ -147,7 +148,7 @@ From 1.0 on:
 ## Limitations
 
 - Windows only.
-- Plugins are reinstalled by Dalamud on the new PC; XIV Vault restores their settings, not the plugins.
+- XIV Vault restores plugin settings, not plugins. On a new PC, install the plugins again from Dalamud's plugin installer (`/xlplugins`).
 - Some plugins keep data outside `pluginConfigs\`; that data is not included.
 - Restoring replaces settings for the plugins in the backup. Plugins configured after the backup return to their earlier settings; the restore review lists them, and the safety backup keeps today's values.
 - A new release's Setup may get a SmartScreen warning until it has been downloaded enough to build a reputation.

@@ -4,6 +4,10 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+### Fixed
+
+- The sidebar said Dalamud reinstalls plugins on a new PC. It doesn't: install them again from Dalamud's plugin installer (`/xlplugins`), and each one picks up its restored settings.
+
 ## [1.0.0] - 2026-10-11
 
 XIV Vault 1.0 is safe to trust and stable to build on: every backup any version made restores in every later version, and the command line keeps its commands, options, JSON fields and exit codes through 1.x ([docs/cli.md](docs/cli.md)).
