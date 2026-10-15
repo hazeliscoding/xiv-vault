@@ -85,7 +85,7 @@
         <section id="first-backup" aria-labelledby="first-backup-title">
           <h2 id="first-backup-title">Make your first backup</h2>
           <p>Open XIV Vault. <span class="ui">Overview</span> shows whether XIVLauncher was found and whether your setup is protected. Choose <span class="ui">Back Up Now</span>.</p>
-          <p>The backup takes a few seconds. XIV Vault writes it under a temporary name, reads it back, checks every file against its SHA-256, and only then gives it its real name. When it's done, Overview says <span class="ui">Backup complete</span> and the backup appears in <span class="ui">Recent backups</span>.</p>
+          <p>XIV Vault writes the backup under a temporary name, reads it back, checks every file against its SHA-256, and only then gives it its real name. When it's done, Overview says <span class="ui">Backup complete</span> and the backup appears in <span class="ui">Recent backups</span>.</p>
           <figure class="shot">
             <a href="assets/generated/overview.png"><img src="assets/generated/overview.png" width="1100" height="720" loading="lazy" decoding="async"
                  alt="Overview: the setup is protected, with the last backup, plugin count, size, integrity and destination, Back Up Now and Restore Backup, and the three most recent backups."><span class="sr-only"> (opens full size)</span></a>
@@ -123,6 +123,7 @@
           </figure>
           <p>Automatic backups run as a Windows scheduled task, <span class="ui">XIV Vault Scheduled Backup</span>, so XIV Vault doesn't need to stay open. If the PC was off at the time, the backup runs when it next starts. If FFXIV is running, the backup waits for the game to close, for up to 6 hours, instead of copying files the game has open.</p>
           <p>If a scheduled backup fails, Windows shows a notification. <span class="ui">Schedule</span> shows the last run as failed, and <span class="ui">Diagnostics</span> says why. The notification never shows a path or an error, so it's safe on a stream.</p>
+          <p>When automatic backups are off, <span class="ui">Schedule</span> says <span class="ui">Off · no scheduled backups</span>. You can still back up from the app or the command line.</p>
         </section>
 
         <section id="restore" aria-labelledby="restore-title">
@@ -195,6 +196,7 @@
 
         <section id="settings" aria-labelledby="settings-title">
           <h2 id="settings-title">Settings</h2>
+          <p>Choose backup options, folders and updates here. Settings save as you change them; backup options apply to the next backup.</p>
           <ul>
             <li><span class="ui">Destination</span>: the backup folder.</li>
             <li><span class="ui">Keep latest backups</span>: how many backups to keep.</li>

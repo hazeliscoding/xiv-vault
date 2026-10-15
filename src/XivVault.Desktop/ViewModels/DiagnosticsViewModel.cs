@@ -144,8 +144,8 @@ public sealed partial class DiagnosticsViewModel(
         BannerTone = check.Status == DiagnosticStatus.Error ? Tone.Critical : Tone.Warning;
         if (check.Detail.Contains("same drive as XIVLauncher", StringComparison.Ordinal))
         {
-            BannerTitle = "Backup destination is on the same physical drive as your XIVLauncher data.";
-            BannerDescription = "Consider using OneDrive, Dropbox, NAS, or another disk for stronger protection. A drive failure would take both the configuration and its backups.";
+            BannerTitle = "Backups and XIVLauncher are on the same drive.";
+            BannerDescription = "A drive failure could lose both copies. Choose a synced folder, a network folder or another drive.";
         }
         else
         {

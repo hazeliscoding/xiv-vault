@@ -105,7 +105,7 @@ public sealed partial class BackupsViewModel : PageViewModel
 
         var confirmed = await _dialogs.ConfirmAsync(new ConfirmRequest(
             "Delete this backup?",
-            $"The archive is removed from {Destination}. Your current Dalamud configuration is not affected.",
+            $"The archive is removed from {Destination}. Your current Dalamud and game settings stay as they are.",
             "Delete backup",
             "Keep backup")
         {

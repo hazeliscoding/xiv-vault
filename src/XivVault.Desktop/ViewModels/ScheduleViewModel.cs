@@ -106,7 +106,7 @@ public sealed partial class ScheduleViewModel : PageViewModel
 
     public string AutoDescription => AutoEnabled
         ? "On · runs as a Windows scheduled task even when XIV Vault is closed"
-        : "Off · backups only happen when you press Back Up Now";
+        : "Off · no scheduled backups";
 
     public string RetentionHint
     {

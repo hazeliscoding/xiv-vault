@@ -11,7 +11,7 @@
     <StackPanel Spacing="16">
       <StackPanel Spacing="4">
         <TextBlock Classes="page-title" Text="Settings" />
-        <TextBlock Classes="body t2" Text="Changes apply to the next backup." />
+        <TextBlock Classes="body t2" Text="Choose backup options, folders and updates." />
       </StackPanel>
 
       <c:Banner Tone="Critical" Title="The setting was not saved" Description="{Binding ErrorMessage}"

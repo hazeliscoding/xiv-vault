@@ -36,7 +36,7 @@
       <StackPanel Spacing="16">
         <StackPanel Spacing="4">
           <TextBlock Classes="page-title" Text="Schedule" />
-          <TextBlock Classes="body t2" Text="XIV Vault backs up on its own so you never have to remember." />
+          <TextBlock Classes="body t2" Text="Choose when Windows backs up your configuration." />
         </StackPanel>
 
         <c:Banner Tone="Critical" Title="Windows could not update the scheduled task" Description="{Binding ErrorMessage}"
@@ -90,7 +90,7 @@
                   </ComboBox.SelectionBoxItemTemplate>
                 </ComboBox>
                 <TextBlock Grid.Column="1" Classes="compact t3" TextWrapping="Wrap" MaxWidth="260" HorizontalAlignment="Left" VerticalAlignment="Center"
-                           Text="Skipped while FFXIV is running, then retried after it closes." />
+                           Text="Waits for FFXIV to close, for up to 6 hours." />
               </Grid>
             </Grid>
             <Border Classes="divider" />

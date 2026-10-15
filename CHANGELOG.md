@@ -20,6 +20,7 @@ This is a testing prerelease. Stable 1.0.0 remains the main download. See [the b
 
 - The sidebar said Dalamud reinstalls plugins on a new PC, which it doesn't. Install them again from Dalamud's plugin installer (`/xlplugins`), and each one picks up its restored settings.
 - The restore review calls missing plugins candidates to look for, since some may need a custom repository or may no longer be available. Its warning about newer settings also explains XIVLauncher's first-start settings.
+- Schedule explains that backups wait for FFXIV for up to 6 hours. Settings describes backup and update preferences, and CLI help includes game settings. Overview no longer promises a backup duration or automatic fallback to an older backup.
 
 ## [1.0.0] - 2026-10-11
 

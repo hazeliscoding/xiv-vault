@@ -58,7 +58,7 @@ public static class XivVaultCli
             });
 
             config.AddCommand<BackupCommand>("backup")
-                .WithDescription("Back up the portable XIVLauncher / Dalamud configuration.")
+                .WithDescription("Back up Dalamud configuration and game settings.")
                 .WithExample("backup")
                 .WithExample("backup", "--quiet")
                 .WithExample("backup", "--destination", @"D:\Backups");
@@ -69,7 +69,7 @@ public static class XivVaultCli
             config.AddCommand<ListCommand>("list")
                 .WithDescription("List the backups in the backup folder.");
             config.AddCommand<StatusCommand>("status")
-                .WithDescription("Show whether your Dalamud setup is protected.")
+                .WithDescription("Show whether your setup is protected.")
                 .WithExample("status", "--json");
             config.AddCommand<DoctorCommand>("doctor")
                 .WithDescription("Check XIVLauncher, Dalamud, the backup folder, scheduling and game settings.")

@@ -12,7 +12,7 @@ namespace XivVault.Cli.Commands;
 internal class ScheduleTimeSettings : GlobalSettings
 {
     [CommandOption("-t|--time <HH:MM>")]
-    [Description("Time of day, 24-hour, such as 18:30. Defaults to the saved time (12:00).")]
+    [Description("Time of day, 24-hour, such as 18:30. Uses the saved time; 12:00 by default.")]
     public string? Time { get; init; }
 
     public override ValidationResult Validate() =>

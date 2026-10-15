@@ -246,7 +246,7 @@ public sealed partial class OverviewViewModel : PageViewModel
             case ProtectionState.NotDetected:
                 State = OverviewState.NotDetected;
                 Subtitle = "XIVLauncher was not found on this PC.";
-                NotDetectedDescription = "Install XIVLauncher and start it once, or point XIV Vault at its folder in Settings. Your backups are safe either way.";
+                NotDetectedDescription = "Install XIVLauncher and start it once, or choose its folder in Settings. Your backups stay in their folder.";
                 break;
             case ProtectionState.NoConfiguration:
                 State = OverviewState.NoConfiguration;
@@ -257,7 +257,7 @@ public sealed partial class OverviewViewModel : PageViewModel
                 Subtitle = "Your Dalamud setup is not backed up yet.";
                 var count = status.Portable?.PluginConfigCount ?? 0;
                 EmptyDescription = $"{Formatting.Count(count, "plugin configuration")} and your Dalamud settings were found. "
-                    + $"The first backup takes a few seconds and is stored at {Destination}.";
+                    + $"The backup will be saved in {Destination}.";
                 break;
             case ProtectionState.NeedsAttention:
                 State = OverviewState.NeedsAttention;
@@ -271,7 +271,7 @@ public sealed partial class OverviewViewModel : PageViewModel
                     FailedDescription = (latest.Problem ?? "A file in the archive does not match its recorded hash.")
                         + (previous is null
                             ? " Back up again to replace it."
-                            : $" The backup from {Formatting.DayAndTime(previous.CreatedAtUtc.ToLocalTime(), now)} is intact and will be used for restores until a new backup succeeds.");
+                            : $" The backup from {Formatting.DayAndTime(previous.CreatedAtUtc.ToLocalTime(), now)} passed verification. You can choose it in Restore, or make a new backup.");
                     FailedMeta = latest.FileName;
                 }
                 else

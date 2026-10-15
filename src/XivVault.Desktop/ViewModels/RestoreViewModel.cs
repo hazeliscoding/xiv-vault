@@ -300,8 +300,8 @@ public sealed partial class RestoreViewModel : PageViewModel
 
             var plugins = preview.ChangesUndoneBy(Selection).Plugins;
             return plugins.Count > 0
-                ? $"{Formatting.Count(plugins.Count, "plugin")} configured after this backup ({Formatting.JoinWords(plugins.Take(4))}) will return to {(plugins.Count == 1 ? "its" : "their")} earlier settings. The safety backup keeps today's values recoverable."
-                : "Dalamud settings saved since this backup will be replaced, including any settings XIVLauncher created on its first start. The safety backup keeps today's values recoverable.";
+                ? $"{Formatting.Count(plugins.Count, "plugin")} configured after this backup ({Formatting.JoinWords(plugins.Take(4))}) will return to {(plugins.Count == 1 ? "its" : "their")} earlier settings. The safety backup keeps your current settings."
+                : "Dalamud settings saved since this backup will be replaced, including any settings XIVLauncher created on its first start. The safety backup keeps your current settings.";
         }
     }
 
