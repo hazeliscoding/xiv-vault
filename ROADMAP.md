@@ -317,7 +317,7 @@ Released as 1.0.0 on 2026-10-11. A real 0.4.0 install updated itself to the draf
 - [ ] Desktop: the review step says which plugins will be installed and from where, and **Restore complete** lists what was installed and what to install from `/xlplugins`. The CLI's restore does the same, with its options and JSON fields added, never changed.
 - [ ] Plugin installs are on only in beta versions. A stable version shows nothing about them and never downloads a plugin.
 - [x] Tests with a fake repository: a zip with paths outside its folder, a name or version that doesn't match the repository, an unticked custom repository, the game running, and a download that fails halfway, which leaves nothing half-installed.
-- [ ] Side by side: an XIV Vault install matches Dalamud's own install of the same plugin version, file for file, apart from the ID.
+- [x] Side by side: an XIV Vault install matches Dalamud's own install of the same plugin version, file for file, apart from the ID. (Checked on 2026-10-15 with the owner's fresh-folder test: all 68 plugins XIV Vault installed match Dalamud's installs of the same versions on the original folder. Every file's hash is equal, and each manifest is equal once parsed, IDs included.)
 - [ ] A weekly CI job installs one real plugin from the live official repository into a temp folder, so a change to the repository's format fails CI before users notice.
 - [ ] **Get beta versions** under Updates in Settings, off by default. On, the update check also offers GitHub prereleases; off, it never downgrades.
 - [ ] Settings and the sidebar say when the installed version is a beta.
