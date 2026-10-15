@@ -30,6 +30,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly DesktopSession _session;
     private readonly IShellService _shell;
     private readonly PathDisplay _paths;
+    private readonly IDialogService _dialogService;
 
     public MainWindowViewModel(
         IEnumerable<PageViewModel> pages,
@@ -38,12 +39,14 @@ public sealed partial class MainWindowViewModel : ObservableObject
         OverlayDialogService dialogs,
         UpdatesViewModel updates,
         IShellService shell,
-        PathDisplay paths)
+        PathDisplay paths,
+        IDialogService dialogService)
     {
         _pages = pages.ToDictionary(page => page.Page);
         _session = session;
         _shell = shell;
         _paths = paths;
+        _dialogService = dialogService;
         Dialogs = dialogs;
         Updates = updates;
         NavItems =
@@ -81,6 +84,18 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public string ProtectionText => XivVaultInfo.IsBeta
         ? "XIV Vault protects portable Dalamud configuration and the game's own settings. This beta can download missing plugins during a restore; custom repositories need your choice."
         : "XIV Vault protects portable Dalamud configuration and the game's own settings. Plugins themselves aren't copied: on a new PC, install them again in Dalamud's plugin installer.";
+
+    /// <summary>True while a restore runs: closing would stop it partway, without its cleanup, so the window asks first.</summary>
+    public bool AsksBeforeClosing => _session.IsRestoring;
+
+    public Task<bool> ConfirmCloseAsync() => _dialogService.ConfirmAsync(new ConfirmRequest(
+        "Close XIV Vault?",
+        "A restore is still running. Closing now stops it partway, and some settings or plugins may not be restored.",
+        "Close anyway",
+        "Keep it open")
+    {
+        Danger = true,
+    });
 
     public async Task InitializeAsync()
     {

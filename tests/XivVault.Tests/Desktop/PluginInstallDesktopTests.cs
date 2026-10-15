@@ -193,6 +193,31 @@ public class PluginInstallDesktopTests
         Assert.Equal(RowsWithDownloads, restore.Stages.Select(stage => stage.Label));
     }
 
+    [Fact]
+    public async Task Closing_during_plugin_downloads_asks_first_and_the_safe_choice_keeps_it_open()
+    {
+        using var host = new DesktopTestHost(pluginInstalls: true);
+        var restore = await ReviewAsync(host);
+        var main = host.Get<MainWindowViewModel>();
+        host.Dialogs.Answer = false;
+        var asksWhileDownloading = false;
+        Task<bool>? closes = null;
+        host.Downloads.BeforeRequest = _ =>
+        {
+            asksWhileDownloading = main.AsksBeforeClosing;
+            closes ??= main.ConfirmCloseAsync();
+        };
+        Assert.False(main.AsksBeforeClosing);
+
+        await restore.ContinueCommand.ExecuteAsync(null);
+        await restore.RestoreNowCommand.ExecuteAsync(null);
+
+        Assert.True(asksWhileDownloading);
+        Assert.False(await closes!);
+        Assert.Equal("Keep it open", Assert.Single(host.Dialogs.Requests).CancelText);
+        Assert.False(main.AsksBeforeClosing);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

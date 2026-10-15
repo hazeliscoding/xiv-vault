@@ -7,15 +7,17 @@ using XivVault.Desktop.ViewModels;
 
 namespace XivVault.Desktop.Views;
 
-/// <summary>Window chrome only: caption buttons, the modal's Escape and focus, scroll reset between pages.</summary>
+/// <summary>Window chrome only: caption buttons, closing, the modal's Escape and focus, scroll reset between pages.</summary>
 public partial class MainWindow : Window
 {
     private IInputElement? _focusBeforeDialog;
+    private bool _closeConfirmed;
 
     public MainWindow()
     {
         InitializeComponent();
         KeyDown += OnKeyDown;
+        Closing += OnClosing;
         DataContextChanged += (_, _) =>
         {
             if (DataContext is MainWindowViewModel viewModel)
@@ -37,6 +39,27 @@ public partial class MainWindow : Window
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
     private void OnClose(object? sender, RoutedEventArgs e) => Close();
+
+    // The answer comes after this event returns, so the close is cancelled and made again once it is yes.
+    private void OnClosing(object? sender, WindowClosingEventArgs e)
+    {
+        if (_closeConfirmed || e.CloseReason == WindowCloseReason.OSShutdown || DataContext is not MainWindowViewModel { AsksBeforeClosing: true } viewModel)
+        {
+            return;
+        }
+
+        e.Cancel = true;
+        _ = CloseIfConfirmedAsync(viewModel);
+    }
+
+    private async Task CloseIfConfirmedAsync(MainWindowViewModel viewModel)
+    {
+        _closeConfirmed = await viewModel.ConfirmCloseAsync();
+        if (_closeConfirmed)
+        {
+            Close();
+        }
+    }
 
     private void OnScrimPressed(object? sender, PointerPressedEventArgs e) =>
         (DataContext as MainWindowViewModel)?.Dialogs.Active?.Close(false);
