@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Microsoft.Extensions.DependencyInjection;
+using XivVault.Core;
 using XivVault.Core.Backup;
 using XivVault.Core.Configuration;
 using XivVault.Core.Platform;
@@ -26,6 +27,10 @@ internal sealed class World : IDisposable
         "HUDManager", "InventoryTools", "KamiToolKit",
     ];
 
+    // The README and website show a stable copy of this build, with plugin installs off; only the beta scenes show a beta.
+    private static readonly XivVaultEdition Stable = new(XivVaultEdition.ThisBuild.Version.Split('-')[0]);
+    private static readonly XivVaultEdition Beta = XivVaultEdition.ThisBuild.IsBeta ? XivVaultEdition.ThisBuild : new(Stable.Version + "-beta.1");
+
     private readonly ServiceProvider _services;
 
     private World(string root, bool withHistory, bool demo, bool betaPreview)
@@ -46,6 +51,7 @@ internal sealed class World : IDisposable
         collection.AddSingleton<IMotionSettings>(new FixedMotion(reduce: !demo));
         collection.AddSingleton<IShellService, NoShell>();
         collection.AddSingleton<IAppUpdater>(Updater);
+        collection.AddSingleton(betaPreview ? Beta : Stable);
         if (betaPreview)
         {
             collection.AddSingleton<IRestoreService>(provider => new BetaRestorePreview(ActivatorUtilities.CreateInstance<RestoreService>(provider)));
