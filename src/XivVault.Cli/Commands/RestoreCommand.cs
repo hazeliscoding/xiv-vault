@@ -107,7 +107,7 @@ internal sealed class RestoreCommand(
         // The restore installs only what the review lists, so nothing when the preview can't say what that is.
         var installs = settings.InstallPlugins ? preview.Plugins : null;
         var ticked = new HashSet<string>(settings.CustomRepositories, StringComparer.OrdinalIgnoreCase);
-        var hosts = installs?.CustomRepositories.Select(repository => repository.Host).Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? [];
+        var hosts = installs?.CustomRepositories.Select(repository => repository.Host).ToList() ?? [];
         var unknown = ticked.Except(hosts, StringComparer.OrdinalIgnoreCase).ToList();
         if (installs is not null && unknown.Count > 0)
         {
@@ -193,11 +193,10 @@ internal sealed class RestoreCommand(
             // Nothing is requested from a repository when no plugin is missing.
             if (toInstall.Count > 0 && installs.CustomRepositories.Count > 0)
             {
-                foreach (var host in installs.CustomRepositories.GroupBy(repository => repository.Host, StringComparer.OrdinalIgnoreCase))
+                foreach (var (host, count) in installs.CustomRepositories)
                 {
-                    var count = host.Count();
-                    var label = $"{Formatting.Count(count, "custom repository", "custom repositories")} at {host.Key}";
-                    Item(ticked.Contains(host.Key), ticked.Contains(host.Key) ? $"{label} · included" : $"{label} · add --custom-repository {host.Key} to include {(count == 1 ? "it" : "them")}");
+                    var label = $"{Formatting.Count(count, "custom repository", "custom repositories")} at {host}";
+                    Item(ticked.Contains(host), ticked.Contains(host) ? $"{label} · included" : $"{label} · add --custom-repository {host} to include {(count == 1 ? "it" : "them")}");
                 }
 
                 // Dalamud's own words, from its custom repository settings.
@@ -252,7 +251,7 @@ internal sealed class RestoreCommand(
             Source = source,
             Selection = selection,
             InstallPlugins = installs is not null,
-            CustomRepositories = installs?.CustomRepositories.Where(repository => ticked.Contains(repository.Host)).Select(repository => repository.Url).ToList() ?? [],
+            CustomRepositoryHosts = installs is null ? [] : ticked,
         };
         var result = await Output.WithStatusAsync("Verifying backup integrity", update =>
             restores.RestoreAsync(request, new InlineProgress<RestoreProgress>(progress => update(progress.Message)), cancellationToken));

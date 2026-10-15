@@ -393,7 +393,7 @@ public sealed class RestoreService : IRestoreService
             // network changes nothing.
             var dalamudConfig = staged.Find(file => file.Item == PortableItem.DalamudConfig);
             var plugins = installs && dalamudConfig is not null
-                ? _plugins.Prepare(dalamudConfig.StagedPath, target.RootPath, name => selection.InstallsPlugin(name, backupPlugins), request.CustomRepositories, Path.Combine(workRoot, "plugins"), progress, cancellationToken)
+                ? _plugins.Prepare(dalamudConfig.StagedPath, target.RootPath, name => selection.InstallsPlugin(name, backupPlugins), request.CustomRepositoryHosts, Path.Combine(workRoot, "plugins"), progress, cancellationToken)
                 : null;
 
             // A restore that requested nothing moves as one without installs does.

@@ -40,8 +40,10 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
         return new PluginInstallPreview(
             settings.Plugins.Where(plugin => LocalOutcome(plugin, installed) is null).Select(plugin => plugin.InternalName).ToList(),
             settings.CustomRepositories
-                .Select(url => HttpsHost(url) is { } host ? new CustomRepository(url, host) : null)
-                .OfType<CustomRepository>()
+                .Select(HttpsHost)
+                .OfType<string>()
+                .GroupBy(host => host, StringComparer.OrdinalIgnoreCase)
+                .Select(host => new CustomRepositoryHost(host.Key, host.Count()))
                 .ToList(),
             DalamudInstall.FindVersion(rootPath) is not null);
     }
@@ -55,7 +57,7 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
         string configPath,
         string rootPath,
         Func<string, bool> installs,
-        IReadOnlyCollection<string> tickedRepositories,
+        IReadOnlyCollection<string> tickedHosts,
         string workFolder,
         IProgress<RestoreProgress>? progress,
         CancellationToken cancellationToken)
@@ -111,7 +113,7 @@ public sealed class PluginInstaller(IWebDownloader downloader, GameProcessGuard 
         }
 
         var custom = settings.CustomRepositories
-            .Where(url => tickedRepositories.Contains(url, StringComparer.Ordinal) && HttpsHost(url) is not null)
+            .Where(url => HttpsHost(url) is { } host && tickedHosts.Contains(host, StringComparer.OrdinalIgnoreCase))
             .Select(url => new CustomRepositoryList(url, FetchList(url, cancellationToken)))
             .ToList();
         if (custom.Count(repository => repository.Plugins is null) is > 0 and var unavailable)

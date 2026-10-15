@@ -78,8 +78,8 @@ public class RestorePluginInstallTests
         File.WriteAllText(Path.Combine(folder, plugin.Name + ".json"), $$"""{ "InternalName": "{{plugin.Name}}", "WorkingPluginId": "{{plugin.Id}}" }""");
     }
 
-    private static Task<RestoreResult> RestoreAsync(TestHost host, string archive, params string[] customRepositories) =>
-        host.Restores.RestoreAsync(new RestoreRequest(archive) { InstallPlugins = true, CustomRepositories = customRepositories }, cancellationToken: Ct);
+    private static Task<RestoreResult> RestoreAsync(TestHost host, string archive, params string[] customRepositoryHosts) =>
+        host.Restores.RestoreAsync(new RestoreRequest(archive) { InstallPlugins = true, CustomRepositoryHosts = customRepositoryHosts }, cancellationToken: Ct);
 
     private static string InstalledPlugins(string root) => Path.Combine(root, "installedPlugins");
 
@@ -423,7 +423,7 @@ public class RestorePluginInstallTests
         repository.Add(Tippy.Name, repository: Disabled);
         host.Downloads.Bodies[NotInSettings] = "[]"u8.ToArray();
 
-        var result = await RestoreAsync(host, archive, Ticked, Disabled, NotInSettings);
+        var result = await RestoreAsync(host, archive, "RAW.example.COM", "disabled.example.net", "notenabled.example.com");
 
         Assert.DoesNotContain(host.Downloads.Requests, url => !url.StartsWith("https://kamori.goats.dev/", StringComparison.Ordinal) && !url.StartsWith("https://raw.example.com/", StringComparison.OrdinalIgnoreCase));
         var report = Report(result, chosen: 4);
@@ -436,6 +436,31 @@ public class RestorePluginInstallTests
     }
 
     [Fact]
+    public async Task A_ticked_host_installs_from_every_repository_the_settings_turn_on_there()
+    {
+        using var host = new TestHost();
+        const string sameHost = "https://raw.example.com/Another/repo.json";
+        const string offAtSameHost = "https://raw.example.com/Old/repo.json";
+        var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig(
+            [Moodles, Lifestream, Tippy],
+            repositories: [(Ticked, true), (sameHost, true), (offAtSameHost, false)]));
+        NewPc(host);
+        var repository = Repository(host);
+        repository.Add(Moodles.Name, repository: Ticked);
+        repository.Add(Lifestream.Name, repository: sameHost);
+        repository.Add(Tippy.Name, repository: offAtSameHost);
+
+        var preview = await host.Restores.PreviewAsync(archive, cancellationToken: Ct);
+        var result = await RestoreAsync(host, archive, "raw.example.com");
+
+        Assert.Equal([new CustomRepositoryHost("raw.example.com", 2)], preview.Plugins!.CustomRepositories);
+        var report = Report(result, chosen: 3);
+        Assert.Equal([Lifestream.Name, Moodles.Name], report.Installed.Order(StringComparer.Ordinal));
+        Assert.Equal(PluginInstallOutcome.NotOffered, OutcomeOf(report, Tippy));
+        Assert.DoesNotContain(offAtSameHost, host.Downloads.Requests);
+    }
+
+    [Fact]
     public async Task A_repository_over_plain_HTTP_is_never_requested()
     {
         using var host = new TestHost();
@@ -444,7 +469,7 @@ public class RestorePluginInstallTests
         NewPc(host);
         Repository(host).Add(Tippy.Name, repository: insecure);
 
-        var result = await RestoreAsync(host, archive, insecure);
+        var result = await RestoreAsync(host, archive, "insecure.example.com");
 
         Assert.DoesNotContain(insecure, host.Downloads.Requests);
         Assert.Equal(PluginInstallOutcome.NotOffered, OutcomeOf(Report(result, chosen: 1), Tippy));
@@ -465,9 +490,9 @@ public class RestorePluginInstallTests
         host.Downloads.Bodies[Ticked] = "[]"u8.ToArray();
 
         var preview = await host.Restores.PreviewAsync(archive, cancellationToken: Ct);
-        var result = await RestoreAsync(host, archive, unconvertible, Ticked);
+        var result = await RestoreAsync(host, archive, "\u00AD.example.com", "raw.example.com");
 
-        Assert.Equal([new CustomRepository(Ticked, "raw.example.com")], preview.Plugins!.CustomRepositories);
+        Assert.Equal([new CustomRepositoryHost("raw.example.com", 1)], preview.Plugins!.CustomRepositories);
         Assert.DoesNotContain(unconvertible, host.Downloads.Requests);
         var report = Report(result, chosen: 2);
         Assert.Equal([Wotsit.Name], report.Installed);
@@ -485,7 +510,7 @@ public class RestorePluginInstallTests
         repository.Add(Moodles.Name, repository: Ticked);
         host.Downloads.Bodies.Remove(Ticked);
 
-        var result = await RestoreAsync(host, archive, Ticked);
+        var result = await RestoreAsync(host, archive, "raw.example.com");
 
         var report = Report(result, chosen: 2);
         Assert.Equal([Wotsit.Name], report.Installed);
@@ -503,7 +528,7 @@ public class RestorePluginInstallTests
         var repository = new FakePluginRepository(web, Path.Combine(host.Environment.Root, "web"));
         string[] links = [repository.Add(Wotsit.Name), repository.Add(Orchestrion.Name), repository.Add(Moodles.Name, repository: Ticked)];
 
-        var result = await RestoreAsync(host, archive, Ticked);
+        var result = await RestoreAsync(host, archive, "raw.example.com");
 
         Assert.Equal(3, Report(result, chosen: 3).Installed.Count);
         List<(string Url, string Accept, long MaxBytes)> expected =
@@ -530,7 +555,7 @@ public class RestorePluginInstallTests
         repository.Add(Moodles.Name, repository: Ticked);
         host.Downloads.Bodies.Remove(FakePluginRepository.Official);
 
-        var result = await RestoreAsync(host, archive, Ticked);
+        var result = await RestoreAsync(host, archive, "raw.example.com");
 
         Assert.Equal([FakePluginRepository.Official], host.Downloads.Requests);
         var report = Report(result, chosen: 2);
@@ -866,7 +891,7 @@ public class RestorePluginInstallTests
         repository.Add(Wotsit.Name);
         var link = repository.Add(name, repository: Ticked);
 
-        var result = await RestoreAsync(host, archive, Ticked);
+        var result = await RestoreAsync(host, archive, "raw.example.com");
 
         var report = Report(result, chosen: 2);
         Assert.Equal(PluginInstallOutcome.PackageRefused, OutcomeOf(report, hostile));
@@ -988,10 +1013,10 @@ public class RestorePluginInstallTests
             }
         });
 
-        var first = await host.Restores.RestoreAsync(new RestoreRequest(archive) { InstallPlugins = true, CustomRepositories = [Ticked, gone] }, progress, Ct);
+        var first = await host.Restores.RestoreAsync(new RestoreRequest(archive) { InstallPlugins = true, CustomRepositoryHosts = ["raw.example.com", "gone.example.com"] }, progress, Ct);
         host.Clock.Advance(TimeSpan.FromMinutes(1));
         host.Downloads.Bodies[FakePluginRepository.Official] = "not a plugin list"u8.ToArray();
-        var second = await RestoreAsync(host, archive, Ticked);
+        var second = await RestoreAsync(host, archive, "raw.example.com");
 
         Assert.Equal([Wotsit.Name], Report(first, chosen: 6).Installed);
         Assert.All(Report(second, chosen: 6).NotInstalled, plugin => Assert.Equal(PluginInstallOutcome.RepositoryUnavailable, plugin.Outcome));
@@ -1016,7 +1041,11 @@ public class RestorePluginInstallTests
         using var host = new TestHost();
         var archive = await BackUpOldPcAsync(host, FakePluginRepository.DalamudConfig(
             [Wotsit, Orchestrion, Moodles],
-            repositories: [(Ticked, true), ("https://plügins.example.com/repo.json", true), ("http://insecure.example.com/repo.json", true), (Disabled, false)]));
+            repositories:
+            [
+                (Ticked, true), ("https://plügins.example.com/repo.json", true), ("https://RAW.EXAMPLE.COM/Other/repo.json", true),
+                ("http://insecure.example.com/repo.json", true), (Disabled, false),
+            ]));
         var root = NewPc(host);
         InstallLocally(root, Orchestrion);
 
@@ -1025,7 +1054,7 @@ public class RestorePluginInstallTests
         var plugins = Assert.IsType<PluginInstallPreview>(preview.Plugins);
         Assert.Equal([Moodles.Name, Wotsit.Name], plugins.Missing.Order(StringComparer.Ordinal));
         Assert.Equal(
-            [new CustomRepository(Ticked, "raw.example.com"), new CustomRepository("https://plügins.example.com/repo.json", "xn--plgins-4ya.example.com")],
+            [new CustomRepositoryHost("raw.example.com", 2), new CustomRepositoryHost("xn--plgins-4ya.example.com", 1)],
             plugins.CustomRepositories);
         Assert.True(plugins.DalamudReady);
         Assert.Empty(host.Downloads.Requests);

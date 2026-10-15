@@ -36,11 +36,12 @@ public sealed partial class PluginChoice(string name) : ObservableObject
 
 public sealed record CurrentItem(string Label, string Meta);
 
-public sealed partial class RepositoryChoice(CustomRepository repository) : ObservableObject
+/// <summary>One custom repository host in the review. Ticking it includes every repository the backup turns on there.</summary>
+public sealed partial class RepositoryChoice(CustomRepositoryHost repository) : ObservableObject
 {
-    internal string Url { get; } = repository.Url;
-
     public string Host { get; } = repository.Host;
+
+    public string Label { get; } = $"{repository.Host} · {Formatting.Count(repository.Count, "repository", "repositories")}";
 
     [ObservableProperty]
     public partial bool IsChosen { get; set; }
@@ -637,7 +638,7 @@ public sealed partial class RestoreViewModel : PageViewModel
             {
                 Selection = selection,
                 InstallPlugins = WillInstallPlugins,
-                CustomRepositories = WillInstallPlugins ? RepositoryChoices.Where(choice => choice.IsChosen).Select(choice => choice.Url).ToList() : [],
+                CustomRepositoryHosts = WillInstallPlugins ? RepositoryChoices.Where(choice => choice.IsChosen).Select(choice => choice.Host).ToList() : [],
             }, progress);
             SetStage(RestoreStage.Completed, plugins, dalamud, game);
             Step = 4;

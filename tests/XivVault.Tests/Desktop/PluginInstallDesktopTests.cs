@@ -8,16 +8,25 @@ public class PluginInstallDesktopTests
 {
     private const string Custom = "https://plugins.example.org/repo.json?token=private";
 
-    private static async Task<RestoreViewModel> ReviewAsync(DesktopTestHost host)
+    /// <summary>
+    /// Reviews a backup of this PC whose plugins, Wotsit and Moodles unless others are given, come from these repositories
+    /// and are all missing.
+    /// </summary>
+    private static async Task<RestoreViewModel> ReviewAsync(DesktopTestHost host, params (string Name, string Repository)[] plugins)
     {
+        plugins = plugins.Length > 0 ? plugins : [("Wotsit", FakePluginRepository.Official), ("Moodles", Custom)];
         var launcher = host.CreateLauncher();
-        File.WriteAllText(Path.Combine(launcher.DataPath, "dalamudConfig.json"),
-            FakePluginRepository.DalamudConfig([("Wotsit", Guid.NewGuid()), ("Moodles", Guid.NewGuid())], repositories: [(Custom, true)]));
+        File.WriteAllText(Path.Combine(launcher.DataPath, "dalamudConfig.json"), FakePluginRepository.DalamudConfig(
+            plugins.Select(plugin => (plugin.Name, Guid.NewGuid())),
+            repositories: plugins.Select(plugin => plugin.Repository).Where(url => url != FakePluginRepository.Official).Distinct().Select(url => (url, true))));
         FakeDalamud.InstallDalamud(launcher.Root, new Version(15, 0, 3, 6));
         await host.BackUpAsync();
         var repo = new FakePluginRepository(host.Downloads, Path.Combine(host.Environment.Root, "web"));
-        repo.Add("Wotsit");
-        repo.Add("Moodles", repository: Custom);
+        foreach (var (name, repository) in plugins)
+        {
+            repo.Add(name, repository: repository);
+        }
+
         await host.Session.RefreshAsync();
         var restore = host.Get<RestoreViewModel>();
         restore.Begin(null);
@@ -52,6 +61,25 @@ public class PluginInstallDesktopTests
         Assert.Equal(ticked, host.Downloads.Requests.Contains(Custom));
         Assert.Contains("Wotsit", restore.InstalledPluginsText);
         Assert.Equal(!ticked, restore.HasUninstalledPlugins);
+    }
+
+    [Fact]
+    public async Task Repositories_at_one_host_share_one_row_and_ticking_it_requests_each_of_them()
+    {
+        const string sameHost = "https://Plugins.Example.org/more/repo.json";
+        const string other = "https://other.example.net/repo.json";
+        using var host = new DesktopTestHost(pluginInstalls: true);
+        var restore = await ReviewAsync(host, ("Moodles", Custom), ("Lifestream", sameHost), ("Tippy", other));
+
+        Assert.Equal(["plugins.example.org · 2 repositories", "other.example.net · 1 repository"], restore.RepositoryChoices.Select(choice => choice.Label));
+        restore.RepositoryChoices[0].IsChosen = true;
+        await restore.ContinueCommand.ExecuteAsync(null);
+        await restore.RestoreNowCommand.ExecuteAsync(null);
+
+        Assert.Contains(Custom, host.Downloads.Requests);
+        Assert.Contains(sameHost, host.Downloads.Requests);
+        Assert.DoesNotContain(other, host.Downloads.Requests);
+        Assert.Equal(["Lifestream", "Moodles"], restore.Result?.Plugins?.Installed.Order(StringComparer.Ordinal));
     }
 
     [Theory]

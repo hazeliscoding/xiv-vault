@@ -19,10 +19,10 @@ public sealed record RestoreRequest(string ArchivePath)
     public bool InstallPlugins { get; init; }
 
     /// <summary>
-    /// The custom repositories the user ticked, exactly as <see cref="PluginInstallPreview"/> gave them. Only
-    /// those the restored settings turn on are used.
+    /// The custom repository hosts the user ticked, as <see cref="PluginInstallPreview"/> lists them, matched without
+    /// case. Every repository the restored settings turn on at those hosts is used.
     /// </summary>
-    public IReadOnlyCollection<string> CustomRepositories { get; init; } = [];
+    public IReadOnlyCollection<string> CustomRepositoryHosts { get; init; } = [];
 }
 
 /// <summary>

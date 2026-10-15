@@ -10,7 +10,7 @@ internal sealed class BetaRestorePreview(IRestoreService inner) : IRestoreServic
         (await inner.PreviewAsync(archivePath, source, cancellationToken).ConfigureAwait(false)) with
         {
             Plugins = new PluginInstallPreview(["Wotsit", "Orchestrion", "Moodles"],
-                [new CustomRepository("https://plugins.example.org/repo.json", "plugins.example.org")], true),
+                [new CustomRepositoryHost("repo.example.com", 2), new CustomRepositoryHost("plugins.example.org", 1)], true),
         };
 
     public Task<IReadOnlyList<SafetyCheck>> CheckAsync(string archivePath, string? source = null, CancellationToken cancellationToken = default) =>

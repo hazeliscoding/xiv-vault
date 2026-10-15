@@ -142,16 +142,16 @@ public sealed record PluginInstalls(bool Available)
 }
 
 /// <summary>
-/// A custom repository the backup's settings turn on. The host is shown instead of the URL, which can hold a
-/// token, and in punycode, so a look-alike name can't pass for another.
+/// A host of custom repositories the backup's settings turn on, and how many. The host is shown instead of each URL,
+/// which can hold a token, and in punycode, so a look-alike name can't pass for another.
 /// </summary>
-public sealed record CustomRepository(string Url, string Host);
+public sealed record CustomRepositoryHost(string Host, int Count);
 
 /// <summary>What a restore would install, worked out without any request.</summary>
 /// <param name="Missing">The backup's plugins that this PC doesn't have and nothing on it blocks, by name.</param>
-/// <param name="CustomRepositories">The custom repositories the backup turns on, HTTPS only, for the user to tick.</param>
+/// <param name="CustomRepositories">The custom repositories the backup turns on, HTTPS only, by host for the user to tick.</param>
 /// <param name="DalamudReady">False until XIVLauncher has finished downloading Dalamud; until then nothing is installed.</param>
-public sealed record PluginInstallPreview(IReadOnlyList<string> Missing, IReadOnlyList<CustomRepository> CustomRepositories, bool DalamudReady);
+public sealed record PluginInstallPreview(IReadOnlyList<string> Missing, IReadOnlyList<CustomRepositoryHost> CustomRepositories, bool DalamudReady);
 
 /// <summary>What a restore installed. Every chosen plugin is counted once: installed, already installed, or not installed with its reason.</summary>
 public sealed record PluginInstallReport(IReadOnlyList<string> Installed, IReadOnlyList<PluginOutcome> NotInstalled, int AlreadyInstalled);

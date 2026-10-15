@@ -232,7 +232,7 @@
                   <ItemsControl ItemsSource="{Binding RepositoryChoices}" AutomationProperties.Name="Custom repositories to install from">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:RepositoryChoice">
-                        <CheckBox Theme="{StaticResource ChoiceToggle}" Content="{Binding Host}" IsChecked="{Binding IsChosen}" AutomationProperties.Name="{Binding Host}" />
+                        <CheckBox Theme="{StaticResource ChoiceToggle}" Content="{Binding Label}" IsChecked="{Binding IsChosen}" AutomationProperties.Name="{Binding Label}" />
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
