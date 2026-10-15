@@ -110,7 +110,8 @@ First release.
 - Installer: `xiv-vault-setup-win-x64.exe` installs the desktop app for the current user and keeps it up to date from GitHub releases. Updates install only when chosen in Settings, wait for running backups, restores and scheduled backups, and the check can be turned off. Uninstalling removes the scheduled backup task.
 - Self-contained Windows x64 builds: `xiv-vault-setup-win-x64.exe`, plus portable `xiv-vault-desktop-win-x64.zip` and `xiv-vault-cli-win-x64.zip`.
 
-[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v1.1.0-beta.1...HEAD
+[1.1.0-beta.1]: https://github.com/hazeliscoding/xiv-vault/compare/v1.0.0...v1.1.0-beta.1
 [1.0.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.4.0...v1.0.0
 [0.4.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.2.0...v0.3.0
