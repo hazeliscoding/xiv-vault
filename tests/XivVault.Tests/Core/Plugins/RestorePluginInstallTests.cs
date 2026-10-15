@@ -265,7 +265,22 @@ public class RestorePluginInstallTests
         Assert.Empty(host.Downloads.Requests);
         var report = Report(result, chosen: 2);
         Assert.All(report.NotInstalled, plugin => Assert.Equal(PluginInstallOutcome.DalamudNotReady, plugin.Outcome));
+        Assert.True(report.WaitingForDalamud);
+        Assert.Empty(report.ForPluginInstaller);
         Assert.Equal(config, File.ReadAllText(Path.Combine(root, "dalamudConfig.json")));
+    }
+
+    [Fact]
+    public void Plugins_waiting_for_Dalamud_are_never_sent_to_the_plugin_installer()
+    {
+        // Installing one from /xlplugins would give it a new ID, which breaks its collections.
+        var report = new PluginInstallReport(
+            [],
+            [new("Wotsit", PluginInstallOutcome.NotOffered), new("Moodles", PluginInstallOutcome.DalamudNotReady), new("tippy", PluginInstallOutcome.InTheWay)],
+            0);
+
+        Assert.Equal([new PluginOutcome("tippy", PluginInstallOutcome.InTheWay), new PluginOutcome("Wotsit", PluginInstallOutcome.NotOffered)], report.ForPluginInstaller);
+        Assert.True(report.WaitingForDalamud);
     }
 
     [Fact]

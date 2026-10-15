@@ -183,15 +183,13 @@ public sealed partial class RestoreViewModel : PageViewModel
         ? $"{Formatting.Count(report.AlreadyInstalled, "plugin")} already installed and left unchanged."
         : "";
 
-    public IReadOnlyList<string> UninstalledPlugins => Result?.Plugins?.NotInstalled
-        .Where(plugin => plugin.Outcome != PluginInstallOutcome.DalamudNotReady)
-        .OrderBy(plugin => plugin.InternalName, StringComparer.OrdinalIgnoreCase)
+    public IReadOnlyList<string> UninstalledPlugins => Result?.Plugins?.ForPluginInstaller
         .Select(plugin => $"{plugin.InternalName}: {PluginOutcomeText.Describe(plugin.Outcome)}")
         .ToList() ?? [];
 
     public bool HasUninstalledPlugins => UninstalledPlugins.Count > 0;
 
-    public bool ResultNeedsDalamud => Result?.Plugins?.NotInstalled.Any(plugin => plugin.Outcome == PluginInstallOutcome.DalamudNotReady) == true;
+    public bool ResultNeedsDalamud => Result?.Plugins?.WaitingForDalamud == true;
 
     [ObservableProperty]
     public partial string PluginFilter { get; set; } = "";

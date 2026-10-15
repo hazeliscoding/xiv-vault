@@ -154,4 +154,16 @@ public sealed record CustomRepositoryHost(string Host, int Count);
 public sealed record PluginInstallPreview(IReadOnlyList<string> Missing, IReadOnlyList<CustomRepositoryHost> CustomRepositories, bool DalamudReady);
 
 /// <summary>What a restore installed. Every chosen plugin is counted once: installed, already installed, or not installed with its reason.</summary>
-public sealed record PluginInstallReport(IReadOnlyList<string> Installed, IReadOnlyList<PluginOutcome> NotInstalled, int AlreadyInstalled);
+public sealed record PluginInstallReport(IReadOnlyList<string> Installed, IReadOnlyList<PluginOutcome> NotInstalled, int AlreadyInstalled)
+{
+    /// <summary>
+    /// The plugins to install from Dalamud's plugin installer (/xlplugins), sorted by name. Never those waiting for Dalamud:
+    /// installing one there gives it a new ID, which breaks its collections, so they wait for the restore to run again.
+    /// </summary>
+    public IReadOnlyList<PluginOutcome> ForPluginInstaller => NotInstalled
+        .Where(plugin => plugin.Outcome != PluginInstallOutcome.DalamudNotReady)
+        .OrderBy(plugin => plugin.InternalName, StringComparer.OrdinalIgnoreCase)
+        .ToList();
+
+    public bool WaitingForDalamud => NotInstalled.Any(plugin => plugin.Outcome == PluginInstallOutcome.DalamudNotReady);
+}

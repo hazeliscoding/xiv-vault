@@ -267,12 +267,8 @@ internal sealed class RestoreCommand(
         Output.Detail($"Safety snapshot: {result.SafetySnapshot.FileName} in {paths.Friendly(Path.GetDirectoryName(result.SafetySnapshot.FilePath)!)}");
         if (result.Plugins is { } report)
         {
-            // Installing from /xlplugins would give these plugins new IDs, so they wait for the restore to run again.
-            var notInstalled = report.NotInstalled
-                .Where(plugin => plugin.Outcome != PluginInstallOutcome.DalamudNotReady)
-                .OrderBy(plugin => plugin.InternalName, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            if (notInstalled.Count < report.NotInstalled.Count)
+            var notInstalled = report.ForPluginInstaller;
+            if (report.WaitingForDalamud)
             {
                 Output.Warning(DalamudNotReady());
             }

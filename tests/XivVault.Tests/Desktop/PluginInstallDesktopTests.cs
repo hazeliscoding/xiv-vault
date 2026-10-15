@@ -12,14 +12,18 @@ public class PluginInstallDesktopTests
     /// Reviews a backup of this PC whose plugins, Wotsit and Moodles unless others are given, come from these repositories
     /// and are all missing.
     /// </summary>
-    private static async Task<RestoreViewModel> ReviewAsync(DesktopTestHost host, params (string Name, string Repository)[] plugins)
+    private static async Task<RestoreViewModel> ReviewAsync(DesktopTestHost host, (string Name, string Repository)[]? plugins = null, bool dalamudReady = true)
     {
-        plugins = plugins.Length > 0 ? plugins : [("Wotsit", FakePluginRepository.Official), ("Moodles", Custom)];
+        plugins ??= [("Wotsit", FakePluginRepository.Official), ("Moodles", Custom)];
         var launcher = host.CreateLauncher();
         File.WriteAllText(Path.Combine(launcher.DataPath, "dalamudConfig.json"), FakePluginRepository.DalamudConfig(
             plugins.Select(plugin => (plugin.Name, Guid.NewGuid())),
             repositories: plugins.Select(plugin => plugin.Repository).Where(url => url != FakePluginRepository.Official).Distinct().Select(url => (url, true))));
-        FakeDalamud.InstallDalamud(launcher.Root, new Version(15, 0, 3, 6));
+        if (dalamudReady)
+        {
+            FakeDalamud.InstallDalamud(launcher.Root, new Version(15, 0, 3, 6));
+        }
+
         await host.BackUpAsync();
         var repo = new FakePluginRepository(host.Downloads, Path.Combine(host.Environment.Root, "web"));
         foreach (var (name, repository) in plugins)
@@ -69,7 +73,7 @@ public class PluginInstallDesktopTests
         const string sameHost = "https://Plugins.Example.org/more/repo.json";
         const string other = "https://other.example.net/repo.json";
         using var host = new DesktopTestHost(pluginInstalls: true);
-        var restore = await ReviewAsync(host, ("Moodles", Custom), ("Lifestream", sameHost), ("Tippy", other));
+        var restore = await ReviewAsync(host, [("Moodles", Custom), ("Lifestream", sameHost), ("Tippy", other)]);
 
         Assert.Equal(["plugins.example.org · 2 repositories", "other.example.net · 1 repository"], restore.RepositoryChoices.Select(choice => choice.Label));
         restore.RepositoryChoices[0].IsChosen = true;
@@ -80,6 +84,23 @@ public class PluginInstallDesktopTests
         Assert.Contains(sameHost, host.Downloads.Requests);
         Assert.DoesNotContain(other, host.Downloads.Requests);
         Assert.Equal(["Lifestream", "Moodles"], restore.Result?.Plugins?.Installed.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task Without_Dalamud_plugins_wait_for_it_and_none_are_sent_to_xlplugins()
+    {
+        using var host = new DesktopTestHost(pluginInstalls: true);
+        var restore = await ReviewAsync(host, dalamudReady: false);
+
+        Assert.True(restore.ShowDalamudNotReady);
+        await restore.ContinueCommand.ExecuteAsync(null);
+        await restore.RestoreNowCommand.ExecuteAsync(null);
+
+        Assert.True(restore.IsStep4);
+        Assert.True(restore.ResultNeedsDalamud);
+        Assert.Empty(restore.UninstalledPlugins);
+        Assert.False(restore.HasUninstalledPlugins);
+        Assert.Empty(host.Downloads.Requests);
     }
 
     [Theory]
