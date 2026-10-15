@@ -44,7 +44,7 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
           $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { $env:INPUT_VERSION }
-          if ($version -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-beta\.(0|[1-9]\d*))?$') { throw "Not a stable or beta version: $version" }
+          if ($version -cnotmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-beta\.(0|[1-9]\d*))?$') { throw "Not a stable or beta version: $version" }
           $beta = $version.Contains('-beta.')
           "VERSION=$version" >> $env:GITHUB_ENV
           "PRERELEASE=$($beta.ToString().ToLowerInvariant())" >> $env:GITHUB_ENV
