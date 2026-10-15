@@ -66,7 +66,7 @@ public sealed partial class UpdatesViewModel : ObservableObject
     public bool IsBeta => XivVaultInfo.IsBeta;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Detail), nameof(BadgeLabel), nameof(BadgeTone), nameof(HasUpdate), nameof(CanCheck), nameof(IsChecking), nameof(IsDownloading), nameof(CanChangeChannel))]
+    [NotifyPropertyChangedFor(nameof(Detail), nameof(BadgeLabel), nameof(BadgeTone), nameof(HasUpdate), nameof(ShowCheckNow), nameof(CanCheck), nameof(IsChecking), nameof(IsDownloading), nameof(CanChangeChannel))]
     [NotifyCanExecuteChangedFor(nameof(CheckNowCommand), nameof(UpdateAndRestartCommand))]
     public partial UpdateState State { get; private set; }
 
@@ -84,7 +84,10 @@ public sealed partial class UpdatesViewModel : ObservableObject
 
     public bool HasUpdate => State is UpdateState.Available or UpdateState.Downloading;
 
-    public bool CanCheck => IsInstalled && !HasUpdate && !IsChecking;
+    // Check Now stays shown while it checks, disabled, so the button and its spinner stay in place.
+    public bool ShowCheckNow => IsInstalled && !HasUpdate;
+
+    public bool CanCheck => ShowCheckNow && !IsChecking;
 
     public bool CanChangeChannel => !IsChecking && !IsDownloading;
 

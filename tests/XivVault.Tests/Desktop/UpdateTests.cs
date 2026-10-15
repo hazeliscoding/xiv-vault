@@ -22,6 +22,7 @@ public class UpdatesViewModelTests
         Assert.Equal(0, host.Updater.Checks);
         Assert.Equal(UpdateState.Portable, updates.State);
         Assert.False(updates.CheckNowCommand.CanExecute(null));
+        Assert.False(updates.ShowCheckNow);
         Assert.Equal(["https://github.com/hazeliscoding/xiv-vault/releases"], host.Shell.Opened);
     }
 
@@ -69,6 +70,28 @@ public class UpdatesViewModelTests
         Assert.Equal(Tone.Accent, updates.BadgeTone);
         Assert.Empty(host.Updater.Downloaded);
         Assert.Null(host.Updater.RestartedInto);
+    }
+
+    [Fact]
+    public async Task Check_Now_stays_shown_but_disabled_while_it_checks()
+    {
+        using var host = new DesktopTestHost();
+        host.Updater.Latest = "0.2.0";
+        var updates = host.Get<UpdatesViewModel>();
+        var whileChecking = new List<(bool Shown, bool Enabled)>();
+        updates.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(UpdatesViewModel.State) && updates.IsChecking)
+            {
+                whileChecking.Add((updates.ShowCheckNow, updates.CheckNowCommand.CanExecute(null)));
+            }
+        };
+
+        await updates.CheckOnStartupAsync();
+
+        Assert.Equal([(true, false)], whileChecking);
+        Assert.False(updates.ShowCheckNow);
+        Assert.True(updates.HasUpdate);
     }
 
     [Fact]

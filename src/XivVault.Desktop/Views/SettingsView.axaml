@@ -133,7 +133,7 @@
                 <c:XvButton Classes="secondary sm" Icon="ExternalLink" Content="Open Releases" Command="{Binding Updates.OpenReleasesCommand}"
                             IsVisible="{Binding !Updates.IsInstalled}" />
                 <c:XvButton Classes="secondary sm" Icon="RefreshCw" Content="Check Now" Command="{Binding Updates.CheckNowCommand}"
-                            IsLoading="{Binding Updates.IsChecking}" IsVisible="{Binding Updates.CanCheck}" />
+                            IsLoading="{Binding Updates.IsChecking}" IsVisible="{Binding Updates.ShowCheckNow}" />
                 <c:XvButton Classes="primary sm" Icon="RefreshCw" Content="Update and Restart" Command="{Binding Updates.UpdateAndRestartCommand}"
                             IsLoading="{Binding Updates.IsDownloading}"
                             IsVisible="{Binding Updates.HasUpdate}" />
