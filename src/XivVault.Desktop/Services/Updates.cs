@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Velopack;
+using Velopack.Locators;
 using Velopack.Sources;
 using XivVault.Core;
 using XivVault.Core.Configuration;
@@ -47,7 +48,7 @@ public sealed class VelopackUpdater : IAppUpdater
         try
         {
             _source = Environment.GetEnvironmentVariable(SourceVariable);
-            var manager = CreateManager(false);
+            var manager = CreateManager(_source, false);
             _manager = manager.IsInstalled ? manager : null;
         }
         catch (Exception ex)
@@ -68,21 +69,21 @@ public sealed class VelopackUpdater : IAppUpdater
         && File.Exists(Path.Combine(folder, "sq.version"))
         && File.Exists(Path.Combine(folder, "..", "Update.exe"));
 
-    private UpdateManager CreateManager(bool getBetaVersions)
+    internal static UpdateManager CreateManager(string? source, bool getBetaVersions, IFileDownloader? downloader = null, IVelopackLocator? locator = null)
     {
-        IUpdateSource source = string.IsNullOrWhiteSpace(_source)
-            ? new GithubSource(XivVaultInfo.RepositoryUrl, accessToken: null, prerelease: getBetaVersions)
-            : Uri.TryCreate(_source, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https"
-                ? new SimpleWebSource(_source)
-                : new SimpleFileSource(new DirectoryInfo(_source));
-        return new UpdateManager(new ChannelUpdateSource(source, getBetaVersions), new UpdateOptions { AllowVersionDowngrade = false });
+        IUpdateSource feed = string.IsNullOrWhiteSpace(source)
+            ? new GithubSource(XivVaultInfo.RepositoryUrl, accessToken: null, prerelease: getBetaVersions, downloader)
+            : Uri.TryCreate(source, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https"
+                ? new SimpleWebSource(source, downloader)
+                : new SimpleFileSource(new DirectoryInfo(source));
+        return new UpdateManager(new ChannelUpdateSource(feed, getBetaVersions), new UpdateOptions { AllowVersionDowngrade = false }, locator);
     }
 
     public async Task<AvailableUpdate?> CheckAsync(bool getBetaVersions, CancellationToken cancellationToken = default)
     {
         _ = Manager;
         var revision = Interlocked.Increment(ref _checkRevision);
-        var manager = CreateManager(getBetaVersions);
+        var manager = CreateManager(_source, getBetaVersions);
         var latest = await manager.CheckForUpdatesAsync().WaitAsync(CheckTimeout, cancellationToken).ConfigureAwait(false);
         if (revision != Volatile.Read(ref _checkRevision))
         {
