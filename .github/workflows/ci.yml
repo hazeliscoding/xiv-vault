@@ -40,3 +40,11 @@ jobs:
       - name: Smoke test
         shell: pwsh
         run: ./scripts/smoke-test.ps1 -Cli src/XivVault.Cli/bin/Release/net10.0/xiv-vault.dll
+
+      # Plugin installs and the beta labels follow the build's version, so test the other edition too. Last, because it rebuilds.
+      - name: Test the other edition
+        shell: pwsh
+        run: |
+          $version = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.Version | Select-Object -First 1
+          $other = if ($version.Contains('-')) { $version -replace '-.*$' } else { "$version-beta.0" }
+          dotnet test --solution XivVault.sln --configuration Release -p:Version=$other
