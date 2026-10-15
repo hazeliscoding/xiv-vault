@@ -84,7 +84,7 @@ public class GameSettingsCliTests
         Assert.Equal(Changed, game.Read("FFXIV.cfg"));
         Assert.Equal(Changed, launcher.Read("dalamudConfig.json"));
         Assert.Equal(Changed, launcher.ReadPluginConfig("Artisan"));
-        Assert.Contains("System settings — not chosen", output);
+        Assert.Contains("System settings · not chosen", output);
     }
 
     [Fact]

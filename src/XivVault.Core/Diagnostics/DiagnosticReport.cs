@@ -74,7 +74,7 @@ public sealed record DiagnosticReport(DateTime GeneratedAtUtc, string XivVaultVe
                 text.Append(CultureInfo.InvariantCulture, $"  {Marker(check.Status)} {check.Label}");
                 if (check.Detail.Length > 0)
                 {
-                    text.Append(" — ").Append(check.Detail);
+                    text.Append(": ").Append(check.Detail);
                 }
 
                 text.AppendLine();

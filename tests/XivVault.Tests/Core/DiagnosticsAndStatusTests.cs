@@ -124,6 +124,21 @@ public class DiagnosticsAndStatusTests
     }
 
     [Fact]
+    public void Report_text_gives_each_check_s_detail_after_a_colon()
+    {
+        var report = new DiagnosticReport(
+            new DateTime(2026, 10, 15, 12, 0, 0, DateTimeKind.Utc),
+            "1.1.0",
+            "Windows 11",
+            [new DiagnosticGroup(DiagnosticArea.XivLauncher, "XIVLauncher", [new("Installation found", DiagnosticStatus.Healthy, @"%AppData%\XIVLauncher"), new("Layout", DiagnosticStatus.Warning, "")])]);
+
+        var lines = report.ToText().Split(Environment.NewLine);
+
+        Assert.Contains(@"  [ok]   Installation found: %AppData%\XIVLauncher", lines);
+        Assert.Contains("  [warn] Layout", lines);
+    }
+
+    [Fact]
     public async Task Error_messages_that_quote_paths_are_redacted_in_the_report()
     {
         using var host = new TestHost();

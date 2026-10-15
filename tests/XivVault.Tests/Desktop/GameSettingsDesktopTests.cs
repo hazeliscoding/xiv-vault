@@ -87,8 +87,8 @@ public class GameSettingsDesktopTests
 
         Assert.False(restore.HasCharacterSettings);
         Assert.False(restore.HasSystemSettings);
-        Assert.Equal("Character settings — not in this backup", restore.CharacterSettingsLabel);
-        Assert.Equal("System settings — not in this backup", restore.SystemSettingsLabel);
+        Assert.Equal("Character settings · not in this backup", restore.CharacterSettingsLabel);
+        Assert.Equal("System settings · not in this backup", restore.SystemSettingsLabel);
         Assert.True(restore.Selection.IsEverything);
     }
 

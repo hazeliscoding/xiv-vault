@@ -133,7 +133,7 @@ internal sealed class RestoreCommand(
         {
             Item(chosenPlugins.Count > 0, chosenPlugins.Count > 0
                 ? $"{chosenPlugins.Count} of {Formatting.Count(contents.PluginConfigCount, "plugin configuration")}: {Formatting.JoinWords(chosenPlugins)}"
-                : "Plugin configurations — not chosen");
+                : "Plugin configurations · not chosen");
         }
 
         if (selection.DalamudSettings)
@@ -143,31 +143,31 @@ internal sealed class RestoreCommand(
             Item(contents.DalamudConfig, contents.CustomRepositoryCount is { } repos and > 0
                 ? $"Custom repository settings · {Formatting.Count(repos, "repo")}"
                 : "Custom repository settings");
-            Item(contents.DalamudUi, contents.DalamudUi ? "UI layout" : "UI layout — not included");
+            Item(contents.DalamudUi, contents.DalamudUi ? "UI layout" : "UI layout · not included");
         }
         else
         {
-            Item(false, "Dalamud settings, plugin collection database and UI layout — not chosen");
+            Item(false, "Dalamud settings, plugin collection database and UI layout · not chosen");
         }
 
         if (!selection.CharacterSettings)
         {
-            Item(false, "Character settings — not chosen");
+            Item(false, "Character settings · not chosen");
         }
         else
         {
             Item(contents.CharacterSettings, contents.CharacterSettings
                 ? $"Character settings · {Formatting.Count(contents.CharacterCount, "character")}"
-                : "Character settings — not in this backup");
+                : "Character settings · not in this backup");
         }
 
         if (!selection.SystemSettings)
         {
-            Item(false, "System settings — not chosen");
+            Item(false, "System settings · not chosen");
         }
         else
         {
-            Item(contents.SystemSettings, contents.SystemSettings ? "System settings · FFXIV.cfg" : "System settings — not in this backup");
+            Item(contents.SystemSettings, contents.SystemSettings ? "System settings · FFXIV.cfg" : "System settings · not in this backup");
         }
 
         if (settings.InstallPlugins && installs is null)

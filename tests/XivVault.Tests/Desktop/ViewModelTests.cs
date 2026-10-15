@@ -235,7 +235,7 @@ public class RestoreViewModelTests
         await restore.ContinueCommand.ExecuteAsync(null);
         Assert.True(restore.IsStep2);
         Assert.Equal("5 plugin configurations", restore.PluginsLabel);
-        Assert.Contains(restore.DalamudDetails, item => item is { Included: false, Label: "UI layout — not included" });
+        Assert.Contains(restore.DalamudDetails, item => item is { Included: false, Label: "UI layout · not included" });
         Assert.NotEmpty(restore.Current);
 
         await restore.ContinueCommand.ExecuteAsync(null);

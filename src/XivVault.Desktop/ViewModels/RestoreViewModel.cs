@@ -251,9 +251,9 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     public string CharacterSettingsLabel => Preview?.Contents is { CharacterSettings: true } contents
         ? $"Character settings · {Formatting.Count(contents.CharacterCount, "character")}"
-        : "Character settings — not in this backup";
+        : "Character settings · not in this backup";
 
-    public string SystemSettingsLabel => HasSystemSettings ? "System settings · FFXIV.cfg" : "System settings — not in this backup";
+    public string SystemSettingsLabel => HasSystemSettings ? "System settings · FFXIV.cfg" : "System settings · not in this backup";
 
     public int ChosenPluginCount => PluginChoices.Count(choice => choice.IsChosen);
 
@@ -949,7 +949,7 @@ public sealed partial class RestoreViewModel : PageViewModel
         DalamudDetails.Add(new ContentItem(chosen && contents.DalamudConfig, contents.CustomRepositoryCount is { } repos and > 0
             ? $"Custom repository settings · {Formatting.Count(repos, "repo")}"
             : "Custom repository settings"));
-        DalamudDetails.Add(new ContentItem(chosen && contents.DalamudUi, contents.DalamudUi ? "UI layout" : "UI layout — not included"));
+        DalamudDetails.Add(new ContentItem(chosen && contents.DalamudUi, contents.DalamudUi ? "UI layout" : "UI layout · not included"));
     }
 
     private void ChoicesChanged()
