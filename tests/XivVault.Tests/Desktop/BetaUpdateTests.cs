@@ -1,6 +1,8 @@
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 using Velopack.Locators;
 using Velopack.Sources;
+using XivVault.Core;
 using XivVault.Core.Configuration;
 using XivVault.Desktop.Services;
 using XivVault.Desktop.ViewModels;
@@ -63,6 +65,23 @@ public class BetaUpdateTests
 
         Assert.Equal(expected, update?.TargetFullRelease.Version.ToString());
         Assert.Equal(beta, github.Requests.Contains(BetaFeed));
+    }
+
+    [Theory]
+    [InlineData("1.1.0", "XIV Vault 1.1.0", false)]
+    [InlineData("1.1.0-beta.1", "Beta\n1.1.0-beta.1", true)]
+    public void Only_a_beta_is_labelled_as_one_in_the_sidebar_and_Settings(string version, string sidebar, bool beta)
+    {
+        using var host = new DesktopTestHost();
+        var services = host.Get<IServiceProvider>();
+        var edition = new XivVaultEdition(version);
+        var updates = ActivatorUtilities.CreateInstance<UpdatesViewModel>(services, edition);
+        var main = ActivatorUtilities.CreateInstance<MainWindowViewModel>(services, edition, updates);
+
+        Assert.Equal(sidebar, main.VersionLabel);
+        Assert.Equal(beta, main.ProtectionText.Contains("This beta", StringComparison.Ordinal));
+        Assert.Equal("XIV Vault " + version, updates.VersionText);
+        Assert.Equal(beta, updates.IsBeta);
     }
 
     [Fact]

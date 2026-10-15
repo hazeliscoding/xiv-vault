@@ -134,12 +134,10 @@ public sealed record InstallPlan(IReadOnlyList<PlannedInstall> Installs, IReadOn
 
 /// <summary>
 /// Whether a restore can install plugins. Only beta versions can (the owner's call): a stable version
-/// shows nothing about installs and never downloads a plugin. Tests and front ends can register their own.
+/// shows nothing about installs and never downloads a plugin. It follows the registered
+/// <see cref="XivVaultEdition"/> unless tests or a front end register their own.
 /// </summary>
-public sealed record PluginInstalls(bool Available)
-{
-    public static PluginInstalls ForThisVersion { get; } = new(XivVaultInfo.IsBeta);
-}
+public sealed record PluginInstalls(bool Available);
 
 /// <summary>
 /// A host of custom repositories the backup's settings turn on, and how many. The host is shown instead of each URL,

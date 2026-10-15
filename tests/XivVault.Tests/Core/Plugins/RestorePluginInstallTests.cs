@@ -206,13 +206,28 @@ public class RestorePluginInstallTests
     [Fact]
     public void Installs_follow_this_version_when_a_front_end_registers_nothing()
     {
+        // Tests can build as a beta or as a stable version, so the expectation follows the version string.
+        Assert.Equal(XivVaultInfo.IsPrerelease(XivVaultInfo.Version), InstallsFor(edition: null).Available);
+    }
+
+    [Theory]
+    [InlineData("1.1.0", false)]
+    [InlineData("1.1.0-beta.1", true)]
+    public void Installs_follow_the_edition_a_front_end_registers(string version, bool available) =>
+        Assert.Equal(available, InstallsFor(new XivVaultEdition(version)).Available);
+
+    private static PluginInstalls InstallsFor(XivVaultEdition? edition)
+    {
         var services = new ServiceCollection();
         services.AddSingleton<IWebDownloader>(new FakeWebDownloader());
+        if (edition is not null)
+        {
+            services.AddSingleton(edition);
+        }
+
         services.AddXivVaultCore();
         using var provider = services.BuildServiceProvider();
-
-        // Checked against the version string rather than IsBeta: tests build as a stable version, where installs must be off.
-        Assert.Equal(XivVaultInfo.IsPrerelease(XivVaultInfo.Version), provider.GetRequiredService<PluginInstalls>().Available);
+        return provider.GetRequiredService<PluginInstalls>();
     }
 
     [Fact]

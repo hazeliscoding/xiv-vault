@@ -29,7 +29,8 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IFileAvailability, WindowsFileAvailability>();
         services.TryAddSingleton<INotifier, WindowsNotifier>();
         services.TryAddSingleton<IWebDownloader, HttpWebDownloader>();
-        services.TryAddSingleton(PluginInstalls.ForThisVersion);
+        services.TryAddSingleton(XivVaultEdition.ThisBuild);
+        services.TryAddSingleton(provider => new PluginInstalls(provider.GetRequiredService<XivVaultEdition>().IsBeta));
 
         services.TryAddSingleton<IConfigStore, ConfigStore>();
         services.TryAddSingleton<IStateStore, StateStore>();

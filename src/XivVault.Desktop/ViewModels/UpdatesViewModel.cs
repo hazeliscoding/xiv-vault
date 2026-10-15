@@ -36,6 +36,7 @@ public sealed partial class UpdatesViewModel : ObservableObject
     private readonly IShellService _shell;
     private readonly IUiThread _uiThread;
     private readonly ILogger<UpdatesViewModel> _logger;
+    private readonly XivVaultEdition _edition;
     private int _channelRevision;
 
     public UpdatesViewModel(
@@ -46,7 +47,8 @@ public sealed partial class UpdatesViewModel : ObservableObject
         IConfigStore configStore,
         IShellService shell,
         IUiThread uiThread,
-        ILogger<UpdatesViewModel> logger)
+        ILogger<UpdatesViewModel> logger,
+        XivVaultEdition edition)
     {
         _updater = updater;
         _instances = instances;
@@ -56,14 +58,15 @@ public sealed partial class UpdatesViewModel : ObservableObject
         _shell = shell;
         _uiThread = uiThread;
         _logger = logger;
+        _edition = edition;
         State = updater.IsInstalled ? UpdateState.NotChecked : UpdateState.Portable;
     }
 
     public bool IsInstalled => _updater.IsInstalled;
 
-    public string VersionText { get; } = "XIV Vault " + XivVaultInfo.Version;
+    public string VersionText => "XIV Vault " + _edition.Version;
 
-    public bool IsBeta => XivVaultInfo.IsBeta;
+    public bool IsBeta => _edition.IsBeta;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Detail), nameof(BadgeLabel), nameof(BadgeTone), nameof(HasUpdate), nameof(ShowCheckNow), nameof(CanCheck), nameof(IsChecking), nameof(IsDownloading), nameof(CanChangeChannel))]

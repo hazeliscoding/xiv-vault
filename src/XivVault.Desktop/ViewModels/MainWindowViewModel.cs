@@ -31,6 +31,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly IShellService _shell;
     private readonly PathDisplay _paths;
     private readonly IDialogService _dialogService;
+    private readonly XivVaultEdition _edition;
 
     public MainWindowViewModel(
         IEnumerable<PageViewModel> pages,
@@ -40,13 +41,15 @@ public sealed partial class MainWindowViewModel : ObservableObject
         UpdatesViewModel updates,
         IShellService shell,
         PathDisplay paths,
-        IDialogService dialogService)
+        IDialogService dialogService,
+        XivVaultEdition edition)
     {
         _pages = pages.ToDictionary(page => page.Page);
         _session = session;
         _shell = shell;
         _paths = paths;
         _dialogService = dialogService;
+        _edition = edition;
         Dialogs = dialogs;
         Updates = updates;
         NavItems =
@@ -79,9 +82,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     public partial string ConnectionLabel { get; private set; } = "Checking backup folder";
 
-    public string VersionLabel { get; } = (XivVaultInfo.IsBeta ? "Beta\n" : "XIV Vault ") + XivVaultInfo.Version;
+    public string VersionLabel => (_edition.IsBeta ? "Beta\n" : "XIV Vault ") + _edition.Version;
 
-    public string ProtectionText => XivVaultInfo.IsBeta
+    public string ProtectionText => _edition.IsBeta
         ? "XIV Vault protects portable Dalamud configuration and the game's own settings. This beta can download missing plugins during a restore; custom repositories need your choice."
         : "XIV Vault protects portable Dalamud configuration and the game's own settings. Plugins themselves aren't copied: on a new PC, install them again in Dalamud's plugin installer.";
 
