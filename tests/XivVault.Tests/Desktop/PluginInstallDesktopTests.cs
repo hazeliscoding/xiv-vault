@@ -194,6 +194,31 @@ public class PluginInstallDesktopTests
     }
 
     [Fact]
+    public async Task The_current_row_counts_the_plugins_as_they_download_and_install()
+    {
+        using var host = new DesktopTestHost(pluginInstalls: true);
+        var restore = await ReviewAsync(host);
+        restore.RepositoryChoices[0].IsChosen = true;
+        var current = new List<string>();
+        restore.Stages.CollectionChanged += (_, args) =>
+        {
+            if (args.NewItems?.Cast<StageItem>().SingleOrDefault(stage => stage.State == StepState.Current) is { } stage && !current.Contains(stage.Label))
+            {
+                current.Add(stage.Label);
+            }
+        };
+
+        await restore.ContinueCommand.ExecuteAsync(null);
+        await restore.RestoreNowCommand.ExecuteAsync(null);
+
+        Assert.Equal(
+            ["Downloading plugin lists", "Downloading plugin 1 of 2", "Downloading plugin 2 of 2"],
+            current.Where(label => label.StartsWith("Downloading", StringComparison.Ordinal)));
+        Assert.Equal(["Installing plugin 1 of 2", "Installing plugin 2 of 2"], current.Where(label => label.StartsWith("Installing", StringComparison.Ordinal)));
+        Assert.Equal(RowsWithDownloads, restore.Stages.Select(stage => stage.Label));
+    }
+
+    [Fact]
     public async Task Closing_during_plugin_downloads_asks_first_and_the_safe_choice_keeps_it_open()
     {
         using var host = new DesktopTestHost(pluginInstalls: true);

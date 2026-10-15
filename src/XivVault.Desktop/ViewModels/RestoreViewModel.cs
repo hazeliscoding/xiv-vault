@@ -643,7 +643,7 @@ public sealed partial class RestoreViewModel : PageViewModel
             {
                 // Dalamud may have finished downloading since the review, and then Core looks for plugins after all.
                 lookingForPlugins |= value.Stage == RestoreStage.DownloadingPlugins;
-                SetStage(value.Stage, plugins, dalamud, game, lookingForPlugins);
+                SetStage(value.Stage, plugins, dalamud, game, lookingForPlugins, value.Message);
             });
             Result = await _restores.RestoreAsync(new RestoreRequest(row.FilePath)
             {
@@ -758,7 +758,7 @@ public sealed partial class RestoreViewModel : PageViewModel
         RestoreNowCommand.NotifyCanExecuteChanged();
     }
 
-    private void SetStage(RestoreStage stage, int pluginCount, bool dalamudSettings, string gameSettings, bool lookingForPlugins)
+    private void SetStage(RestoreStage stage, int pluginCount, bool dalamudSettings, string gameSettings, bool lookingForPlugins, string? message = null)
     {
         List<(RestoreStage Stage, string Label)> stages =
         [
@@ -786,7 +786,9 @@ public sealed partial class RestoreViewModel : PageViewModel
         Stages.Clear();
         for (var i = 0; i < stages.Count; i++)
         {
-            Stages.Add(new StageItem(i < current ? StepState.Done : i == current ? StepState.Current : StepState.Todo, stages[i].Label));
+            // Core says which plugin it is on, as in "Downloading plugin 3 of 12", so a long download doesn't look stuck.
+            var label = i == current && message is not null && stages[i].Stage is RestoreStage.DownloadingPlugins or RestoreStage.InstallingPlugins ? message : stages[i].Label;
+            Stages.Add(new StageItem(i < current ? StepState.Done : i == current ? StepState.Current : StepState.Todo, label));
         }
     }
 
