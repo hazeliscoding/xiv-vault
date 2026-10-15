@@ -101,6 +101,27 @@ public class RestoreHardeningTests
     }
 
     [Fact]
+    public async Task A_restore_removes_the_unpacked_settings_an_interrupted_restore_left_behind()
+    {
+        using var host = new TestHost();
+        host.CreateLauncher();
+        var backup = await host.BackUpAsync();
+
+        // Closing the app during plugin downloads ends the restore without its cleanup.
+        var work = Path.Combine(host.Environment.TempPath, "XIV Vault");
+        var unpacked = Path.Combine(work, "restore-0123456789ab", "staged", "dalamud", "dalamudConfig.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(unpacked)!);
+        File.WriteAllText(unpacked, """{ "token": "secret" }""");
+        File.SetAttributes(unpacked, FileAttributes.ReadOnly);
+        var other = Path.Combine(work, "notes.txt");
+        File.WriteAllText(other, "not a restore's");
+
+        await host.Restores.RestoreAsync(new RestoreRequest(backup.Record.FilePath), cancellationToken: Ct);
+
+        Assert.Equal([other], Directory.GetFileSystemEntries(work));
+    }
+
+    [Fact]
     public async Task A_failure_after_the_temp_copy_is_written_still_rolls_everything_back()
     {
         var writer = new FailAfterTempCopy(failOnCall: 4);

@@ -326,6 +326,8 @@ public sealed class RestoreService : IRestoreService
     private RestoreResult Restore(RestoreRequest request, IProgress<RestoreProgress>? progress, CancellationToken cancellationToken)
     {
         using var held = _operationLock.Acquire();
+        var workFolders = Path.Combine(_environment.TempPath, "XIV Vault");
+        RemoveLeftoverWorkFolders(workFolders);
         var stopwatch = Stopwatch.StartNew();
         var config = _configStore.Load();
 
@@ -377,7 +379,7 @@ public sealed class RestoreService : IRestoreService
         // anything changes: settings saved meanwhile are in it, and a link made meanwhile is still refused.
         var installs = request.InstallPlugins && selection.DalamudSettings && CanInstallPlugins(manifest, target);
         var snapshot = installs ? null : CreateSnapshot(10);
-        var workRoot = Path.Combine(_environment.TempPath, "XIV Vault", "restore-" + Guid.NewGuid().ToString("N")[..12]);
+        var workRoot = Path.Combine(workFolders, "restore-" + Guid.NewGuid().ToString("N")[..12]);
         var staging = Path.Combine(workRoot, "staged");
         var rollback = Path.Combine(workRoot, "replaced");
         try
@@ -793,6 +795,26 @@ public sealed class RestoreService : IRestoreService
         {
             problem = ex is UnauthorizedAccessException ? "not writable" : "not available";
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Removes the work folders of restores that ended without cleaning up, such as one whose app was closed during plugin
+    /// downloads: they hold unpacked settings, which can include plugins' tokens. The operation lock is held, so no other
+    /// restore is using one.
+    /// </summary>
+    private void RemoveLeftoverWorkFolders(string workFolders)
+    {
+        try
+        {
+            foreach (var leftover in Directory.EnumerateDirectories(workFolders, "restore-*"))
+            {
+                TryDeleteDirectory(leftover);
+            }
+        }
+        catch (Exception ex) when (IsFileSystemError(ex))
+        {
+            // Missing until the first restore, and never a reason to stop this one.
         }
     }
 
