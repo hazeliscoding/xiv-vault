@@ -161,7 +161,7 @@ Researched from XIVLauncher.Core's, Dalamud's and Wine's source, the XIVLauncher
 - **Betas are opt-in GitHub prereleases** on the same update feed, tagged `vX.Y.Z-beta.N`. A **Get beta versions** switch in Settings, off by default, makes the update check offer them too. Copies with the switch off, including every version released so far, never see a beta. Turning it off never downgrades: the beta stays until a newer stable release arrives.
 - **Stable stays stable:** a beta is never the latest release, so the website's download button, winget and installed copies without the switch keep to stable releases. Portable copies and the CLI have no updater and don't change.
 - **Betas keep the same promise:** anything a beta writes, every later version restores. So a beta never ships an unfinished backup format; a format change goes out only once it is final.
-- **The switch ships first,** in a stable 1.1, because people can only opt in from a version that has it. Linux then ships as 1.2 betas until the check on the owner's Deck passes.
+- **The switch ships first,** in a stable 1.1, because people can only opt in from a version that has it. Linux then ships as 1.2 betas until the check on the owner's Deck passes. (Replaced on 2026-10-15: the first beta comes before a stable 1.1. See **The first beta** below.)
 
 ## Decisions (2026-10-12, installing plugins)
 
@@ -192,6 +192,11 @@ Settled after reading Dalamud 15.0.3.6's source and checking the owner's install
 - **Reading beyond the allowlist:** to tell what is installed and which Dalamud will run, XIV Vault reads folder names and manifests under `installedPlugins\`, the version of `Dalamud.dll` under `addon\Hooks\`, and Dalamud's ban list in `dalamudAssets\`. This amends 2026-10-04's "Nothing else is ever read"; backups still hold only the allowlist.
 - **Logs** hold counts and fixed reasons. Plugin names appear on screen, never in logs or the diagnostic report, and repository URLs and plugin IDs never appear at all.
 - **On the command line,** `restore --install-plugins` and `--custom-repository <HOST>` stay out of `--help` in every version while installs are in beta, and stable versions refuse both with exit code 2. Spectre.Console.Cli's hidden `cli` developer command still names them, which is accepted. A host, matched without case, ticks every repository the backup turns on there, and the review shows how many. Plugins that don't install leave the exit code at 0, since the settings are restored.
+
+## Decisions (2026-10-15, the first beta)
+
+- **The first beta comes before a stable 1.1** (the owner's call: plugin installs aren't ready for a stable release). Testers install `1.1.0-beta.1` from its GitHub prerelease page, and later betas reach copies with **Get beta versions** on. Stable 1.1.0, with the switch and plugin installs off, closes M12 as its **Done when** says.
+- **The tester's clean-PC run comes next,** on that first beta. It needs the beta channel and the app's install screens; the weekly CI job can follow.
 
 ## M0: Bootstrap
 
