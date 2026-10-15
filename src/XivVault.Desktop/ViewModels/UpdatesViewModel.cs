@@ -161,12 +161,24 @@ public sealed partial class UpdatesViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanCheck))]
     private async Task CheckNowAsync()
     {
+        bool getBetaVersions;
+        try
+        {
+            getBetaVersions = _configStore.Load().GetBetaVersions;
+        }
+        catch (Exception ex) when (ex is XivVaultException or IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(ex, "Skipped the update check because the settings could not be read");
+            Notice = "XIV Vault could not read its settings, so it did not check for updates.";
+            return;
+        }
+
         State = UpdateState.Checking;
         Notice = null;
         var revision = _channelRevision;
         try
         {
-            var update = await _updater.CheckAsync(_configStore.Load().GetBetaVersions);
+            var update = await _updater.CheckAsync(getBetaVersions);
             if (revision != _channelRevision)
             {
                 return;

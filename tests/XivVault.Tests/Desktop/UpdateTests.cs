@@ -56,6 +56,22 @@ public class UpdatesViewModelTests
     }
 
     [Fact]
+    public async Task Check_Now_says_when_the_settings_are_unreadable_instead_of_blaming_GitHub()
+    {
+        using var host = new DesktopTestHost();
+        var store = host.Get<IConfigStore>();
+        Directory.CreateDirectory(host.Environment.DataDirectory);
+        File.WriteAllText(store.ConfigPath, "{ not json");
+        var updates = host.Get<UpdatesViewModel>();
+
+        await updates.CheckNowCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, host.Updater.Checks);
+        Assert.Equal(UpdateState.NotChecked, updates.State);
+        Assert.Contains("could not read its settings", updates.Notice);
+    }
+
+    [Fact]
     public async Task The_startup_check_finds_a_new_version_without_installing_it()
     {
         using var host = new DesktopTestHost();
