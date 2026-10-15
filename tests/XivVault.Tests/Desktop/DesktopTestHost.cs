@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using XivVault.Core.Backup;
 using XivVault.Core.Platform;
+using XivVault.Core.Plugins;
 using XivVault.Core.Scheduling;
 using XivVault.Desktop;
 using XivVault.Desktop.Services;
@@ -14,7 +15,7 @@ public sealed class DesktopTestHost : IDisposable
 {
     private readonly ServiceProvider _provider;
 
-    public DesktopTestHost()
+    public DesktopTestHost(bool pluginInstalls = false)
     {
         Environment = new TestEnvironment();
         var services = new ServiceCollection();
@@ -24,8 +25,9 @@ public sealed class DesktopTestHost : IDisposable
         services.AddSingleton<TimeProvider>(Clock);
         services.AddSingleton<IFileAvailability>(Files);
         services.AddSingleton<INotifier>(Notifications);
-        services.AddSingleton<IWebDownloader>(new FakeWebDownloader());
+        services.AddSingleton<IWebDownloader>(Downloads);
         services.AddXivVaultDesktop();
+        services.AddSingleton(new PluginInstalls(pluginInstalls));
 
         // Registered after the app's own, so these win.
         services.AddSingleton<IUiThread, InlineUiThread>();
@@ -63,6 +65,8 @@ public sealed class DesktopTestHost : IDisposable
     public FakePicker Picker { get; } = new();
 
     public FakeUpdater Updater { get; } = new();
+
+    public FakeWebDownloader Downloads { get; } = new();
 
     public FakeInstances Instances { get; } = new();
 
@@ -233,13 +237,16 @@ public sealed class FakeUpdater : IAppUpdater
 
     public int Checks { get; private set; }
 
+    public bool LastBetaPreference { get; private set; }
+
     public List<string> Downloaded { get; } = [];
 
     public string? RestartedInto { get; private set; }
 
-    public Task<AvailableUpdate?> CheckAsync(CancellationToken cancellationToken = default)
+    public Task<AvailableUpdate?> CheckAsync(bool getBetaVersions, CancellationToken cancellationToken = default)
     {
         Checks++;
+        LastBetaPreference = getBetaVersions;
         if (CheckError is { } error)
         {
             return Task.FromException<AvailableUpdate?>(error);

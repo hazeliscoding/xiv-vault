@@ -87,7 +87,7 @@ public class CliContractTests
         },
         {
             ["config", "show", "--json"],
-            ["backupDestination", "retentionCount", "includeDalamudUi", "includeGameSettings", "compression", "xivLauncherPathOverride", "schedule", "schedule.enabled", "schedule.frequency", "schedule.days", "schedule.time", "checkForUpdates"]
+            ["backupDestination", "retentionCount", "includeDalamudUi", "includeGameSettings", "compression", "xivLauncherPathOverride", "schedule", "schedule.enabled", "schedule.frequency", "schedule.days", "schedule.time", "checkForUpdates", "getBetaVersions"]
         },
     };
 

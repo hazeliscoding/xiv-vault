@@ -36,6 +36,7 @@ public sealed partial class UpdatesViewModel : ObservableObject
     private readonly IShellService _shell;
     private readonly IUiThread _uiThread;
     private readonly ILogger<UpdatesViewModel> _logger;
+    private int _channelRevision;
 
     public UpdatesViewModel(
         IAppUpdater updater,
@@ -62,8 +63,10 @@ public sealed partial class UpdatesViewModel : ObservableObject
 
     public string VersionText { get; } = "XIV Vault " + XivVaultInfo.Version;
 
+    public bool IsBeta => XivVaultInfo.IsBeta;
+
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Detail), nameof(BadgeLabel), nameof(BadgeTone), nameof(HasUpdate), nameof(CanCheck), nameof(IsChecking), nameof(IsDownloading))]
+    [NotifyPropertyChangedFor(nameof(Detail), nameof(BadgeLabel), nameof(BadgeTone), nameof(HasUpdate), nameof(CanCheck), nameof(IsChecking), nameof(IsDownloading), nameof(CanChangeChannel))]
     [NotifyCanExecuteChangedFor(nameof(CheckNowCommand), nameof(UpdateAndRestartCommand))]
     public partial UpdateState State { get; private set; }
 
@@ -81,7 +84,17 @@ public sealed partial class UpdatesViewModel : ObservableObject
 
     public bool HasUpdate => State is UpdateState.Available or UpdateState.Downloading;
 
-    public bool CanCheck => IsInstalled && !HasUpdate;
+    public bool CanCheck => IsInstalled && !HasUpdate && !IsChecking;
+
+    public bool CanChangeChannel => !IsChecking && !IsDownloading;
+
+    public void ChannelChanged()
+    {
+        _channelRevision++;
+        Update = null;
+        State = IsInstalled ? UpdateState.NotChecked : UpdateState.Portable;
+        Notice = null;
+    }
 
     public bool IsChecking => State == UpdateState.Checking;
 
@@ -147,16 +160,26 @@ public sealed partial class UpdatesViewModel : ObservableObject
     {
         State = UpdateState.Checking;
         Notice = null;
+        var revision = _channelRevision;
         try
         {
-            Update = await _updater.CheckAsync();
+            var update = await _updater.CheckAsync(_configStore.Load().GetBetaVersions);
+            if (revision != _channelRevision)
+            {
+                return;
+            }
+
+            Update = update;
             State = Update is null ? UpdateState.UpToDate : UpdateState.Available;
         }
         catch (Exception ex)
         {
             // Offline, rate-limited or a missing feed all mean the same thing: no answer this time.
             _logger.LogWarning(ex, "Could not check for updates");
-            State = UpdateState.CheckFailed;
+            if (revision == _channelRevision)
+            {
+                State = UpdateState.CheckFailed;
+            }
         }
     }
 
@@ -166,6 +189,11 @@ public sealed partial class UpdatesViewModel : ObservableObject
     private async Task UpdateAndRestartAsync()
     {
         if (Update is not { } update)
+        {
+            return;
+        }
+
+        if (!StillAllowed(update))
         {
             return;
         }
@@ -193,6 +221,11 @@ public sealed partial class UpdatesViewModel : ObservableObject
         }
 
         // Something may have started while the update downloaded.
+        if (!StillAllowed(update))
+        {
+            return;
+        }
+
         if (WhyNotNow() is { } after)
         {
             State = UpdateState.Available;
@@ -206,6 +239,25 @@ public sealed partial class UpdatesViewModel : ObservableObject
 
     [RelayCommand]
     private void OpenReleases() => _shell.OpenUrl(ReleasesUrl);
+
+    private bool StillAllowed(AvailableUpdate update)
+    {
+        try
+        {
+            if (UpdateChannel.Allows(update.Version, _configStore.Load().GetBetaVersions))
+            {
+                return true;
+            }
+        }
+        catch (Exception ex) when (ex is XivVaultException or IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(ex, "Could not read the update preference");
+        }
+
+        ChannelChanged();
+        Notice = "The update preference changed or could not be read. Check for updates again.";
+        return false;
+    }
 
     /// <summary>
     /// Installing ends every copy of XIV Vault that runs from the install folder. A backup it

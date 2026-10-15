@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Velopack;
 using Velopack.Sources;
 using XivVault.Core;
+using XivVault.Core.Configuration;
 using XivVault.Core.Scheduling;
 
 namespace XivVault.Desktop.Services;
@@ -16,7 +17,7 @@ public interface IAppUpdater
     bool IsInstalled { get; }
 
     /// <summary>Asks the release feed for a newer version. Null means this is the latest.</summary>
-    Task<AvailableUpdate?> CheckAsync(CancellationToken cancellationToken = default);
+    Task<AvailableUpdate?> CheckAsync(bool getBetaVersions, CancellationToken cancellationToken = default);
 
     Task DownloadAsync(AvailableUpdate update, Action<int> progress, CancellationToken cancellationToken = default);
 
@@ -31,8 +32,10 @@ public sealed class VelopackUpdater : IAppUpdater
 
     private static readonly TimeSpan CheckTimeout = TimeSpan.FromSeconds(30);
 
-    private readonly UpdateManager? _manager;
+    private UpdateManager? _manager;
+    private readonly string? _source;
     private UpdateInfo? _latest;
+    private int _checkRevision;
 
     public VelopackUpdater(ILogger<VelopackUpdater> logger)
     {
@@ -43,10 +46,8 @@ public sealed class VelopackUpdater : IAppUpdater
 
         try
         {
-            var source = Environment.GetEnvironmentVariable(SourceVariable);
-            var manager = string.IsNullOrWhiteSpace(source)
-                ? new UpdateManager(new GithubSource(XivVaultInfo.RepositoryUrl, accessToken: null, prerelease: false))
-                : new UpdateManager(source);
+            _source = Environment.GetEnvironmentVariable(SourceVariable);
+            var manager = CreateManager(false);
             _manager = manager.IsInstalled ? manager : null;
         }
         catch (Exception ex)
@@ -67,9 +68,29 @@ public sealed class VelopackUpdater : IAppUpdater
         && File.Exists(Path.Combine(folder, "sq.version"))
         && File.Exists(Path.Combine(folder, "..", "Update.exe"));
 
-    public async Task<AvailableUpdate?> CheckAsync(CancellationToken cancellationToken = default)
+    private UpdateManager CreateManager(bool getBetaVersions)
     {
-        _latest = await Manager.CheckForUpdatesAsync().WaitAsync(CheckTimeout, cancellationToken).ConfigureAwait(false);
+        IUpdateSource source = string.IsNullOrWhiteSpace(_source)
+            ? new GithubSource(XivVaultInfo.RepositoryUrl, accessToken: null, prerelease: getBetaVersions)
+            : Uri.TryCreate(_source, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https"
+                ? new SimpleWebSource(_source)
+                : new SimpleFileSource(new DirectoryInfo(_source));
+        return new UpdateManager(new ChannelUpdateSource(source, getBetaVersions), new UpdateOptions { AllowVersionDowngrade = false });
+    }
+
+    public async Task<AvailableUpdate?> CheckAsync(bool getBetaVersions, CancellationToken cancellationToken = default)
+    {
+        _ = Manager;
+        var revision = Interlocked.Increment(ref _checkRevision);
+        var manager = CreateManager(getBetaVersions);
+        var latest = await manager.CheckForUpdatesAsync().WaitAsync(CheckTimeout, cancellationToken).ConfigureAwait(false);
+        if (revision != Volatile.Read(ref _checkRevision))
+        {
+            return null;
+        }
+
+        _manager = manager;
+        _latest = latest;
         return _latest is null ? null : new AvailableUpdate(_latest.TargetFullRelease.Version.ToString());
     }
 
@@ -84,6 +105,20 @@ public sealed class VelopackUpdater : IAppUpdater
         _latest is { } latest && latest.TargetFullRelease.Version.ToString() == update.Version
             ? latest
             : throw new InvalidOperationException($"Version {update.Version} was not found by the last update check.");
+}
+
+// Filter package versions too: a local rehearsal feed or a later stable feed can contain beta packages.
+internal sealed class ChannelUpdateSource(IUpdateSource inner, bool getBetaVersions) : IUpdateSource
+{
+    public async Task<VelopackAssetFeed> GetReleaseFeed(Velopack.Logging.IVelopackLogger logger, string? appId, string channel, Guid? stagingId = null, VelopackAsset? latestLocalRelease = null)
+    {
+        var feed = await inner.GetReleaseFeed(logger, appId, channel, stagingId, latestLocalRelease).ConfigureAwait(false);
+        feed.Assets = feed.Assets.Where(asset => UpdateChannel.Allows(asset.Version.ToString(), getBetaVersions)).ToArray();
+        return feed;
+    }
+
+    public Task DownloadReleaseEntry(Velopack.Logging.IVelopackLogger logger, VelopackAsset releaseEntry, string localFile, Action<int> progress, CancellationToken cancelToken = default) =>
+        inner.DownloadReleaseEntry(logger, releaseEntry, localFile, progress, cancelToken);
 }
 
 /// <summary>Other running copies of the desktop app, such as a scheduled backup started by Windows.</summary>

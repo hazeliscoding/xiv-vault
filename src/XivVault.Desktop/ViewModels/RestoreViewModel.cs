@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using XivVault.Core;
 using XivVault.Core.Backup;
 using XivVault.Core.Platform;
+using XivVault.Core.Plugins;
 using XivVault.Core.Restore;
 using XivVault.Desktop.Controls;
 using XivVault.Desktop.Services;
@@ -34,6 +35,16 @@ public sealed partial class PluginChoice(string name) : ObservableObject
 }
 
 public sealed record CurrentItem(string Label, string Meta);
+
+public sealed partial class RepositoryChoice(CustomRepository repository) : ObservableObject
+{
+    internal string Url { get; } = repository.Url;
+
+    public string Host { get; } = repository.Host;
+
+    [ObservableProperty]
+    public partial bool IsChosen { get; set; }
+}
 
 public sealed record CheckItem(Tone Tone, string Label, string Detail);
 
@@ -137,6 +148,49 @@ public sealed partial class RestoreViewModel : PageViewModel
     public ObservableCollection<PluginChoice> PluginChoices { get; } = [];
 
     public ObservableCollection<PluginChoice> VisiblePluginChoices { get; } = [];
+
+    public ObservableCollection<RepositoryChoice> RepositoryChoices { get; } = [];
+
+    [ObservableProperty]
+    public partial bool InstallMissingPlugins { get; set; } = true;
+
+    public bool ShowPluginInstalls => Preview?.Plugins is not null;
+
+    public bool CanInstallPlugins => ShowPluginInstalls && DalamudSettingsChosen;
+
+    public bool WillInstallPlugins => CanInstallPlugins && InstallMissingPlugins;
+
+    public bool ShowRepositoryChoices => WillInstallPlugins && RepositoryChoices.Count > 0 && Preview?.PluginsToInstall(Selection).Count > 0;
+
+    public bool ShowDalamudNotReady => WillInstallPlugins && Preview?.Plugins?.DalamudReady == false && Preview.PluginsToInstall(Selection).Count > 0;
+
+    public string MissingPluginsText => Preview is { } preview
+        ? preview.PluginsToInstall(Selection) is { Count: > 0 } missing
+            ? $"{Formatting.Count(missing.Count, "missing plugin")} to look for: {Formatting.JoinWords(missing.Order(StringComparer.OrdinalIgnoreCase))}"
+            : "No missing plugins to look for."
+        : "";
+
+    public bool HasPluginInstallReport => Result?.Plugins is not null;
+
+    public string InstalledPluginsText => Result?.Plugins is { } report
+        ? report.Installed.Count > 0
+            ? $"{Formatting.Count(report.Installed.Count, "plugin")} installed: {Formatting.JoinWords(report.Installed.Order(StringComparer.OrdinalIgnoreCase))}"
+            : "No plugins installed."
+        : "";
+
+    public string AlreadyInstalledText => Result?.Plugins is { AlreadyInstalled: > 0 } report
+        ? $"{Formatting.Count(report.AlreadyInstalled, "plugin")} already installed and left unchanged."
+        : "";
+
+    public IReadOnlyList<string> UninstalledPlugins => Result?.Plugins?.NotInstalled
+        .Where(plugin => plugin.Outcome != PluginInstallOutcome.DalamudNotReady)
+        .OrderBy(plugin => plugin.InternalName, StringComparer.OrdinalIgnoreCase)
+        .Select(plugin => $"{plugin.InternalName}: {PluginOutcomeText.Describe(plugin.Outcome)}")
+        .ToList() ?? [];
+
+    public bool HasUninstalledPlugins => UninstalledPlugins.Count > 0;
+
+    public bool ResultNeedsDalamud => Result?.Plugins?.NotInstalled.Any(plugin => plugin.Outcome == PluginInstallOutcome.DalamudNotReady) == true;
 
     [ObservableProperty]
     public partial string PluginFilter { get; set; } = "";
@@ -247,7 +301,7 @@ public sealed partial class RestoreViewModel : PageViewModel
             var plugins = preview.ChangesUndoneBy(Selection).Plugins;
             return plugins.Count > 0
                 ? $"{Formatting.Count(plugins.Count, "plugin")} configured after this backup ({Formatting.JoinWords(plugins.Take(4))}) will return to {(plugins.Count == 1 ? "its" : "their")} earlier settings. The safety backup keeps today's values recoverable."
-                : "Your Dalamud settings changed after this backup and will return to their earlier values. The safety backup keeps today's values recoverable.";
+                : "Dalamud settings saved since this backup will be replaced, including any settings XIVLauncher created on its first start. The safety backup keeps today's values recoverable.";
         }
     }
 
@@ -368,6 +422,8 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     partial void OnSystemSettingsChosenChanged(bool value) => ChoicesChanged();
 
+    partial void OnInstallMissingPluginsChanged(bool value) => ChoicesChanged();
+
     partial void OnPreviewChanged(RestorePreview? value)
     {
         OnPropertyChanged(nameof(HasDalamudSettings));
@@ -399,6 +455,12 @@ public sealed partial class RestoreViewModel : PageViewModel
         OnPropertyChanged(nameof(ResultGame));
         OnPropertyChanged(nameof(ResultSnapshot));
         OnPropertyChanged(nameof(ResultSnapshotFile));
+        OnPropertyChanged(nameof(HasPluginInstallReport));
+        OnPropertyChanged(nameof(InstalledPluginsText));
+        OnPropertyChanged(nameof(AlreadyInstalledText));
+        OnPropertyChanged(nameof(UninstalledPlugins));
+        OnPropertyChanged(nameof(HasUninstalledPlugins));
+        OnPropertyChanged(nameof(ResultNeedsDalamud));
     }
 
     /// <summary>Opens the wizard on step 1 with this backup chosen, e.g. from a Backups row.</summary>
@@ -571,7 +633,12 @@ public sealed partial class RestoreViewModel : PageViewModel
         try
         {
             var progress = new UiProgress<RestoreProgress>(_uiThread, value => SetStage(value.Stage, plugins, dalamud, game));
-            Result = await _restores.RestoreAsync(new RestoreRequest(row.FilePath) { Selection = selection }, progress);
+            Result = await _restores.RestoreAsync(new RestoreRequest(row.FilePath)
+            {
+                Selection = selection,
+                InstallPlugins = WillInstallPlugins,
+                CustomRepositories = WillInstallPlugins ? RepositoryChoices.Where(choice => choice.IsChosen).Select(choice => choice.Url).ToList() : [],
+            }, progress);
             SetStage(RestoreStage.Completed, plugins, dalamud, game);
             Step = 4;
         }
@@ -681,27 +748,27 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     private void SetStage(RestoreStage stage, int pluginCount, bool dalamudSettings, string gameSettings)
     {
-        var current = stage switch
-        {
-            RestoreStage.VerifyingIntegrity => 0,
-            RestoreStage.CreatingSafetySnapshot => 1,
-            RestoreStage.Extracting or RestoreStage.RestoringPluginConfigs => 2,
-            RestoreStage.RestoringDalamudSettings => 3,
-            RestoreStage.RestoringGameSettings => 4,
-            _ => 5,
-        };
-        string[] labels =
+        List<(RestoreStage Stage, string Label)> stages =
         [
-            "Verifying backup integrity",
-            "Creating pre-restore safety backup",
-            pluginCount > 0 ? $"Restoring {Formatting.Count(pluginCount, "plugin configuration")}" : "Plugin configurations stay as they are",
-            dalamudSettings ? "Restoring Dalamud settings" : "Dalamud settings stay as they are",
-            gameSettings,
+            (RestoreStage.VerifyingIntegrity, "Verifying backup integrity"),
+            (RestoreStage.CreatingSafetySnapshot, "Creating pre-restore safety backup"),
+            (RestoreStage.RestoringPluginConfigs, pluginCount > 0 ? $"Restoring {Formatting.Count(pluginCount, "plugin configuration")}" : "Plugin configurations stay as they are"),
+            (RestoreStage.RestoringDalamudSettings, dalamudSettings ? "Restoring Dalamud settings" : "Dalamud settings stay as they are"),
+            (RestoreStage.RestoringGameSettings, gameSettings),
         ];
-        Stages.Clear();
-        for (var i = 0; i < labels.Length; i++)
+        if (WillInstallPlugins)
         {
-            Stages.Add(new StageItem(i < current ? StepState.Done : i == current ? StepState.Current : StepState.Todo, labels[i]));
+            stages.Insert(1, (RestoreStage.DownloadingPlugins, "Downloading and checking missing plugins"));
+            stages.Insert(1, (RestoreStage.Extracting, "Unpacking and checking the backup"));
+            stages.Add((RestoreStage.InstallingPlugins, "Installing missing plugins"));
+        }
+
+        var current = stage == RestoreStage.Completed ? stages.Count
+            : stages.FindIndex(item => item.Stage == (stage == RestoreStage.Extracting && !WillInstallPlugins ? RestoreStage.RestoringPluginConfigs : stage));
+        Stages.Clear();
+        for (var i = 0; i < stages.Count; i++)
+        {
+            Stages.Add(new StageItem(i < current ? StepState.Done : i == current ? StepState.Current : StepState.Todo, stages[i].Label));
         }
     }
 
@@ -784,6 +851,13 @@ public sealed partial class RestoreViewModel : PageViewModel
         DalamudSettingsChosen = HasDalamudSettings;
         CharacterSettingsChosen = HasCharacterSettings;
         SystemSettingsChosen = HasSystemSettings;
+        InstallMissingPlugins = true;
+        RepositoryChoices.Clear();
+        foreach (var repository in preview.Plugins?.CustomRepositories ?? [])
+        {
+            RepositoryChoices.Add(new RepositoryChoice(repository));
+        }
+
         BuildDalamudDetails();
         BuildCurrent();
         ChoicesChanged();
@@ -869,6 +943,12 @@ public sealed partial class RestoreViewModel : PageViewModel
         OnPropertyChanged(nameof(CanContinueReview));
         OnPropertyChanged(nameof(ChoiceProblem));
         OnPropertyChanged(nameof(RestoreSummary));
+        OnPropertyChanged(nameof(ShowPluginInstalls));
+        OnPropertyChanged(nameof(CanInstallPlugins));
+        OnPropertyChanged(nameof(WillInstallPlugins));
+        OnPropertyChanged(nameof(ShowRepositoryChoices));
+        OnPropertyChanged(nameof(ShowDalamudNotReady));
+        OnPropertyChanged(nameof(MissingPluginsText));
         ContinueCommand.NotifyCanExecuteChanged();
     }
 }

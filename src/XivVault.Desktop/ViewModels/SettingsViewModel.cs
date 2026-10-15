@@ -67,6 +67,9 @@ public sealed partial class SettingsViewModel : PageViewModel
     public partial bool CheckForUpdates { get; set; } = true;
 
     [ObservableProperty]
+    public partial bool GetBetaVersions { get; set; }
+
+    [ObservableProperty]
     public partial string DetectedPath { get; private set; } = "";
 
     [ObservableProperty]
@@ -112,6 +115,14 @@ public sealed partial class SettingsViewModel : PageViewModel
 
     partial void OnCheckForUpdatesChanged(bool value) => Save(config => config with { CheckForUpdates = value });
 
+    partial void OnGetBetaVersionsChanged(bool value)
+    {
+        if (Save(config => config with { GetBetaVersions = value }))
+        {
+            Updates.ChannelChanged();
+        }
+    }
+
     partial void OnCompressionChanged(Option<CompressionPreset> value)
     {
         OnPropertyChanged(nameof(CompressionHint));
@@ -136,6 +147,7 @@ public sealed partial class SettingsViewModel : PageViewModel
             IncludeGame = config.IncludeGameSettings;
             Compression = CompressionOptions.First(option => option.Value == config.Compression);
             CheckForUpdates = config.CheckForUpdates;
+            GetBetaVersions = config.GetBetaVersions;
             HasOverride = config.XivLauncherPathOverride is not null;
             ErrorMessage = null;
 
@@ -245,21 +257,23 @@ public sealed partial class SettingsViewModel : PageViewModel
         }
     }
 
-    private void Save(Func<XivVaultConfig, XivVaultConfig> change)
+    private bool Save(Func<XivVaultConfig, XivVaultConfig> change)
     {
         if (_loading)
         {
-            return;
+            return false;
         }
 
         try
         {
             _configStore.Save(change(_configStore.Load()));
             ErrorMessage = null;
+            return true;
         }
         catch (XivVaultException ex)
         {
             ErrorMessage = ex.Message;
+            return false;
         }
     }
 

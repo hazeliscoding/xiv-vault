@@ -12,7 +12,7 @@
     <StackPanel Spacing="16">
       <StackPanel Spacing="4">
         <TextBlock Classes="page-title" Text="Restore" />
-        <TextBlock Classes="body t2" Text="Bring back a previous Dalamud configuration. Nothing changes until the last step." />
+        <TextBlock Classes="body t2" Text="Bring back Dalamud and game settings. Nothing changes until the last step." />
       </StackPanel>
 
       <!-- Steps -->
@@ -117,7 +117,7 @@
       <StackPanel Spacing="16" IsVisible="{Binding IsStep2}">
         <StackPanel Spacing="12">
           <TextBlock Classes="section-title" Text="{Binding SelectedTitle}" />
-          <c:Banner Tone="Warning" Title="This backup is older than your current configuration" Description="{Binding OlderWarningText}"
+          <c:Banner Tone="Warning" Title="Settings saved since this backup will be replaced" Description="{Binding OlderWarningText}"
                     IsVisible="{Binding ShowOlderWarning}" />
           <c:Banner Tone="Critical" Title="XIVLauncher isn't set up on this PC yet" Description="{Binding TargetProblem}"
                     IsVisible="{Binding TargetProblem, Converter={x:Static ObjectConverters.IsNotNull}}">
@@ -218,6 +218,31 @@
               </StackPanel>
             </Border>
           </Grid>
+          <Border Classes="card" Padding="16,14" IsVisible="{Binding ShowPluginInstalls}">
+            <StackPanel Spacing="10">
+              <CheckBox Theme="{StaticResource ChoiceToggle}" Content="Install missing plugins" IsChecked="{Binding InstallMissingPlugins}"
+                        IsEnabled="{Binding CanInstallPlugins}" />
+              <TextBlock Classes="compact t3" TextWrapping="Wrap" Text="Beta feature. Requires Dalamud settings to be restored. Existing plugins stay as they are. The backup's list may include plugins you removed in game." />
+              <StackPanel Spacing="10" IsVisible="{Binding WillInstallPlugins}">
+                <TextBlock Classes="body" TextWrapping="Wrap" Text="{Binding MissingPluginsText}" />
+                <TextBlock Classes="compact t3" TextWrapping="Wrap" Text="XIV Vault looks in Dalamud's official repository and the custom repositories you choose below. It downloads current versions when available. Nothing executable comes from the backup." />
+                <StackPanel Spacing="8" IsVisible="{Binding ShowRepositoryChoices}">
+                  <TextBlock Classes="strong" Text="Custom repositories" />
+                  <TextBlock Classes="compact t3" TextWrapping="Wrap" Text="Dalamud warns: Plugins have full control over your PC, like any other program, and may cause harm or crashes. Please make absolutely sure that you only install plugins from developers you trust." />
+                  <ItemsControl ItemsSource="{Binding RepositoryChoices}" AutomationProperties.Name="Custom repositories to install from">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:RepositoryChoice">
+                        <CheckBox Theme="{StaticResource ChoiceToggle}" Content="{Binding Host}" IsChecked="{Binding IsChosen}" AutomationProperties.Name="{Binding Host}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <TextBlock Classes="compact t3" TextWrapping="Wrap" Text="Repository hosts see which plugins are requested. XIV Vault sends no configuration contents, character information or backups." />
+                <c:Banner Tone="Warning" Title="Dalamud hasn't finished downloading" IsVisible="{Binding ShowDalamudNotReady}"
+                          Description="Open XIVLauncher, let it finish, close it and restore again. Settings can still be restored now; plugins will wait." />
+              </StackPanel>
+            </StackPanel>
+          </Border>
           <c:Banner Tone="Info" Icon="ShieldCheck" Title="XIV Vault will create a safety backup of your current configuration before restoring anything."
                     Description="It appears in Backups as a Pre-Restore Safety Backup and can be restored the same way." />
         </StackPanel>
@@ -333,6 +358,26 @@
                           IsVisible="{Binding CanOpenLauncher}" c:FocusFallback.IsTarget="True" />
               <c:XvButton Classes="secondary" Icon="Archive" Content="View Backups" Command="{Binding ViewBackupsCommand}" c:FocusFallback.IsTarget="True" />
             </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="16,14" IsVisible="{Binding HasPluginInstallReport}">
+          <StackPanel Spacing="10">
+            <TextBlock Classes="strong" Text="Plugins" />
+            <TextBlock Classes="body" TextWrapping="Wrap" Text="{Binding InstalledPluginsText}" />
+            <TextBlock Classes="compact t3" TextWrapping="Wrap" Text="{Binding AlreadyInstalledText}" />
+            <c:Banner Tone="Warning" Title="Plugins are waiting for Dalamud" IsVisible="{Binding ResultNeedsDalamud}"
+                      Description="Open XIVLauncher, let Dalamud finish downloading, close it and restore again." />
+            <StackPanel Spacing="8" IsVisible="{Binding HasUninstalledPlugins}">
+              <TextBlock Classes="body" TextWrapping="Wrap" Text="These plugins were not installed. Open the game's plugin installer (/xlplugins) to install them:" />
+              <ItemsControl ItemsSource="{Binding UninstalledPlugins}" AutomationProperties.Name="Plugins not installed">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <TextBlock Classes="compact t2" TextWrapping="Wrap" Text="{Binding}" Margin="0,3" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <TextBlock Classes="compact t3" TextWrapping="Wrap" Text="Restoring the safety backup brings back your previous settings. Plugins installed during this restore stay installed." />
           </StackPanel>
         </Border>
         <c:XvButton Classes="ghost" Content="Start another restore" HorizontalAlignment="Right" Command="{Binding StartOverCommand}" />

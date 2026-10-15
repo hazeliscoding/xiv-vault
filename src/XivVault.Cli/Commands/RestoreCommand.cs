@@ -182,8 +182,13 @@ internal sealed class RestoreCommand(
         {
             var toInstall = preview.PluginsToInstall(selection).Order(StringComparer.OrdinalIgnoreCase).ToList();
             Item(toInstall.Count > 0, toInstall.Count > 0
-                ? $"{Formatting.Count(toInstall.Count, "missing plugin")} to install: {Formatting.JoinWords(toInstall)}"
+                ? $"{Formatting.Count(toInstall.Count, "missing plugin")} to look for: {Formatting.JoinWords(toInstall)}"
                 : "No missing plugins to install");
+
+            if (toInstall.Count > 0)
+            {
+                Output.Detail("XIV Vault looks in Dalamud's official repository and the custom repositories you choose. Current versions install when available.");
+            }
 
             // Nothing is requested from a repository when no plugin is missing.
             if (toInstall.Count > 0 && installs.CustomRepositories.Count > 0)
@@ -206,7 +211,7 @@ internal sealed class RestoreCommand(
             var plugins = undone.Plugins;
             Output.Warning(plugins.Count > 0
                 ? $"This backup is older than your current configuration. {Formatting.Count(plugins.Count, "plugin")} configured since ({Formatting.JoinWords(plugins.Take(5))}) will return to {(plugins.Count == 1 ? "its" : "their")} earlier settings."
-                : "This backup is older than your current Dalamud settings, which will return to their earlier values.");
+                : "Dalamud settings saved since this backup will be replaced, including any settings XIVLauncher created on its first start.");
         }
 
         Output.Line();

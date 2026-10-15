@@ -76,7 +76,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     public partial string ConnectionLabel { get; private set; } = "Checking backup folder";
 
-    public string VersionLabel { get; } = "XIV Vault " + XivVaultInfo.Version;
+    public string VersionLabel { get; } = (XivVaultInfo.IsBeta ? "Beta\n" : "XIV Vault ") + XivVaultInfo.Version;
+
+    public string ProtectionText => XivVaultInfo.IsBeta
+        ? "XIV Vault protects portable Dalamud configuration and the game's own settings. This beta can download missing plugins during a restore; custom repositories need your choice."
+        : "XIV Vault protects portable Dalamud configuration and the game's own settings. Plugins themselves aren't copied: on a new PC, install them again in Dalamud's plugin installer.";
 
     public async Task InitializeAsync()
     {

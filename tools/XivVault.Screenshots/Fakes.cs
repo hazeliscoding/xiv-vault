@@ -98,7 +98,7 @@ internal sealed class FakeUpdater : IAppUpdater
 
     public string? Latest { get; set; }
 
-    public Task<AvailableUpdate?> CheckAsync(CancellationToken cancellationToken = default) =>
+    public Task<AvailableUpdate?> CheckAsync(bool getBetaVersions, CancellationToken cancellationToken = default) =>
         Task.FromResult(Latest is null ? null : new AvailableUpdate(Latest));
 
     public Task DownloadAsync(AvailableUpdate update, Action<int> progress, CancellationToken cancellationToken = default) => Task.CompletedTask;

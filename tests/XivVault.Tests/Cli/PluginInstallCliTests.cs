@@ -108,7 +108,7 @@ public class PluginInstallCliTests
         var (code, output) = await Run(host, beta: true, "restore", "latest", "--yes", "--install-plugins");
 
         Assert.Equal(0, code);
-        Assert.Contains("✓ 4 missing plugins to install: Lifestream, Moodles, Orchestrion and Wotsit", output);
+        Assert.Contains("✓ 4 missing plugins to look for: Lifestream, Moodles, Orchestrion and Wotsit", output);
         Assert.Contains("Restore complete", output);
         Assert.Contains("2 plugins installed: Orchestrion and Wotsit", output);
         Assert.Contains("1 plugin already installed", output);
@@ -297,7 +297,7 @@ public class PluginInstallCliTests
 
         Assert.Equal(0, code);
         Assert.Equal([Moodles.Name, Wotsit.Name], toInstall);
-        Assert.Contains($"✓ {Formatting.Count(toInstall.Count, "missing plugin")} to install: {Formatting.JoinWords(toInstall)}", output);
+        Assert.Contains($"✓ {Formatting.Count(toInstall.Count, "missing plugin")} to look for: {Formatting.JoinWords(toInstall)}", output);
         Assert.DoesNotContain(Orchestrion.Name, output);
     }
 

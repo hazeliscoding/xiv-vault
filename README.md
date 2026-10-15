@@ -83,6 +83,12 @@ An update waits while a backup or restore runs, or while a scheduled backup or a
 
 ![Update available](docs/screenshots/settings-update.png)
 
+### Beta versions
+
+Betas are for testers who want to try upcoming changes and report what happens. They appear as **Pre-release** on [Releases](https://github.com/hazeliscoding/xiv-vault/releases); the website's main download and winget stay on stable releases. The first beta needs its own Setup download because 1.0 has no beta switch.
+
+In versions with **Settings → Updates → Get beta versions**, turn it on and select **Check Now** to receive later betas. It is off by default, even in a beta. Turning it off keeps your current version until a newer stable release arrives. Settings and the sidebar identify beta copies. Portable copies and the CLI must be downloaded by hand. See each beta's release notes for its experimental features and network use; the rest of this README describes stable releases.
+
 ## Where to keep backups
 
 A backup is no safer than the place you keep it. Good choices:

@@ -89,6 +89,9 @@ internal static class Program
         Shot(window, "diagnostics");
         Go(main, AppPage.Settings);
         Shot(window, "settings");
+        window.FindControl<ScrollViewer>("PageScroller")!.ScrollToEnd();
+        Shot(window, "settings-updates", audit: false);
+        window.FindControl<ScrollViewer>("PageScroller")!.ScrollToHome();
         services.GetRequiredService<SettingsViewModel>().ToggleOverrideCommand.Execute(null);
         Shot(window, "settings-override");
         services.GetRequiredService<SettingsViewModel>().ToggleOverrideCommand.Execute(null);
@@ -117,6 +120,30 @@ internal static class Program
         Run(newPc.Services.GetRequiredService<RestoreViewModel>().ContinueCommand.ExecuteAsync(null));
         Shot(cloudWindow, "restore-2-cloud-review");
         cloudWindow.Close();
+
+        using var beta = World.Create(root + "-beta", withHistory: true, betaPreview: true);
+        App.ServicesOverride = () => beta.Services;
+        var betaWindow = Open(beta);
+        var betaMain = (MainWindowViewModel)betaWindow.DataContext!;
+        Go(betaMain, AppPage.Restore);
+        var betaRestore = beta.Services.GetRequiredService<RestoreViewModel>();
+        Run(betaRestore.ContinueCommand.ExecuteAsync(null));
+        Shot(betaWindow, "restore-beta-review");
+        betaWindow.FindControl<ScrollViewer>("PageScroller")!.ScrollToEnd();
+        Shot(betaWindow, "restore-beta-repositories", audit: false);
+        betaWindow.Width = 920;
+        betaWindow.Height = 600;
+        Settle(TimeSpan.FromMilliseconds(100));
+        betaWindow.FindControl<ScrollViewer>("PageScroller")!.ScrollToEnd();
+        Shot(betaWindow, "restore-beta-repositories-small", audit: false);
+        betaWindow.Width = 1100;
+        betaWindow.Height = 720;
+        Run(betaRestore.ContinueCommand.ExecuteAsync(null));
+        Run(betaRestore.RestoreNowCommand.ExecuteAsync(null));
+        Shot(betaWindow, "restore-beta-complete");
+        betaWindow.FindControl<ScrollViewer>("PageScroller")!.ScrollToEnd();
+        Shot(betaWindow, "restore-beta-results", audit: false);
+        betaWindow.Close();
 
         Console.WriteLine($"Screenshots written to {_output}");
         return 0;
@@ -200,7 +227,7 @@ internal static class Program
         }
     }
 
-    private static void Shot(Window window, string name)
+    private static void Shot(Window window, string name, bool audit = true)
     {
         Settle(TimeSpan.FromMilliseconds(300));
         var frame = window.CaptureRenderedFrame() ?? throw new InvalidOperationException("No frame was rendered.");
@@ -208,7 +235,7 @@ internal static class Program
         frame.Save(Path.Combine(_output, name + ".png"));
 #pragma warning restore CS0618
         Console.WriteLine($"  {name}.png");
-        if (_audit)
+        if (_audit && audit)
         {
             File.WriteAllText(Path.Combine(_output, name + ".a11y.txt"), AccessibilityAudit.Report(window, () => Settle(TimeSpan.FromMilliseconds(60))));
         }

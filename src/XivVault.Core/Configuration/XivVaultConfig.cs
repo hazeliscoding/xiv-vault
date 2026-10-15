@@ -29,6 +29,8 @@ public sealed record XivVaultConfig
 
     /// <summary>Whether the installed desktop app asks GitHub for a newer version when it opens.</summary>
     public bool CheckForUpdates { get; set; } = true;
+
+    public bool GetBetaVersions { get; set; }
 }
 
 public enum CompressionPreset

@@ -163,11 +163,14 @@ There is one group for each `area`. Paths in `detail` start with `%USERPROFILE%`
     "days": ["sunday"],
     "time": "18:30"
   },
-  "checkForUpdates": true
+  "checkForUpdates": true,
+  "getBetaVersions": false
 }
 ```
 
 `backupDestination` is the default folder unless you chose one, and `xivLauncherPathOverride` is null while XIV Vault finds XIVLauncher itself. `schedule` is the schedule you chose, whether or not the task is installed.
+
+`getBetaVersions` is the installed desktop app's opt-in to GitHub prereleases, off by default. Turning it off never downgrades the app. The CLI has no updater; change this preference in the app's **Settings → Updates**.
 
 ### Values
 
@@ -191,6 +194,6 @@ Beta versions of XIV Vault, such as `1.1.0-beta.1`, can also install the plugins
 - `--install-plugins` installs the plugins this PC doesn't have yet, from Dalamud's official repository. Plugins are installed only along with the Dalamud settings, so a selection without them, such as `--plugin <NAME>` alone, is refused. A plugin whose settings are in the backup but left out of the selection isn't installed.
 - `--custom-repository <HOST>` (repeatable, with `--install-plugins`) also installs from a custom repository that the backup's Dalamud settings turn on. Name it by its host, as the restore's review lists it. Naming a host includes every repository at that host.
 
-The review lists the plugins to install before anything changes. Afterwards, the restore names each plugin it couldn't install and why, so you can install it from `/xlplugins` in the game. If Dalamud hasn't finished downloading, the restore installs no plugins and says to open XIVLauncher, let it finish, close it and restore again. Plugins that aren't installed don't change the exit code.
+The review lists missing plugins to look for in the official repository and the custom repositories you choose before anything changes. Afterwards, the restore names each plugin it couldn't install and why, so you can install it from `/xlplugins` in the game. If Dalamud hasn't finished downloading, the restore installs no plugins and says to open XIVLauncher, let it finish, close it and restore again. Plugins that aren't installed don't change the exit code.
 
 `--help` doesn't list either option, and stable versions refuse both with exit code 2. They aren't part of [What stays the same in 1.x](#what-stays-the-same-in-1x) until a stable version lists them.

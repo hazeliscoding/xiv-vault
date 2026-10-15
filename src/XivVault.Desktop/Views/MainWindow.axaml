@@ -65,7 +65,7 @@
                 <StackPanel Spacing="6">
                   <TextBlock Classes="micro t3" Text="WHAT IS PROTECTED" />
                   <TextBlock Classes="compact t2" TextWrapping="Wrap"
-                             Text="XIV Vault protects portable Dalamud configuration and the game's own settings. Plugins themselves aren't copied: on a new PC, install them again in Dalamud's plugin installer." />
+                             Text="{Binding ProtectionText}" />
                 </StackPanel>
               </Border>
               <Button Theme="{StaticResource LinkButton}" Foreground="{StaticResource AccentText}" Margin="10,0,4,8"
@@ -73,11 +73,11 @@
                       AutomationProperties.Name="{Binding Updates.NavLabel}" ToolTip.Tip="Open Settings to install it">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <c:StatusDot Tone="Accent" Diameter="5" VerticalAlignment="Center" />
-                  <TextBlock Classes="compact" Text="{Binding Updates.NavLabel}" VerticalAlignment="Center" />
+                  <TextBlock Classes="compact" Text="{Binding Updates.NavLabel}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="140" />
                 </StackPanel>
               </Button>
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="10,0,4,0">
-                <TextBlock Classes="data t3" FontSize="11" Text="{Binding VersionLabel}" VerticalAlignment="Center" />
+                <TextBlock Classes="data t3" FontSize="11" Text="{Binding VersionLabel}" VerticalAlignment="Center" TextWrapping="Wrap" />
                 <Button Grid.Column="1" Theme="{StaticResource LinkButton}" Foreground="{StaticResource Text3}"
                         Command="{Binding OpenGitHubCommand}" AutomationProperties.Name="Open XIV Vault on GitHub">
                   <StackPanel Orientation="Horizontal" Spacing="4">

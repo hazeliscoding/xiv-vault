@@ -7,6 +7,21 @@ namespace XivVault.Tests.Core;
 public class ConfigStoreTests
 {
     [Fact]
+    public void Beta_versions_are_off_for_old_settings_and_stay_opted_in_after_saving()
+    {
+        using var env = new TestEnvironment();
+        var store = new ConfigStore(env);
+        Directory.CreateDirectory(env.DataDirectory);
+        File.WriteAllText(store.ConfigPath, "{}");
+        Assert.False(store.Load().GetBetaVersions);
+
+        store.Save(store.Load() with { GetBetaVersions = true });
+        Assert.True(store.Load().GetBetaVersions);
+        store.Save(store.Load() with { RetentionCount = 7 });
+        Assert.True(store.Load().GetBetaVersions);
+    }
+
+    [Fact]
     public void Missing_file_gives_defaults_with_a_OneDrive_destination()
     {
         using var env = new TestEnvironment(withOneDrive: true);

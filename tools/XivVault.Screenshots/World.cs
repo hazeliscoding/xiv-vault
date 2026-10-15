@@ -28,7 +28,7 @@ internal sealed class World : IDisposable
 
     private readonly ServiceProvider _services;
 
-    private World(string root, bool withHistory, bool demo)
+    private World(string root, bool withHistory, bool demo, bool betaPreview)
     {
         Root = root;
         Environment = new FakeEnvironment(root);
@@ -46,6 +46,10 @@ internal sealed class World : IDisposable
         collection.AddSingleton<IMotionSettings>(new FixedMotion(reduce: !demo));
         collection.AddSingleton<IShellService, NoShell>();
         collection.AddSingleton<IAppUpdater>(Updater);
+        if (betaPreview)
+        {
+            collection.AddSingleton<IRestoreService>(provider => new BetaRestorePreview(ActivatorUtilities.CreateInstance<RestoreService>(provider)));
+        }
         if (demo)
         {
             collection.AddSingleton<IBackupService>(provider => new PacedBackupService(provider.GetRequiredService<BackupService>(), TimeSpan.FromSeconds(2.5)));
@@ -80,7 +84,7 @@ internal sealed class World : IDisposable
     public string GamePath => Path.Combine(Environment.Documents, "My Games", "FINAL FANTASY XIV - A Realm Reborn");
 
     /// <summary>A fake PC. A demo world has animations on and paces backups and restores for recording.</summary>
-    public static World Create(string root, bool withHistory, bool demo = false) => new(root, withHistory, demo);
+    public static World Create(string root, bool withHistory, bool demo = false, bool betaPreview = false) => new(root, withHistory, demo, betaPreview);
 
     /// <summary>Leaves every archive in the cloud and forgets their verification, as on a new PC.</summary>
     public void MoveBackupsToCloud()

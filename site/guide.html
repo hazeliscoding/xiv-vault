@@ -130,7 +130,7 @@
           <p>Close XIVLauncher and FFXIV first: the game rewrites its settings when you log out. Then open <span class="ui">Restore</span>. Nothing on disk changes until the last step.</p>
           <ol>
             <li><strong>Choose backup.</strong> Pick a backup from the list, or <span class="ui">Choose a backup file…</span> to restore one from anywhere. Choose <span class="ui">Continue</span>.</li>
-            <li><strong>Review.</strong> <span class="ui">In this backup</span> shows what the backup holds; <span class="ui">On this PC right now</span> shows what is here today. Plugins configured after the backup are listed, because they will return to their earlier settings. Choose <span class="ui">Continue</span>.</li>
+            <li><strong>Review.</strong> <span class="ui">In this backup</span> shows what the backup holds; <span class="ui">On this PC right now</span> shows what is here today. Plugins configured after the backup are listed, because they will return to their earlier settings. The warning that settings saved since the backup will be replaced also covers settings XIVLauncher created on its first start. Choose <span class="ui">Continue</span>.</li>
             <li><strong>Safety check.</strong> XIV Vault checks that XIVLauncher and FFXIV are closed, verifies the backup, and gets a safety backup ready. Choose <span class="ui">Restore Configuration</span>.</li>
             <li><strong>Complete.</strong> Open XIVLauncher, or <span class="ui">View Backups</span> to see the safety backup.</li>
           </ol>
@@ -203,6 +203,7 @@
             <li><span class="ui">Compression</span>: Fast, Balanced or Maximum.</li>
             <li><span class="ui">Override path</span>: a different XIVLauncher folder, when XIV Vault doesn't find yours.</li>
             <li><span class="ui">Check for updates when XIV Vault opens</span>: see <a href="#updates">Updates</a>.</li>
+            <li><span class="ui">Get beta versions</span>: off by default, for testers of upcoming releases. Available in versions after 1.0; see <a href="#updates">Updates</a>.</li>
           </ul>
           <figure class="shot">
             <a href="assets/generated/settings.png"><img src="assets/generated/settings.png" width="1100" height="720" loading="lazy" decoding="async"
@@ -215,6 +216,10 @@
           <p>When XIV Vault opens, it checks GitHub's public release list for a newer version. When there is one, the sidebar says so. Open <span class="ui">Settings</span> and choose <span class="ui">Update and Restart</span> when it suits you; nothing installs on its own.</p>
           <p>An update waits while a backup or restore runs, or while another XIV Vault window or a scheduled backup is open. Your settings, backups and schedule carry over.</p>
           <p>The update check is the only time XIV Vault uses the network, and it sends nothing about you or your backups. Turn it off with <span class="ui">Check for updates when XIV Vault opens</span>. Portable copies never check.</p>
+          <h3>Beta versions</h3>
+          <p>Betas are for testing upcoming changes and reporting problems. Download the first beta's Setup from a release marked <strong>Pre-release</strong> on <a href="https://github.com/hazeliscoding/xiv-vault/releases">Releases</a>: version 1.0 cannot opt in. Read that release's notes for experimental features and any additional network use. This guide otherwise describes stable releases.</p>
+          <p>In a version with <span class="ui">Get beta versions</span>, turn it on under <span class="ui">Settings → Updates</span>, then select <span class="ui">Check Now</span>. The switch starts off, including in a beta. Turning it off removes a pending beta offer and keeps the installed version until a newer stable release arrives. It never downgrades. Beta copies are labelled in Settings and the sidebar. Portable copies and the CLI need a fresh download for each version.</p>
+          <p>The website's main download and winget stay on stable releases. A beta does not become the latest stable release.</p>
         </section>
 
         <section id="problems" aria-labelledby="problems-title">
