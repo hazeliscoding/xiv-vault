@@ -1,5 +1,6 @@
 using XivVault.Core.Plugins;
 using XivVault.Desktop.ViewModels;
+using XivVault.Tests.Core.Plugins;
 using XivVault.Tests.Support;
 
 namespace XivVault.Tests.Desktop;
@@ -8,11 +9,22 @@ public class PluginInstallDesktopTests
 {
     private const string Custom = "https://plugins.example.org/repo.json?token=private";
 
+    private static readonly string[] RowsWithoutDownloads =
+    [
+        "Verifying backup integrity", "Unpacking and checking the backup", "Creating pre-restore safety backup",
+        "Restoring 5 plugin configurations", "Restoring Dalamud settings", "Game settings stay as they are",
+    ];
+
+    // Core downloads after unpacking and before the safety snapshot, and installs last.
+    private static readonly string[] RowsWithDownloads =
+        [.. RowsWithoutDownloads[..2], "Downloading and checking missing plugins", .. RowsWithoutDownloads[2..], "Installing missing plugins"];
+
     /// <summary>
     /// Reviews a backup of this PC whose plugins, Wotsit and Moodles unless others are given, come from these repositories
-    /// and are all missing.
+    /// and are missing unless already installed.
     /// </summary>
-    private static async Task<RestoreViewModel> ReviewAsync(DesktopTestHost host, (string Name, string Repository)[]? plugins = null, bool dalamudReady = true)
+    private static async Task<RestoreViewModel> ReviewAsync(
+        DesktopTestHost host, (string Name, string Repository)[]? plugins = null, bool dalamudReady = true, bool alreadyInstalled = false)
     {
         plugins ??= [("Wotsit", FakePluginRepository.Official), ("Moodles", Custom)];
         var launcher = host.CreateLauncher();
@@ -22,6 +34,11 @@ public class PluginInstallDesktopTests
         if (dalamudReady)
         {
             FakeDalamud.InstallDalamud(launcher.Root, new Version(15, 0, 3, 6));
+        }
+
+        foreach (var (name, _) in alreadyInstalled ? plugins : [])
+        {
+            RestorePluginInstallTests.InstallLocally(launcher.Root, (name, Guid.NewGuid()));
         }
 
         await host.BackUpAsync();
@@ -141,5 +158,51 @@ public class PluginInstallDesktopTests
 
         Assert.True(restore.IsStep4);
         Assert.DoesNotContain(stagesBeforeDownloads, item => item.Label == "Creating pre-restore safety backup" && item.State == StepState.Done);
+    }
+
+    [Theory]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, false)]
+    [InlineData(false, false, false)]
+    public async Task Downloads_are_mentioned_only_when_plugins_will_be_looked_for(bool dalamudReady, bool alreadyInstalled, bool looksForPlugins)
+    {
+        using var host = new DesktopTestHost(pluginInstalls: true);
+        var restore = await ReviewAsync(host, dalamudReady: dalamudReady, alreadyInstalled: alreadyInstalled);
+
+        Assert.True(restore.WillInstallPlugins);
+        Assert.Equal(looksForPlugins, restore.WillLookForPlugins);
+        Assert.Equal(looksForPlugins, restore.ShowRepositoryChoices);
+        await restore.ContinueCommand.ExecuteAsync(null);
+        await restore.RestoreNowCommand.ExecuteAsync(null);
+
+        Assert.Equal(looksForPlugins ? RowsWithDownloads : RowsWithoutDownloads, restore.Stages.Select(stage => stage.Label));
+        Assert.Equal(looksForPlugins, host.Downloads.Requests.Count > 0);
+    }
+
+    [Fact]
+    public async Task Plugins_looked_for_after_Dalamud_finished_downloading_since_the_review_show_their_rows()
+    {
+        using var host = new DesktopTestHost(pluginInstalls: true);
+        var restore = await ReviewAsync(host, dalamudReady: false);
+        FakeDalamud.InstallDalamud(host.Environment.XivLauncherPath, new Version(15, 0, 3, 6));
+
+        await restore.ContinueCommand.ExecuteAsync(null);
+        await restore.RestoreNowCommand.ExecuteAsync(null);
+
+        Assert.Contains("Wotsit", restore.Result?.Plugins?.Installed ?? []);
+        Assert.Equal(RowsWithDownloads, restore.Stages.Select(stage => stage.Label));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task The_review_points_below_only_when_it_lists_custom_repositories(bool custom)
+    {
+        using var host = new DesktopTestHost(pluginInstalls: true);
+        var restore = await ReviewAsync(host, custom ? null : [("Wotsit", FakePluginRepository.Official)]);
+
+        Assert.True(restore.WillLookForPlugins);
+        Assert.Equal(custom, restore.ShowRepositoryChoices);
+        Assert.Equal(custom, restore.RepositoriesText.Contains("below", StringComparison.Ordinal));
     }
 }

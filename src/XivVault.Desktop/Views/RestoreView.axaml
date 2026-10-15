@@ -225,7 +225,7 @@
               <TextBlock Classes="compact t3" TextWrapping="Wrap" Text="Beta feature. Requires Dalamud settings to be restored. Existing plugins stay as they are. The backup's list may include plugins you removed in game." />
               <StackPanel Spacing="10" IsVisible="{Binding WillInstallPlugins}">
                 <TextBlock Classes="body" TextWrapping="Wrap" Text="{Binding MissingPluginsText}" />
-                <TextBlock Classes="compact t3" TextWrapping="Wrap" Text="XIV Vault looks in Dalamud's official repository and the custom repositories you choose below. It downloads current versions when available. Nothing executable comes from the backup." />
+                <TextBlock Classes="compact t3" TextWrapping="Wrap" Text="{Binding RepositoriesText}" IsVisible="{Binding WillLookForPlugins}" />
                 <StackPanel Spacing="8" IsVisible="{Binding ShowRepositoryChoices}">
                   <TextBlock Classes="strong" Text="Custom repositories" />
                   <TextBlock Classes="compact t3" TextWrapping="Wrap" Text="Dalamud warns: Plugins have full control over your PC, like any other program, and may cause harm or crashes. Please make absolutely sure that you only install plugins from developers you trust." />
@@ -237,7 +237,8 @@
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
                 </StackPanel>
-                <TextBlock Classes="compact t3" TextWrapping="Wrap" Text="Repository hosts see which plugins are requested. XIV Vault sends no configuration contents, character information or backups." />
+                <TextBlock Classes="compact t3" TextWrapping="Wrap" IsVisible="{Binding WillLookForPlugins}"
+                           Text="Repository hosts see which plugins are requested. XIV Vault sends no configuration contents, character information or backups." />
                 <c:Banner Tone="Warning" Title="Dalamud hasn't finished downloading" IsVisible="{Binding ShowDalamudNotReady}"
                           Description="Open XIVLauncher, let it finish, close it and restore again. Settings can still be restored now; plugins will wait." />
               </StackPanel>

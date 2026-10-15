@@ -161,7 +161,14 @@ public sealed partial class RestoreViewModel : PageViewModel
 
     public bool WillInstallPlugins => CanInstallPlugins && InstallMissingPlugins;
 
-    public bool ShowRepositoryChoices => WillInstallPlugins && RepositoryChoices.Count > 0 && Preview?.PluginsToInstall(Selection).Count > 0;
+    /// <summary>Installs are on, Dalamud is ready and a plugin is missing: only then is anything requested.</summary>
+    public bool WillLookForPlugins => WillInstallPlugins && Preview?.Plugins?.DalamudReady == true && Preview.PluginsToInstall(Selection).Count > 0;
+
+    public bool ShowRepositoryChoices => WillLookForPlugins && RepositoryChoices.Count > 0;
+
+    public string RepositoriesText => ShowRepositoryChoices
+        ? "XIV Vault looks in Dalamud's official repository and the custom repositories you choose below. It downloads current versions when available. Nothing executable comes from the backup."
+        : "XIV Vault looks in Dalamud's official repository. It downloads current versions when available. Nothing executable comes from the backup.";
 
     public bool ShowDalamudNotReady => WillInstallPlugins && Preview?.Plugins?.DalamudReady == false && Preview.PluginsToInstall(Selection).Count > 0;
 
@@ -628,17 +635,23 @@ public sealed partial class RestoreViewModel : PageViewModel
             (false, true) => "Restoring system settings",
             _ => "Game settings stay as they are",
         };
-        SetStage(RestoreStage.VerifyingIntegrity, plugins, dalamud, game);
+        var lookingForPlugins = WillLookForPlugins;
+        SetStage(RestoreStage.VerifyingIntegrity, plugins, dalamud, game, lookingForPlugins);
         try
         {
-            var progress = new UiProgress<RestoreProgress>(_uiThread, value => SetStage(value.Stage, plugins, dalamud, game));
+            var progress = new UiProgress<RestoreProgress>(_uiThread, value =>
+            {
+                // Dalamud may have finished downloading since the review, and then Core looks for plugins after all.
+                lookingForPlugins |= value.Stage == RestoreStage.DownloadingPlugins;
+                SetStage(value.Stage, plugins, dalamud, game, lookingForPlugins);
+            });
             Result = await _restores.RestoreAsync(new RestoreRequest(row.FilePath)
             {
                 Selection = selection,
                 InstallPlugins = WillInstallPlugins,
                 CustomRepositoryHosts = WillInstallPlugins ? RepositoryChoices.Where(choice => choice.IsChosen).Select(choice => choice.Host).ToList() : [],
             }, progress);
-            SetStage(RestoreStage.Completed, plugins, dalamud, game);
+            SetStage(RestoreStage.Completed, plugins, dalamud, game, lookingForPlugins);
             Step = 4;
         }
         catch (XivVaultException ex)
@@ -745,7 +758,7 @@ public sealed partial class RestoreViewModel : PageViewModel
         RestoreNowCommand.NotifyCanExecuteChanged();
     }
 
-    private void SetStage(RestoreStage stage, int pluginCount, bool dalamudSettings, string gameSettings)
+    private void SetStage(RestoreStage stage, int pluginCount, bool dalamudSettings, string gameSettings, bool lookingForPlugins)
     {
         List<(RestoreStage Stage, string Label)> stages =
         [
@@ -755,10 +768,16 @@ public sealed partial class RestoreViewModel : PageViewModel
             (RestoreStage.RestoringDalamudSettings, dalamudSettings ? "Restoring Dalamud settings" : "Dalamud settings stay as they are"),
             (RestoreStage.RestoringGameSettings, gameSettings),
         ];
+
+        // A restore that installs plugins unpacks the backup before its safety snapshot, whether or not it downloads any.
         if (WillInstallPlugins)
         {
-            stages.Insert(1, (RestoreStage.DownloadingPlugins, "Downloading and checking missing plugins"));
             stages.Insert(1, (RestoreStage.Extracting, "Unpacking and checking the backup"));
+        }
+
+        if (lookingForPlugins)
+        {
+            stages.Insert(2, (RestoreStage.DownloadingPlugins, "Downloading and checking missing plugins"));
             stages.Add((RestoreStage.InstallingPlugins, "Installing missing plugins"));
         }
 
@@ -945,7 +964,9 @@ public sealed partial class RestoreViewModel : PageViewModel
         OnPropertyChanged(nameof(ShowPluginInstalls));
         OnPropertyChanged(nameof(CanInstallPlugins));
         OnPropertyChanged(nameof(WillInstallPlugins));
+        OnPropertyChanged(nameof(WillLookForPlugins));
         OnPropertyChanged(nameof(ShowRepositoryChoices));
+        OnPropertyChanged(nameof(RepositoriesText));
         OnPropertyChanged(nameof(ShowDalamudNotReady));
         OnPropertyChanged(nameof(MissingPluginsText));
         ContinueCommand.NotifyCanExecuteChanged();
