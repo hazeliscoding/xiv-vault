@@ -17,9 +17,9 @@ Every release must update cleanly from the one before it, so nothing is publishe
 
 ## 3. Update the previous release to the draft
 
-On a PC with the previous release installed. If XIV Vault isn't installed there, install the previous release's Setup first. Close every XIV Vault window, then point the installed copy at the draft:
-
 For the first beta, the previous release is stable 1.0.0. Its local-source override can offer the beta for this rehearsal, although its normal GitHub check never offers prereleases. Testers install the first beta's Setup by hand. For later betas, rehearse from the previous beta with **Get beta versions** on, and from the latest stable version when it has the switch.
+
+On a PC with the previous release installed. If XIV Vault isn't installed there, install the previous release's Setup first. Close every XIV Vault window, then point the installed copy at the draft:
 
 ```powershell
 gh release download vx.y.z -p "*.nupkg" -p releases.win.json -D "$env:TEMP\xiv-vault-draft"
