@@ -4,9 +4,22 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+## [1.1.0-beta.1] - 2026-10-15
+
+This is a testing prerelease. Stable 1.0.0 remains the main download. See [the beta notes](docs/releases/1.1.0-beta.1.md) for the clean-PC test and download details.
+
+### Added
+
+- **Get beta versions** under Settings → Updates, off by default. It offers GitHub prereleases as well as stable releases. Turning it off clears pending offers and never downgrades. Settings and the sidebar label beta copies.
+- In beta versions only, **Install missing plugins** in the restore review. It downloads current plugin versions from Dalamud's official repository and only the custom repositories you choose, preserving the IDs used by collections. Existing plugins stay unchanged. Completion lists installed plugins and those that need attention.
+- Beta-only CLI options `restore --install-plugins` and `--custom-repository <HOST>`. Stable builds refuse them; they remain hidden from help while experimental. Plugin install failures do not change a successful settings restore's exit code.
+- `config show --json` adds `getBetaVersions`, the desktop update preference.
+- Beta tags create signed GitHub prerelease drafts that never become the latest stable release.
+
 ### Fixed
 
 - The sidebar said Dalamud reinstalls plugins on a new PC, which it doesn't. Install them again from Dalamud's plugin installer (`/xlplugins`), and each one picks up its restored settings.
+- The restore review calls missing plugins candidates to look for, since some may need a custom repository or may no longer be available. Its warning about newer settings also explains XIVLauncher's first-start settings.
 
 ## [1.0.0] - 2026-10-11
 

@@ -197,6 +197,8 @@ Settled after reading Dalamud 15.0.3.6's source and checking the owner's install
 
 - **The first beta comes before a stable 1.1** (the owner's call: plugin installs aren't ready for a stable release). Testers install `1.1.0-beta.1` from its GitHub prerelease page, and later betas reach copies with **Get beta versions** on. Stable 1.1.0, with the switch and plugin installs off, closes M12 as its **Done when** says.
 - **The tester's clean-PC run comes next,** on that first beta. It needs the beta channel and the app's install screens; the weekly CI job can follow.
+- **Beta preparation (2026-10-15):** `1.1.0-beta.1` adds the opt-in update preference, desktop install review and results, and signed-prerelease draft workflow. Custom hosts start unticked. Reviews call missing plugins candidates to look for, since availability is unknown until the chosen repositories are read; first-start Dalamud settings are explained by the replacement warning. `docs/releases/1.1.0-beta.1.md` holds the prerelease notes and HummingOak's clean-PC steps. The signed draft, installed-update rehearsal, goatcorp heads-up and HummingOak's run are still pending. No stable 1.1 is being released.
+- **Local verification:** 755 tests pass both as `1.1.0-beta.1` and as a stable `1.1.0` build; the CLI smoke test and formatting check pass. All 21 screen accessibility reports, including beta review and completion, have no `!` findings. Release command checks use a mocked GitHub CLI: they verify prerelease/latest flags and that missing beta notes stop draft creation, without publishing anything.
 
 ## M0: Bootstrap
 
@@ -318,18 +320,18 @@ Released as 1.0.0 on 2026-10-11. A real 0.4.0 install updated itself to the draf
 
 - [x] Core reads the plugin list from Dalamud's settings: internal names and IDs from the default collection and saved collections, nothing else. On/off states need no reading: they come back with the restored settings file, which matches each plugin by its ID.
 - [x] Core installs each missing plugin's current version from its repository, checked as Dalamud checks it (name, version, API level, no paths outside the plugin's folder), into `installedPlugins\<Name>\<version>\` with its old ID. A plugin that is already installed is left alone.
-- [ ] Custom-repository plugins install only from repositories the user ticks in the review.
-- [ ] Desktop: the review step says which plugins will be installed and from where, and **Restore complete** lists what was installed and what to install from `/xlplugins`. The CLI's restore does the same, with its options and JSON fields added, never changed.
-- [ ] Plugin installs are on only in beta versions. A stable version shows nothing about them and never downloads a plugin.
+- [x] Custom-repository plugins install only from repositories the user ticks in the review.
+- [x] Desktop: the review step lists missing plugins to look for in the official and chosen custom repositories, and **Restore complete** lists what was installed and what to install from `/xlplugins`. The CLI's restore does the same, with its options and JSON fields added, never changed.
+- [x] Plugin installs are on only in beta versions. A stable version shows nothing about them and never downloads a plugin.
 - [x] Tests with a fake repository: a zip with paths outside its folder, a name or version that doesn't match the repository, an unticked custom repository, the game running, and a download that fails halfway, which leaves nothing half-installed.
 - [x] Side by side: an XIV Vault install matches Dalamud's own install of the same plugin version, file for file, apart from the ID. (Checked on 2026-10-15 with the owner's fresh-folder test: all 68 plugins XIV Vault installed match Dalamud's installs of the same versions on the original folder. Every file's hash is equal, and each manifest is equal once parsed, IDs included.)
 - [ ] A weekly CI job installs one real plugin from the live official repository into a temp folder, so a change to the repository's format fails CI before users notice.
-- [ ] **Get beta versions** under Updates in Settings, off by default. On, the update check also offers GitHub prereleases; off, it never downgrades.
-- [ ] Settings and the sidebar say when the installed version is a beta.
-- [ ] `release.yml`: a `vX.Y.Z-beta.N` tag builds a signed prerelease, with a delta from the previous release, that never becomes the latest release.
-- [ ] The release checklist covers betas: the previous release still updates to the draft first, and winget is skipped.
-- [ ] Tests prove the switch decides whether prereleases are offered.
-- [ ] README, user guide and website say what the beta channel is and who it's for. AGENTS.md and the beta release notes say what plugin installs download, from where, and that nothing about the user is sent; the README and website describe installs once they leave beta.
+- [x] **Get beta versions** under Updates in Settings, off by default. On, the update check also offers GitHub prereleases; off, it never downgrades.
+- [x] Settings and the sidebar say when the installed version is a beta.
+- [x] `release.yml`: a `vX.Y.Z-beta.N` tag builds a signed prerelease, with a delta from the previous release, that never becomes the latest release. (Workflow implemented; the first signed draft and installed-update rehearsal remain pending.)
+- [x] The release checklist covers betas: the previous release still updates to the draft first, and winget is skipped.
+- [x] Tests prove the switch decides whether prereleases are offered.
+- [x] README, user guide and website say what the beta channel is and who it's for. AGENTS.md and the beta release notes say what plugin installs download, from where, and that nothing about the user is sent; the README and website describe installs once they leave beta.
 - [x] README, `docs/`, both website pages and the unreleased changelog are read for AI-writing patterns (the humanizer skill) and rewritten where they show, keeping every fact, command and label. Released changelog entries, the roadmap's records and AGENTS.md stay as they are.
 - [ ] The app's and the CLI's own wording gets the same pass, with the desktop step, so screenshots and tests are redone once.
 - [x] On the owner's PC with `%APPDATA%\XIVLauncher` renamed aside: XIVLauncher set up fresh, the restore installs the plugins, and in game they load with their settings and collections, with no manifest errors in `dalamud.log`. Then the original folder is renamed back. (Passed on 2026-10-15 with the `1.1.0-beta.0` CLI and Dalamud 15.0.3.7: all 68 plugins came back with their old IDs, including those from 12 custom repositories, and Dalamud loaded each one as the collections said. The log's two errors show in the original folder's logs too. It turned up two fixes for the review's wording: its count of plugins to install includes custom-repository plugins whose repository isn't chosen, and on a fresh setup it always warns that the backup is older than the current Dalamud settings, because XIVLauncher's first start writes new ones.)

@@ -19,8 +19,11 @@ $repo = 'hazeliscoding/xiv-vault'
 $tag = "v$Version"
 $schema = '1.12.0'
 
+if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Winget manifests are only for stable x.y.z releases.' }
+
 $release = Invoke-RestMethod "https://api.github.com/repos/$repo/releases/tags/$tag"
 if ($release.draft) { throw "$tag is still a draft. Winget needs a published release." }
+if ($release.prerelease) { throw "$tag is a prerelease. Winget stays on stable releases." }
 $date = ([datetime]$release.published_at).ToUniversalTime().ToString('yyyy-MM-dd')
 
 $sumsFile = New-TemporaryFile

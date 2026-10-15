@@ -18,6 +18,8 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    outputs:
+      prerelease: ${{ steps.version.outputs.prerelease }}
     # Tag builds run in the release environment, whose variables let this job sign in to Azure Artifact Signing.
     # Manual runs have no environment, so they build unsigned.
     environment: ${{ github.ref_type == 'tag' && 'release' || '' }}
@@ -36,16 +38,21 @@ jobs:
           global-json-file: global.json
 
       - name: Version
+        id: version
         shell: pwsh
         env:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
           $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { $env:INPUT_VERSION }
-          if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "Not a version: $version" }
+          if ($version -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-beta\.(0|[1-9]\d*))?$') { throw "Not a stable or beta version: $version" }
+          $beta = $version.Contains('-beta.')
           "VERSION=$version" >> $env:GITHUB_ENV
+          "PRERELEASE=$($beta.ToString().ToLowerInvariant())" >> $env:GITHUB_ENV
+          "prerelease=$($beta.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:SIGN -ne 'true') { throw 'Tag releases must be signed.' }
 
       - name: Test
-        run: dotnet test --solution XivVault.sln --configuration Release
+        run: dotnet test --solution XivVault.sln --configuration Release -p:Version=${{ env.VERSION }}
 
       - name: Publish
         run: |
@@ -97,7 +104,8 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           dotnet tool restore
           if ($env:GITHUB_REF_TYPE -eq 'tag') {
-            dotnet vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ github.token }} --outputDir artifacts/velopack
+            $pre = @(if ($env:PRERELEASE -eq 'true') { '--pre' })
+            dotnet vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ github.token }} --outputDir artifacts/velopack @pre
           }
           $sign = @(if ($env:SIGN -eq 'true') { '--azureTrustedSignFile', "$env:RUNNER_TEMP/signing.json" })
           dotnet vpk pack --runtime win-x64 --packId XivVault --packVersion $env:VERSION --packTitle "XIV Vault" --packAuthors "Hazel Granados" --packDir artifacts/publish/XivVault.Desktop --mainExe XIV-Vault.exe --icon docs/brand/xiv-vault.ico --shortcuts StartMenuRoot --noPortable --outputDir artifacts/velopack @sign
@@ -168,9 +176,21 @@ jobs:
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.build.outputs.prerelease }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          gh release create "${{ github.ref_name }}" release/* \
-            --repo "${{ github.repository }}" \
+          set -euo pipefail
+          flags=()
+          notes=(--notes "Windows x64, self-contained: no .NET install needed. Install the app with xiv-vault-setup-win-x64.exe, which keeps it up to date; the zips are portable copies. See CHANGELOG.md for what changed. Verify downloads against SHA256SUMS.")
+          if [[ "$PRERELEASE" == "true" ]]; then
+            flags+=(--prerelease --latest=false)
+            gh api "repos/$REPOSITORY/contents/docs/releases/${RELEASE_TAG#v}.md?ref=$RELEASE_TAG" --jq .content | base64 --decode > release-notes.md
+            notes=(--notes-file release-notes.md)
+          fi
+          gh release create "$RELEASE_TAG" release/* \
+            --repo "$REPOSITORY" \
             --draft \
-            --title "XIV Vault ${{ github.ref_name }}" \
-            --notes "Windows x64, self-contained: no .NET install needed. Install the app with xiv-vault-setup-win-x64.exe, which keeps it up to date; the zips are portable copies. See CHANGELOG.md for what changed. Verify downloads against SHA256SUMS."
+            "${flags[@]}" \
+            --title "XIV Vault $RELEASE_TAG" \
+            "${notes[@]}"
