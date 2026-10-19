@@ -4,7 +4,7 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
-## [1.1.0-beta.1] - 2026-10-15
+## [1.1.0-beta.1] - 2026-10-19
 
 This is a testing prerelease. Stable 1.0.0 remains the main download. See [the beta notes](docs/releases/1.1.0-beta.1.md) for the clean-PC test and download details.
 
