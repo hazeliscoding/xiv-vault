@@ -201,6 +201,12 @@ Settled after reading Dalamud 15.0.3.6's source and checking the owner's install
 - **goatcorp heard first:** the owner emailed goatcorp on 2026-10-15 about the beta, with how installs work and an AI disclosure, and offered to hold it if they'd like changes. No reply had come by 2026-10-19, when the beta was published as planned.
 - **Local verification:** 755 tests pass both as `1.1.0-beta.1` and as a stable `1.1.0` build; the CLI smoke test and formatting check pass. All 21 screen accessibility reports, including beta review and completion, have no `!` findings. Release command checks use a mocked GitHub CLI: they verify prerelease/latest flags and that missing beta notes stop draft creation, without publishing anything.
 
+## Decisions (2026-10-21, the switch in 1.0.1)
+
+- **1.0.1 brings the beta switch to stable copies** before XIV Vault is shared more widely, so people who install it from the website can opt in to betas without a separate Setup download. It is the 2026-10-11 reason for shipping the switch first, applied to a patch.
+- **Built from main as a stable build.** Backporting only the switch onto 1.0.0 would mean splitting the commit that added it together with the desktop plugin installs, and CI already tests the stable build of main. Plugin installs stay off, and the fixes made since 1.0.0 come with it.
+- **A patch number, although it adds a setting.** Semver would call it 1.1.0, but 1.1.0 stays the release that closes M12, and the plugin-install betas keep their `1.1.0-beta.N` numbers.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
@@ -330,6 +336,7 @@ Released as 1.0.0 on 2026-10-11. A real 0.4.0 install updated itself to the draf
 - [x] **Get beta versions** under Updates in Settings, off by default. On, the update check also offers GitHub prereleases; off, it never downgrades.
 - [x] Settings and the sidebar say when the installed version is a beta.
 - [x] `release.yml`: a `vX.Y.Z-beta.N` tag builds a signed prerelease, with a delta from the previous release, that never becomes the latest release. (The `v1.1.0-beta.1` tag made a signed Pre-release draft with all 7 files and a delta from 1.0.0, and 1.0.0 stayed the latest release. A real 1.0.0 install updated itself to the draft through `XIV_VAULT_UPDATE_SOURCE`, kept its settings, backed up and ran its scheduled task, and the draft was published as a Pre-release on 2026-10-19.)
+- [ ] Stable 1.0.1, built from main with plugin installs off, so copies installed from the website can turn on **Get beta versions**.
 - [x] The release checklist covers betas: the previous release still updates to the draft first, and winget is skipped.
 - [x] Tests prove the switch decides whether prereleases are offered.
 - [x] README, user guide and website say what the beta channel is and who it's for. AGENTS.md and the beta release notes say what plugin installs download, from where, and that nothing about the user is sent; the README and website describe installs once they leave beta.
