@@ -4,6 +4,23 @@ All notable changes to XIV Vault are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-21
+
+Stable copies get the beta switch, so they can opt in to betas from Settings. Plugin installs stay in betas only.
+
+### Added
+
+- **Get beta versions** under Settings → Updates, off by default. On, the update check also offers GitHub prereleases. Turning it off clears a pending beta offer and never downgrades. Settings and the sidebar label beta copies.
+- `config show --json` adds `getBetaVersions`, the desktop update preference.
+
+### Fixed
+
+- The sidebar said Dalamud reinstalls plugins on a new PC, which it doesn't. Install them again from Dalamud's plugin installer (`/xlplugins`), and each one picks up its restored settings.
+- Closing the window during a restore asks first.
+- The next restore removes work folders that an interrupted restore left in the temp folder.
+- **Check Now** stays visible while it checks, and says when it can't read the settings.
+- Schedule explains that backups wait for FFXIV for up to 6 hours. Settings describes backup and update preferences, and CLI help and `doctor` include game settings. Overview no longer promises a backup duration or automatic fallback to an older backup. The restore review's warning about newer Dalamud settings also explains XIVLauncher's first-start settings.
+
 ## [1.1.0-beta.1] - 2026-10-19
 
 This is a testing prerelease. Stable 1.0.0 remains the main download. See [the beta notes](docs/releases/1.1.0-beta.1.md) for the clean-PC test and download details.
@@ -110,7 +127,8 @@ First release.
 - Installer: `xiv-vault-setup-win-x64.exe` installs the desktop app for the current user and keeps it up to date from GitHub releases. Updates install only when chosen in Settings, wait for running backups, restores and scheduled backups, and the check can be turned off. Uninstalling removes the scheduled backup task.
 - Self-contained Windows x64 builds: `xiv-vault-setup-win-x64.exe`, plus portable `xiv-vault-desktop-win-x64.zip` and `xiv-vault-cli-win-x64.zip`.
 
-[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v1.1.0-beta.1...HEAD
+[Unreleased]: https://github.com/hazeliscoding/xiv-vault/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/hazeliscoding/xiv-vault/compare/v1.0.0...v1.0.1
 [1.1.0-beta.1]: https://github.com/hazeliscoding/xiv-vault/compare/v1.0.0...v1.1.0-beta.1
 [1.0.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.4.0...v1.0.0
 [0.4.0]: https://github.com/hazeliscoding/xiv-vault/compare/v0.3.0...v0.4.0
