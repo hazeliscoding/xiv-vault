@@ -16,20 +16,16 @@ permissions:
   contents: read
 
 jobs:
+  # The tests, the build and the smoke test run every package they load and the built CLI, so this job
+  # gets no way to sign.
   build:
     runs-on: windows-latest
     outputs:
+      version: ${{ steps.version.outputs.version }}
       prerelease: ${{ steps.version.outputs.prerelease }}
-    # Tag builds run in the release environment, whose variables let this job sign in to Azure Artifact Signing.
-    # Manual runs have no environment, so they build unsigned.
-    environment: ${{ github.ref_type == 'tag' && 'release' || '' }}
-    permissions:
-      contents: read
-      id-token: write
     env:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
-      SIGN: ${{ vars.AZURE_CLIENT_ID != '' && vars.ARTIFACT_SIGNING_ENDPOINT != '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -47,9 +43,8 @@ jobs:
           if ($version -cnotmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-beta\.(0|[1-9]\d*))?$') { throw "Not a stable or beta version: $version" }
           $beta = $version.Contains('-beta.')
           "VERSION=$version" >> $env:GITHUB_ENV
-          "PRERELEASE=$($beta.ToString().ToLowerInvariant())" >> $env:GITHUB_ENV
+          "version=$version" >> $env:GITHUB_OUTPUT
           "prerelease=$($beta.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
-          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:SIGN -ne 'true') { throw 'Tag releases must be signed.' }
 
       - name: Test
         run: dotnet test --solution XivVault.sln --configuration Release -p:Version=${{ env.VERSION }}
@@ -58,6 +53,52 @@ jobs:
         run: |
           dotnet publish src/XivVault.Cli -p:PublishProfile=win-x64 -p:Version=${{ env.VERSION }}
           dotnet publish src/XivVault.Desktop -p:PublishProfile=win-x64 -p:Version=${{ env.VERSION }}
+
+      - name: Smoke test the published CLI
+        shell: pwsh
+        run: ./scripts/smoke-test.ps1 -Cli artifacts/publish/XivVault.Cli/xiv-vault.exe
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: publish
+          path: |
+            artifacts/publish/
+            !artifacts/publish/**/*.pdb
+          if-no-files-found: error
+
+  # The only job that can sign. It runs no build or test code: it signs and packs the built files.
+  package:
+    needs: build
+    runs-on: windows-latest
+    # Tag builds run in the release environment, whose variables let this job sign in to Azure Artifact Signing.
+    # Manual runs have no environment, so they build unsigned.
+    environment: ${{ github.ref_type == 'tag' && 'release' || '' }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      SIGN: ${{ vars.AZURE_CLIENT_ID != '' && vars.ARTIFACT_SIGNING_ENDPOINT != '' }}
+      VERSION: ${{ needs.build.outputs.version }}
+      PRERELEASE: ${{ needs.build.outputs.prerelease }}
+    steps:
+      - name: Require signing for tags
+        if: github.ref_type == 'tag' && env.SIGN != 'true'
+        shell: pwsh
+        run: throw 'Tag releases must be signed.'
+
+      # For vpk's version in dotnet-tools.json, the icon and the docs in the zips.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: publish
+          path: artifacts/publish
 
       - name: Sign in to Azure for code signing
         if: env.SIGN == 'true'
@@ -79,10 +120,6 @@ jobs:
           files: |
             ${{ github.workspace }}\artifacts\publish\XivVault.Cli\xiv-vault.exe
             ${{ github.workspace }}\artifacts\publish\XivVault.Desktop\XIV-Vault.exe
-
-      - name: Smoke test the published CLI
-        shell: pwsh
-        run: ./scripts/smoke-test.ps1 -Cli artifacts/publish/XivVault.Cli/xiv-vault.exe
 
       - name: Write the Artifact Signing metadata
         if: env.SIGN == 'true'
@@ -162,7 +199,7 @@ jobs:
 
   # The only job with write access. It runs no repository code, only the GitHub CLI.
   release:
-    needs: build
+    needs: [build, package]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
