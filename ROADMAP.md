@@ -207,6 +207,10 @@ Settled after reading Dalamud 15.0.3.6's source and checking the owner's install
 - **Built from main as a stable build.** Backporting only the switch onto 1.0.0 would mean splitting the commit that added it together with the desktop plugin installs, and CI already tests the stable build of main. Plugin installs stay off, and the fixes made since 1.0.0 come with it.
 - **A patch number, although it adds a setting.** Semver would call it 1.1.0, but 1.1.0 stays the release that closes M12, and the plugin-install betas keep their `1.1.0-beta.N` numbers.
 
+## Decisions (2026-10-24, signing in its own job)
+
+- **Releases are signed in a job of their own.** The build job runs the tests, the build and the smoke test, and so every package they load and the built CLI, so it can't get a token. The package job takes the published files and only signs and packs them. A compromised package could otherwise take the token and sign files of its own with the owner's certificate, unseen in any release. A package that changes the build is still signed with it. The check that a tag build is signed moves to the package job, where the `release` environment's variables are. This gives up a single job: a release starts a second Windows runner and passes the build between them, and the smoke test runs on the unsigned CLI.
+
 ## M0: Bootstrap
 
 - [x] Solution with `XivVault.Core`, `XivVault.Cli`, `XivVault.Desktop` and `XivVault.Tests`.
